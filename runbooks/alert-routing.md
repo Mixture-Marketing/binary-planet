@@ -9,32 +9,69 @@ Konfiguracja kanałów alertów + on-call discipline. Implementacja `.ts` w `mm-
 | `sms:jakub` | SMS Twilio/SMSAPI | +48 ... | 🔴 TODO — wybór provider (preferuję SMSAPI bo i tak go używamy) |
 | `email:jakub` | Email | info@mixturemarketing.pl | ✅ JEST |
 | `email:digest` | Email daily digest | info@mixturemarketing.pl | 🔴 TODO — osobny inbox lub label |
-| `slack:critical` | Slack #critical | webhook URL | 🔴 TODO — wybór: Slack vs Discord vs Telegram |
-| `slack:ops` | Slack #ops | webhook URL | 🔴 TODO |
+| `chat:critical` | Discord #critical | webhook URL | 🔴 TODO — utwórz Discord server `MixtureMarketing Ops` + 3 channels |
+| `chat:ops` | Discord #ops | webhook URL | 🔴 TODO |
+| `chat:digest` | Discord #digest | webhook URL | 🔴 TODO |
 | `email:va` | Email VA | TBD (Faza 8) | 🚫 BLOCKED — po hire VA |
 | `sms:va` | SMS VA | TBD (Faza 8) | 🚫 BLOCKED |
 
-**Decyzja do podjęcia:** kanał chat — Slack (standard) vs Discord (tańszy, lepsze webhooki) vs Telegram (najtańszy, instant push na phone bez Slack app). Rekomendacja: **Discord** (free unlimited webhooks, bot dla rich embeds, mobile push działa out-of-box).
+**✅ DECYZJA: Discord.** Powody:
+- Free unlimited webhooks (Slack ma 10 na free plan)
+- Free unlimited history (Slack 90 dni)
+- Per-channel notification rules
+- Rich embeds z kolorami (czerwony P1, żółty P2, etc.)
+- Mobile push działa out-of-box
+- VA growth path: $0 koszt (Slack $7/usr/mc)
+
+**Setup (3 min — po założeniu serwera):**
+1. https://discord.com/register
+2. Stwórz server "MixtureMarketing Ops"
+3. Stwórz 3 channels: `#critical` (P1 only), `#ops` (P2+P3), `#digest` (daily summary)
+4. Per kanał: Settings → Integrations → Webhooks → New Webhook → Copy URL
+5. Zapisz w 1Password jako `DISCORD_WEBHOOK_CRITICAL`, `DISCORD_WEBHOOK_OPS`, `DISCORD_WEBHOOK_DIGEST`
+6. W Faza 1 (gdy budujemy alert router w mm-control-plane) → wstawimy jako wrangler secrets
 
 ## Routing table
 
 ```typescript
 // mm-control-plane/src/alerting/router.ts (Faza 3)
 const alertRoutes = {
-  P1: ['sms:jakub', 'email:jakub', 'slack:critical'],
-  P2: ['email:jakub', 'slack:ops'],
-  P3: ['email:digest', 'slack:ops'],
-  P4: ['slack:ops'],
+  P1: ['sms:jakub', 'email:jakub', 'chat:critical'],
+  P2: ['email:jakub', 'chat:ops'],
+  P3: ['email:digest', 'chat:ops'],
+  P4: ['chat:digest'],
 };
 
 // W Fazie 8 po hire VA:
 const alertRoutesWithVA = {
-  P1: ['sms:jakub', 'sms:va', 'email:jakub', 'slack:critical'],
-  P2: ['email:va', 'email:jakub', 'slack:ops'],        // VA primary, Jakub cc
-  P3: ['email:digest', 'slack:ops'],                   // VA picks up daily
-  P4: ['slack:ops'],
+  P1: ['sms:jakub', 'sms:va', 'email:jakub', 'chat:critical'],
+  P2: ['email:va', 'email:jakub', 'chat:ops'],         // VA primary, Jakub cc
+  P3: ['email:digest', 'chat:ops'],                    // VA picks up daily
+  P4: ['chat:digest'],
 };
 ```
+
+## Discord embed format (P1)
+
+Rich embed dla maksymalnej czytelności na mobile:
+
+```json
+{
+  "embeds": [{
+    "title": "🚨 P1 — Site offline: kowalski-slusarz.pl",
+    "description": "HTTP 521 from health check\nDuration: 7 min",
+    "color": 15158332,
+    "fields": [
+      { "name": "Client", "value": "clk_abc123", "inline": true },
+      { "name": "Started", "value": "2026-05-18 14:23 UTC", "inline": true },
+      { "name": "Runbook", "value": "[P1-client-site-offline](https://github.com/MixtureMarketing/binary-planet/blob/main/runbooks/P1-client-site-offline.md)" }
+    ],
+    "footer": { "text": "alt_xyz · ack: app.mixturemarketing.pl/alerts/alt_xyz" }
+  }]
+}
+```
+
+Colors: P1=red `15158332`, P2=yellow `15844367`, P3=blue `3447003`, P4=gray `9807270`.
 
 ## On-call discipline
 

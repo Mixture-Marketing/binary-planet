@@ -92,7 +92,8 @@
 | F7 | Repo `mm-control-plane` (apps/control-plane/) | 🔴 TODO Track J | placeholder README.md |
 | F8 | Repo `mm-marketing` (apps/marketing/) | 🔴 TODO | placeholder README.md |
 | F9 | GitHub Actions secrets (CF_API_TOKEN, GHCR PAT, ...) | 🔴 TODO | po faktycznym push do GitHub org |
-| F10 | `git init` + push do `github.com/mixturemarketing/binary-planet` | 🔴 TODO | gdy zechcesz committować |
+| F10 | `git init` + initial commit | ✅ DONE | Local repo `d:\KOD\binary-planet\`, branch `main`, commit `7bfa002` |
+| F10b | Push do `github.com/MixtureMarketing/binary-planet` | 🔴 TODO | `gh repo create` + `git push -u origin main` — instrukcja w [setup-playbook.md](setup-playbook.md) |
 | F11 | pnpm global install (lub corepack enable) | 🟡 OPTIONAL | działa też przez `npx pnpm@9.12.0 ...` |
 
 ---
@@ -119,7 +120,7 @@
 | H2a | Pozostałe ops runbooks (deploy-fleet, handoff-to-va) | 🚫 BLOCKED | po Fazie 5 (fleet) / Faza 8 (VA) |
 | H3 | Secrets inventory + rotation policy | ✅ DONE | [runbooks/secrets-inventory.md](runbooks/secrets-inventory.md) + [ops-rotate-secrets.md](runbooks/ops-rotate-secrets.md) |
 | H4 | Alert routing config | ✅ DONE (design) | [runbooks/alert-routing.md](runbooks/alert-routing.md) — implementacja `.ts` w Fazie 3 |
-| H5 | Wybór chat channel (Slack/Discord/Telegram) | 🔴 TODO | rekomendacja: Discord (free webhooks) |
+| H5 | Wybór chat channel | ✅ DONE — Discord | Free unlimited webhooks. Routing zaktualizowany w [alert-routing.md](runbooks/alert-routing.md). Setup serwera czeka na Ciebie (3 min) |
 | H6 | Observability MVP (logs + metrics + alerts) | 🚫 BLOCKED | implementacja w Fazie 1 ([W.3](plan/W-12-dni-operacyjnych.md)) |
 | H7 | 1Password / Bitwarden vault + hardware 2FA | 🔴 TODO | YubiKey rekomendowane, gating dla pre-launch |
 
