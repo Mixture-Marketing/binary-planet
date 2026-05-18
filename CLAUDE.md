@@ -46,6 +46,7 @@ d:\KOD\binary-planet\
 │   │   ├── src/repos/    ← data access (clients, leads, webhook-events)
 │   │   ├── src/scheduled/← cron dispatcher + health-check + backup
 │   │   └── test/         ← integration tests w node:sqlite mock D1
+│   ├── admin/            ← mm-admin — ✅ Track J2 done (Astro 5 admin dashboard + magic link auth + 7 pages, shared D1)
 │   └── marketing/        ← mm-marketing — placeholder (TODO)
 ├── package.json          ← root workspace
 ├── pnpm-workspace.yaml

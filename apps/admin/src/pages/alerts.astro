@@ -1,0 +1,63 @@
+---
+import AdminLayout from "../layouts/AdminLayout.astro";
+
+import { listOpenAlerts } from "../lib/db.ts";
+
+const env = Astro.locals.runtime?.env;
+if (!env?.DB) return new Response("Runtime not available", { status: 500 });
+
+const alerts = await listOpenAlerts(env.DB, 200);
+
+const formatRelative = (iso: string): string => {
+  const date = new Date(iso);
+  const ms = Date.now() - date.getTime();
+  const min = Math.floor(ms / 60000);
+  if (min < 60) return `${min} min temu`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} h temu`;
+  return `${Math.floor(hr / 24)} d temu`;
+};
+---
+
+<AdminLayout title="Alerty">
+  <header style="margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0;">🚨 Alerty</h1>
+    <p style="color: var(--c-text-muted); margin: 0;">
+      Otwarte alerty wymagające uwagi. {alerts.length} wpisów.
+    </p>
+  </header>
+
+  {alerts.length === 0 ? (
+    <div class="card" style="text-align: center; padding: 3rem;">
+      <p style="font-size: 3rem; margin: 0 0 1rem 0;">✓</p>
+      <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 0.5rem 0; color: var(--c-success);">Wszystko OK</h2>
+      <p style="color: var(--c-text-muted); margin: 0;">Brak otwartych alertów.</p>
+    </div>
+  ) : (
+    <div style="display: grid; gap: 0.75rem;">
+      {alerts.map((alert) => (
+        <article class="card" style="display: grid; grid-template-columns: max-content 1fr max-content; gap: 1rem; align-items: center;">
+          <span class={`badge ${alert.severity === "P1" ? "badge-danger" : alert.severity === "P2" ? "badge-warning" : ""}`} style="font-size: 0.9rem; padding: 0.3rem 0.7rem;">
+            {alert.severity}
+          </span>
+          <div style="min-width: 0;">
+            <p style="margin: 0; font-weight: 600;">{alert.title}</p>
+            <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">
+              {alert.alert_type} · {alert.client_id ? <a href={`/clients/${alert.client_id}`} style="color: var(--c-brand); text-decoration: none;">{alert.client_id}</a> : "platform-wide"}
+              · status: <span class={`badge ${alert.status === "acked" ? "badge-warning" : "badge-danger"}`}>{alert.status}</span>
+              · {formatRelative(alert.fired_at)}
+            </p>
+            {alert.description && <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem;">{alert.description}</p>}
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            {alert.runbook_url && (
+              <a href={alert.runbook_url} target="_blank" rel="noopener" class="btn" style="font-size: 0.85rem; padding: 0.4rem 0.875rem; min-height: 32px;">
+                Runbook ↗
+              </a>
+            )}
+          </div>
+        </article>
+      ))}
+    </div>
+  )}
+</AdminLayout>

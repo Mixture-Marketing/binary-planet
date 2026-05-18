@@ -1,0 +1,36 @@
+---
+import LoginLayout from "../../layouts/LoginLayout.astro";
+
+import { buildSessionCookie, verifyMagicLink } from "../../lib/auth.ts";
+
+const url = new URL(Astro.request.url);
+const token = url.searchParams.get("token");
+const next = url.searchParams.get("next") ?? "/";
+
+if (!token) {
+  return Astro.redirect("/login?error=invalid_token");
+}
+
+const env = Astro.locals.runtime?.env;
+if (!env?.DB) {
+  return new Response("Runtime not available", { status: 500 });
+}
+
+const user = await verifyMagicLink(env.DB, token);
+if (!user) {
+  return Astro.redirect("/login?error=invalid_token");
+}
+
+// Set session cookie + redirect to next
+const sessionId = token.split(".")[0]!;
+const secure = !import.meta.env.DEV;
+const headers = new Headers({
+  Location: next,
+  "Set-Cookie": buildSessionCookie(sessionId, secure),
+});
+return new Response(null, { status: 302, headers });
+---
+
+<LoginLayout title="Verifying...">
+  <p>Verifying login link...</p>
+</LoginLayout>

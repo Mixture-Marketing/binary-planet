@@ -1,0 +1,126 @@
+---
+import AdminLayout from "../layouts/AdminLayout.astro";
+import StatCard from "../components/StatCard.astro";
+
+import { getDashboardStats, listRecentLeads, listOpenAlerts } from "../lib/db.ts";
+
+const env = Astro.locals.runtime?.env;
+if (!env?.DB) return new Response("Runtime not available", { status: 500 });
+
+const stats = await getDashboardStats(env.DB);
+const recentLeads = await listRecentLeads(env.DB, 5);
+const alerts = await listOpenAlerts(env.DB, 5);
+
+const formatRelative = (iso: string): string => {
+  const date = new Date(iso);
+  const ms = Date.now() - date.getTime();
+  const min = Math.floor(ms / 60000);
+  if (min < 1) return "przed chwilą";
+  if (min < 60) return `${min} min temu`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} h temu`;
+  const days = Math.floor(hr / 24);
+  if (days < 30) return `${days} d temu`;
+  return date.toLocaleDateString("pl-PL");
+};
+---
+
+<AdminLayout title="Overview">
+  <header style="margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0;">Overview</h1>
+    <p style="color: var(--c-text-muted); margin: 0;">
+      Aktualny stan platformy. {new Date().toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" })}.
+    </p>
+  </header>
+
+  <section aria-label="Statystyki" style="display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 2.5rem;">
+    <StatCard label="Klienci łącznie" value={stats.totalClients} icon="🏢" />
+    <StatCard
+      label="Aktywni"
+      value={stats.activeClients}
+      delta={`${stats.totalClients - stats.activeClients} nieaktywnych`}
+      deltaTone={stats.activeClients === stats.totalClients ? "positive" : "neutral"}
+      icon="✓"
+    />
+    <StatCard label="Leady dzisiaj" value={stats.leadsToday} icon="📥" />
+    <StatCard label="Leady (7d)" value={stats.leadsThisWeek} icon="📊" />
+    <StatCard
+      label="Otwarte alerty"
+      value={stats.openAlerts}
+      deltaTone={stats.openAlerts === 0 ? "positive" : "negative"}
+      delta={stats.openAlerts === 0 ? "Wszystko OK" : "Wymagana uwaga"}
+      icon="🚨"
+    />
+  </section>
+
+  <section aria-labelledby="recent-leads-heading" style="margin-bottom: 2.5rem;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1rem;">
+      <h2 id="recent-leads-heading" style="font-size: 1.25rem; font-weight: 700; margin: 0;">Ostatnie leady</h2>
+      <a href="/inbox/leads" style="color: var(--c-brand); text-decoration: none; font-size: 0.9rem; font-weight: 600;">Pokaż wszystkie →</a>
+    </div>
+    <div class="card" style="padding: 0;">
+      {recentLeads.length === 0 ? (
+        <p style="padding: 1.5rem; text-align: center; color: var(--c-text-muted); margin: 0;">
+          Brak leadów. Gdy klienci zaczną wypełniać formularze, pojawią się tu.
+        </p>
+      ) : (
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Klient</th>
+              <th>Źródło</th>
+              <th>Usługa</th>
+              <th>Status</th>
+              <th>Kiedy</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recentLeads.map((lead) => (
+              <tr>
+                <td>
+                  <a href={`/clients/${lead.client_id}`} style="color: var(--c-brand); text-decoration: none; font-weight: 500;">
+                    {lead.business_name}
+                  </a>
+                </td>
+                <td>{lead.source}</td>
+                <td>{lead.service_interest ?? "—"}</td>
+                <td>
+                  <span class={`badge ${lead.status === "new" ? "badge-warning" : lead.status === "won" ? "badge-success" : ""}`}>
+                    {lead.status}
+                  </span>
+                </td>
+                <td style="color: var(--c-text-muted); font-size: 0.85rem;">{formatRelative(lead.created_at)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  </section>
+
+  {alerts.length > 0 && (
+    <section aria-labelledby="alerts-heading">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1rem;">
+        <h2 id="alerts-heading" style="font-size: 1.25rem; font-weight: 700; margin: 0;">Otwarte alerty</h2>
+        <a href="/alerts" style="color: var(--c-brand); text-decoration: none; font-size: 0.9rem; font-weight: 600;">Pokaż wszystkie →</a>
+      </div>
+      <div style="display: grid; gap: 0.75rem;">
+        {alerts.map((alert) => (
+          <div class="card" style="display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem;">
+            <span class={`badge ${alert.severity === "P1" ? "badge-danger" : alert.severity === "P2" ? "badge-warning" : ""}`}>
+              {alert.severity}
+            </span>
+            <div style="flex: 1; min-width: 0;">
+              <p style="margin: 0; font-weight: 600;">{alert.title}</p>
+              {alert.description && <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{alert.description}</p>}
+            </div>
+            <span style="color: var(--c-text-muted); font-size: 0.85rem; flex-shrink: 0;">{formatRelative(alert.fired_at)}</span>
+            {alert.runbook_url && (
+              <a href={alert.runbook_url} target="_blank" rel="noopener" class="btn" style="padding: 0.4rem 0.75rem; font-size: 0.85rem; min-height: 32px;">Runbook</a>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  )}
+</AdminLayout>

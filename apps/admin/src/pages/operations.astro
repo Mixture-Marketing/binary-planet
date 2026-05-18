@@ -1,0 +1,114 @@
+---
+import AdminLayout from "../layouts/AdminLayout.astro";
+
+const env = Astro.locals.runtime?.env;
+if (!env?.DB) return new Response("Runtime not available", { status: 500 });
+
+// Recent cron runs (status visibility for Faza 5 scheduled tasks)
+const cronRuns = await env.DB
+  .prepare(
+    `SELECT job_name, started_at, finished_at, status, items_processed, items_failed, error
+       FROM cron_runs
+      ORDER BY started_at DESC LIMIT 30`,
+  )
+  .all<{
+    job_name: string;
+    started_at: string;
+    finished_at: string | null;
+    status: string;
+    items_processed: number;
+    items_failed: number;
+    error: string | null;
+  }>();
+
+const aiCallsToday = await env.DB
+  .prepare(
+    `SELECT COUNT(*) AS calls, SUM(cost_grosze) AS cost
+       FROM ai_calls WHERE occurred_at >= datetime('now', '-1 day')`,
+  )
+  .first<{ calls: number; cost: number }>();
+
+const healthLast = await env.DB
+  .prepare(
+    `SELECT
+       COUNT(*) AS checked,
+       SUM(CASE WHEN uptime = 1 THEN 1 ELSE 0 END) AS up
+     FROM health_checks WHERE checked_at >= datetime('now', '-1 hour')`,
+  )
+  .first<{ checked: number; up: number }>();
+
+const formatDuration = (started: string, finished: string | null): string => {
+  if (!finished) return "—";
+  const ms = new Date(finished).getTime() - new Date(started).getTime();
+  return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
+};
+---
+
+<AdminLayout title="Operations">
+  <header style="margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0;">⚙️ Operations</h1>
+    <p style="color: var(--c-text-muted); margin: 0;">
+      Status zaplecza: crony, AI quota, health checks.
+    </p>
+  </header>
+
+  <section style="display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 2.5rem;">
+    <div class="card">
+      <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase;">AI calls / 24h</p>
+      <p style="margin: 0.5rem 0 0 0; font-size: 1.75rem; font-weight: 800;">{aiCallsToday?.calls ?? 0}</p>
+      <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted);">
+        Koszt: ${((aiCallsToday?.cost ?? 0) / 10000).toFixed(2)}
+      </p>
+    </div>
+    <div class="card">
+      <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase;">Health checks / 1h</p>
+      <p style="margin: 0.5rem 0 0 0; font-size: 1.75rem; font-weight: 800;">{healthLast?.checked ?? 0}</p>
+      <p style="margin: 0; font-size: 0.85rem;" class={(healthLast?.up ?? 0) === (healthLast?.checked ?? 0) ? "" : ""}>
+        Up: <strong>{healthLast?.up ?? 0}</strong> / {healthLast?.checked ?? 0}
+      </p>
+    </div>
+    <div class="card">
+      <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase;">Ostatnie cron runs</p>
+      <p style="margin: 0.5rem 0 0 0; font-size: 1.75rem; font-weight: 800;">{cronRuns.results?.length ?? 0}</p>
+      <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted);">w bazie</p>
+    </div>
+  </section>
+
+  <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 1rem 0;">Scheduled jobs (ostatnie 30)</h2>
+  <div class="card" style="padding: 0;">
+    {(cronRuns.results?.length ?? 0) === 0 ? (
+      <p style="padding: 2rem; text-align: center; color: var(--c-text-muted); margin: 0;">
+        Brak uruchomień cron w bazie. Po deploy mm-control-plane z aktywnym CF Workers Paid pojawią się tu.
+      </p>
+    ) : (
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Job</th>
+            <th>Status</th>
+            <th>Czas trwania</th>
+            <th>Items</th>
+            <th>Kiedy</th>
+          </tr>
+        </thead>
+        <tbody>
+          {cronRuns.results?.map((run) => (
+            <tr>
+              <td style="font-family: ui-monospace, monospace; font-size: 0.85rem;">{run.job_name}</td>
+              <td>
+                <span class={`badge ${run.status === "success" ? "badge-success" : run.status === "failed" ? "badge-danger" : run.status === "partial_success" ? "badge-warning" : ""}`}>
+                  {run.status}
+                </span>
+              </td>
+              <td style="font-size: 0.85rem; color: var(--c-text-muted);">{formatDuration(run.started_at, run.finished_at)}</td>
+              <td style="font-size: 0.85rem;">
+                {run.items_processed} processed{run.items_failed > 0 ? `, ${run.items_failed} failed` : ""}
+              </td>
+              <td style="font-size: 0.85rem; color: var(--c-text-muted);">{new Date(run.started_at).toLocaleString("pl-PL")}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+</AdminLayout>

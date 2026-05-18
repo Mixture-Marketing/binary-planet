@@ -1,0 +1,39 @@
+---
+import "../styles/admin.css";
+
+import Sidebar from "../components/Sidebar.astro";
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = "MixtureMarketing admin panel" } = Astro.props;
+const user = Astro.locals.user;
+const nonce = Astro.locals.nonce ?? "";
+
+if (!user) {
+  // Shouldn't reach here — middleware redirects to /login. Defensive.
+  return Astro.redirect("/login");
+}
+---
+
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} — MM Admin</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <div style="display: grid; grid-template-columns: 240px 1fr; min-height: 100vh;">
+      <Sidebar user={user} />
+      <main style="padding: 2rem; max-width: 1280px; width: 100%;">
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>

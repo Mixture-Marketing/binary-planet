@@ -1,0 +1,75 @@
+---
+interface Props {
+  user: {
+    email: string;
+    displayName: string;
+    role: string;
+  };
+}
+
+const { user } = Astro.props;
+const currentPath = Astro.url.pathname;
+
+const navItems = [
+  { href: "/", label: "Overview", icon: "📊" },
+  { href: "/clients", label: "Klienci", icon: "🏢" },
+  { href: "/inbox/leads", label: "Inbox: Leady", icon: "📥" },
+  { href: "/alerts", label: "Alerty", icon: "🚨" },
+  { href: "/operations", label: "Operations", icon: "⚙️" },
+];
+
+const isActive = (href: string): boolean => {
+  if (href === "/") return currentPath === "/";
+  return currentPath.startsWith(href);
+};
+---
+
+<aside
+  role="navigation"
+  aria-label="Główna nawigacja"
+  style="background: var(--c-surface); border-right: 1px solid var(--c-border); padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 1.5rem; position: sticky; top: 0; height: 100vh; overflow-y: auto;"
+>
+  <div>
+    <h1 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 0.25rem 0;">MixtureMarketing</h1>
+    <p style="font-size: 0.8rem; color: var(--c-text-muted); margin: 0;">Admin Panel</p>
+  </div>
+
+  <nav style="flex: 1;">
+    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.25rem;">
+      {navItems.map((item) => (
+        <li>
+          <a
+            href={item.href}
+            aria-current={isActive(item.href) ? "page" : undefined}
+            style={`
+              display: flex;
+              align-items: center;
+              gap: 0.625rem;
+              padding: 0.625rem 0.875rem;
+              border-radius: 0.5rem;
+              color: var(--c-text);
+              text-decoration: none;
+              font-weight: 500;
+              font-size: 0.9rem;
+              ${isActive(item.href) ? "background: var(--c-brand); color: var(--c-brand-fg);" : ""}
+            `}
+          >
+            <span aria-hidden="true">{item.icon}</span>
+            {item.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+
+  <div style="padding-top: 1rem; border-top: 1px solid var(--c-border);">
+    <p style="font-size: 0.85rem; font-weight: 600; margin: 0 0 0.25rem 0;">{user.displayName}</p>
+    <p style="font-size: 0.75rem; color: var(--c-text-muted); margin: 0 0 0.5rem 0;">{user.email}</p>
+    <span class="badge">{user.role}</span>
+    <form method="POST" action="/api/auth/logout" style="margin-top: 0.75rem;">
+      <button type="submit" class="btn" style="width: 100%; font-size: 0.85rem; padding: 0.4rem 0.75rem; min-height: 32px;">
+        Wyloguj
+      </button>
+    </form>
+  </div>
+</aside>

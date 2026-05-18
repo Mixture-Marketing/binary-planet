@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --c-bg: #f5f5f7;
+    --c-surface: #ffffff;
+    --c-surface-muted: #fafafa;
+    --c-border: #e5e5e7;
+    --c-text: #1a1a1a;
+    --c-text-muted: #5a5a5a;
+    --c-brand: #1e40af;
+    --c-brand-fg: #ffffff;
+    --c-success: #047857;
+    --c-warning: #b45309;
+    --c-danger: #b91c1c;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--c-text);
+    background-color: var(--c-bg);
+    line-height: 1.5;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--c-brand);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@layer components {
+  .card {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    border: 1px solid var(--c-border);
+    background: var(--c-surface);
+    color: var(--c-text);
+    text-decoration: none;
+    cursor: pointer;
+    min-height: 40px;
+    font-size: 0.95rem;
+  }
+  .btn-primary {
+    background: var(--c-brand);
+    color: var(--c-brand-fg);
+    border-color: var(--c-brand);
+  }
+  .btn:hover {
+    filter: brightness(0.96);
+  }
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 999px;
+    background: var(--c-surface-muted);
+    color: var(--c-text-muted);
+    border: 1px solid var(--c-border);
+  }
+  .badge-success { color: var(--c-success); border-color: #a7f3d0; background: #ecfdf5; }
+  .badge-warning { color: var(--c-warning); border-color: #fde68a; background: #fffbeb; }
+  .badge-danger { color: var(--c-danger); border-color: #fecaca; background: #fef2f2; }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .table th, .table td {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--c-border);
+    font-size: 0.9rem;
+  }
+  .table th {
+    color: var(--c-text-muted);
+    font-weight: 600;
+    background: var(--c-surface-muted);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .table tr:hover td {
+    background: var(--c-surface-muted);
+  }
+}

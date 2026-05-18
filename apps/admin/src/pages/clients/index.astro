@@ -1,0 +1,100 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+
+import { listClients } from "../../lib/db.ts";
+
+const env = Astro.locals.runtime?.env;
+if (!env?.DB) return new Response("Runtime not available", { status: 500 });
+
+const url = new URL(Astro.request.url);
+const statusFilter = url.searchParams.get("status") ?? undefined;
+
+const clients = await listClients(env.DB, {
+  ...(statusFilter && { status: statusFilter }),
+});
+
+const statusOptions = ["all", "active", "pending", "provisioning", "paused", "suspended", "churned"];
+
+const formatDate = (iso: string | null): string => {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("pl-PL");
+};
+
+const tierLabel: Record<string, string> = {
+  starter: "Starter",
+  standard: "Standard",
+  premium: "Premium",
+};
+---
+
+<AdminLayout title="Klienci">
+  <header style="display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;">
+    <div>
+      <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0;">Klienci</h1>
+      <p style="color: var(--c-text-muted); margin: 0;">
+        {clients.length} {statusFilter ? `(filtr: ${statusFilter})` : "łącznie"}
+      </p>
+    </div>
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+      {statusOptions.map((s) => (
+        <a
+          href={s === "all" ? "/clients" : `/clients?status=${s}`}
+          class={`btn ${(s === "all" && !statusFilter) || s === statusFilter ? "btn-primary" : ""}`}
+          style="font-size: 0.85rem; padding: 0.4rem 0.875rem; min-height: 32px;"
+        >
+          {s}
+        </a>
+      ))}
+    </div>
+  </header>
+
+  <div class="card" style="padding: 0;">
+    {clients.length === 0 ? (
+      <p style="padding: 2rem; text-align: center; color: var(--c-text-muted); margin: 0;">
+        Brak klientów {statusFilter ? `o statusie "${statusFilter}"` : "w bazie"}.
+      </p>
+    ) : (
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Firma</th>
+            <th>Domena</th>
+            <th>Branża</th>
+            <th>Miasto</th>
+            <th>Tier</th>
+            <th>Status</th>
+            <th>Aktywacja</th>
+          </tr>
+        </thead>
+        <tbody>
+          {clients.map((c) => (
+            <tr>
+              <td>
+                <a href={`/clients/${c.id}`} style="color: var(--c-brand); text-decoration: none; font-weight: 600;">
+                  {c.business_name}
+                </a>
+                <p style="margin: 0.15rem 0 0 0; font-size: 0.75rem; color: var(--c-text-muted); font-family: ui-monospace, monospace;">{c.id}</p>
+              </td>
+              <td>
+                {c.primary_domain ? (
+                  <a href={`https://${c.primary_domain}`} target="_blank" rel="noopener" style="color: var(--c-text); text-decoration: underline;">
+                    {c.primary_domain}
+                  </a>
+                ) : "—"}
+              </td>
+              <td>{c.industry}</td>
+              <td>{c.city}</td>
+              <td><span class="badge">{tierLabel[c.tier] ?? c.tier}</span></td>
+              <td>
+                <span class={`badge ${c.status === "active" ? "badge-success" : c.status === "churned" || c.status === "suspended" ? "badge-danger" : "badge-warning"}`}>
+                  {c.status}
+                </span>
+              </td>
+              <td style="color: var(--c-text-muted); font-size: 0.85rem;">{formatDate(c.activated_at)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+</AdminLayout>
