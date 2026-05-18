@@ -144,6 +144,8 @@ const config: ClientConfig = {
 
   rodo: {
     consentVersion: "v1.0",
+    privacyPolicyUrl: "https://kowalski-slusarz.pl/polityka-prywatnosci",
+    termsUrl: "https://kowalski-slusarz.pl/regulamin",
     dpaSigned: true,
   },
 };

@@ -1,12 +1,12 @@
 ---
 import CraftsmanLayout from "../themes/craftsman/layouts/CraftsmanLayout.astro";
 import clientConfig from "../client.config.ts";
+import { notFoundSeo } from "../lib/seo.ts";
+
+const { meta, jsonLd } = notFoundSeo();
 ---
 
-<CraftsmanLayout
-  title={`Strona nie znaleziona — ${clientConfig.business.name}`}
-  description="Strona której szukasz nie istnieje lub została przeniesiona."
->
+<CraftsmanLayout meta={meta} jsonLd={jsonLd}>
   <section class="section-py" style="min-height: 60vh; display: grid; place-items: center; text-align: center;">
     <div class="container-px">
       <p style="font-size: 6rem; font-weight: 800; color: var(--color-brand); margin: 0; line-height: 1;">404</p>
@@ -18,7 +18,12 @@ import clientConfig from "../client.config.ts";
       </p>
       <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
         <a href="/" class="btn-primary">Strona główna</a>
-        <a href={`tel:${clientConfig.contact.primaryPhone}`} class="btn-outline">
+        <a
+          href={`tel:${clientConfig.contact.primaryPhone}`}
+          class="btn-outline"
+          data-track-event="phone_click"
+          data-track-position="404"
+        >
           📞 {clientConfig.contact.primaryPhone}
         </a>
       </div>

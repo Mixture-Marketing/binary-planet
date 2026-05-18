@@ -1,0 +1,14 @@
+---
+import { buildBreadcrumbHtml, type BreadcrumbItem } from "@mixturemarketing/web-core/a11y";
+
+interface Props {
+  items: ReadonlyArray<BreadcrumbItem>;
+}
+const { items } = Astro.props;
+
+const html = buildBreadcrumbHtml(items);
+---
+
+<div class="container-px" style="padding-block: 1rem 0.5rem;">
+  <Fragment set:html={html} />
+</div>

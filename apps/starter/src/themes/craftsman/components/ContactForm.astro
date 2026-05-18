@@ -28,8 +28,8 @@ const consentVersion = clientConfig.rodo.consentVersion;
     >
       <input type="hidden" name="consent_text_version" value={consentVersion} />
       <input type="hidden" name="source_page" value={Astro.url.pathname} />
-      {/* Honeypot — hidden field, filled by bots */}
-      <label style="position: absolute; left: -9999px;" aria-hidden="true">
+      {/* Honeypot — hidden field (uses .sr-only from web-core/a11y), filled by bots */}
+      <label class="sr-only" aria-hidden="true">
         <input type="text" name="honeypot" tabindex="-1" autocomplete="off" />
       </label>
 
@@ -110,8 +110,10 @@ const consentVersion = clientConfig.rodo.consentVersion;
       </div>
 
       {turnstileSiteKey && (
-        <div class="cf-turnstile" data-sitekey={turnstileSiteKey}></div>
-        <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+        <>
+          <div class="cf-turnstile" data-sitekey={turnstileSiteKey}></div>
+          <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+        </>
       )}
 
       <label style="display: flex; gap: 0.6rem; align-items: flex-start; cursor: pointer;">
@@ -132,27 +134,46 @@ const consentVersion = clientConfig.rodo.consentVersion;
       <button type="submit" class="btn-primary" style="margin-top: 0.5rem;">
         Wyślij wiadomość
       </button>
-
-      <div id="contact-form-status" role="status" aria-live="polite" style="min-height: 1.5rem;"></div>
     </form>
 
-    <script is:inline nonce={Astro.locals.nonce}>
-      (() => {
-        const form = document.getElementById("contact-form");
-        const status = document.getElementById("contact-form-status");
-        if (!form || !status) return;
+    {/* Live status region — SR announcements + visible. */}
+    <div
+      id="contact-form-status"
+      role="status"
+      aria-live="polite"
+      style="min-height: 1.5rem; max-width: 36rem; margin-top: 1rem; font-weight: 600; color: var(--color-brand);"
+    ></div>
+
+    {/* Wire form: form_viewer audience + lead conversion + status announcements */}
+    <script>
+      import { fireFormViewer, fireLeadConversion } from "@mixturemarketing/web-core/ads";
+
+      const form = document.getElementById("contact-form") as HTMLFormElement | null;
+      const status = document.getElementById("contact-form-status");
+      if (form && status) {
+        // Fire form_viewer when form intersects viewport (audience tracking, exclude later)
+        if ("IntersectionObserver" in window) {
+          const obs = new IntersectionObserver(
+            (entries) => {
+              for (const e of entries) {
+                if (e.isIntersecting) {
+                  fireFormViewer("contact");
+                  obs.disconnect();
+                }
+              }
+            },
+            { threshold: 0.5 },
+          );
+          obs.observe(form);
+        }
 
         form.addEventListener("submit", async (e) => {
           e.preventDefault();
           status.textContent = "Wysyłam…";
-          status.style.color = "";
 
           const formData = new FormData(form);
-          // Convert FormData to JSON
-          const body = {};
-          for (const [k, v] of formData.entries()) {
-            body[k] = v;
-          }
+          const body: Record<string, FormDataEntryValue> = {};
+          for (const [k, v] of formData.entries()) body[k] = v;
 
           try {
             const res = await fetch(form.action, {
@@ -160,22 +181,28 @@ const consentVersion = clientConfig.rodo.consentVersion;
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(body),
             });
-            const json = await res.json();
+            const json = (await res.json()) as {
+              ok: boolean;
+              message?: string;
+              lead_id?: string;
+            };
             if (res.ok && json.ok) {
-              status.textContent = json.message || "Dziękujemy! Wiadomość została wysłana.";
-              status.style.color = "var(--color-brand)";
+              status.textContent = json.message ?? "Dziękujemy! Wiadomość została wysłana.";
+              fireLeadConversion({
+                form_id: "contact",
+                service_interest: String(body["service_interest"] ?? ""),
+                lead_id: json.lead_id ?? "",
+              });
               form.reset();
-              if (window.plausible) window.plausible("lead_form_submit", { props: { service: body.service_interest || "unknown" } });
             } else {
-              status.textContent = json.message || "Coś poszło nie tak. Spróbuj ponownie lub zadzwoń.";
-              status.style.color = "var(--color-brand)";
+              status.textContent =
+                json.message ?? "Coś poszło nie tak. Spróbuj ponownie lub zadzwoń.";
             }
-          } catch (err) {
+          } catch {
             status.textContent = "Brak połączenia. Spróbuj zadzwonić bezpośrednio.";
-            status.style.color = "var(--color-brand)";
           }
         });
-      })();
+      }
     </script>
   </div>
 </section>

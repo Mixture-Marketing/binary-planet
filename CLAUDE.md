@@ -39,7 +39,7 @@ d:\KOD\binary-planet\
 │   │   └── src/ads/          ← ✅ Track Ads done — conversion helpers + GCLID + Meta CAPI server-side + GAds OCT
 │   └── logger/               ← @mixturemarketing/logger (v0.0.1 funkcjonalny)
 ├── apps/
-│   ├── starter/          ← mm-starter — ✅ Track I done (Astro 5 + CF + Tailwind v4 + craftsman theme)
+│   ├── starter/          ← mm-starter — ✅ Track I + I2 done (Astro 5 + CF + Tailwind v4 + craftsman theme + full web-core integration)
 │   ├── control-plane/    ← mm-control-plane — ✅ Track J done (Hono hub API + cron + 24 tests)
 │   │   ├── migrations/   ← ✅ Track C done — 9 SQL files, 37 tables, 110 indexes
 │   │   ├── src/api/      ← Hono routes, middleware (auth/logger/error), lib

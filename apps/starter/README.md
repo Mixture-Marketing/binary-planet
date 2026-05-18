@@ -2,9 +2,56 @@
 
 Astro 5 + CF Workers + Tailwind v4 template dla stron klientów MixtureMarketing.
 
-**Status:** Track I done — build green, jeden preset (`craftsman`) funkcjonalny end-to-end.
+**Status:** Track I + I2 done — full integration wszystkich `web-core` modułów. Build zielony, 49 Vite modules transformed, ~17KB gzip client bundle (Vite). Strona renderuje pełen pakiet: meta + JSON-LD + a11y + RODO consent + ads conversion tracking + Zaraz event dispatch.
 
 Demo client: **"Ślusarz Kowalski Rzeszów"** (`src/client.config.ts`).
+
+## Track I2: Integracja `web-core` modułów
+
+Każda strona dostaje (auto, przez `BaseLayout` + `init.client.ts`):
+
+| Moduł | Co dodaje | Plik |
+|-------|-----------|------|
+| **`/seo`** | meta tags + 4-5 JSON-LD blocks per page type (LocalBusiness + WebSite + Organization + Breadcrumb + FAQPage) | `src/lib/seo.ts` |
+| **`/security`** | CSP nonce + HSTS + Permissions-Policy headers | `src/middleware.ts` |
+| **`/a11y`** | Skip link + sr-only CSS + :focus-visible + Breadcrumb HTML | `BaseLayout.astro` global styles |
+| **`/consent`** | Default state script + banner + preferences modal + audit POST | `BaseLayout` head/body + `init.client.ts` |
+| **`/ads`** | GCLID capture + `fireLeadConversion()` w form submit + `fireFormViewer()` via IntersectionObserver | `ContactForm.astro` script |
+| **`/zaraz`** | `autoTrackClicks()` (data-track-event attrs) + `trackEvent("page_view")` | `init.client.ts` |
+| **`/feature-flags`** | Typed config (`client.config.ts.integrations`) — runtime client w hub deploy (Track J2) | `client.config.ts` |
+| **`/forms`** | API `/api/contact` z Turnstile + rate limit + Resend + fallback queue (Track F) | `pages/api/contact.ts` |
+| **`/local`** | LocalBusiness 15 subtypes + sitemap.xml + robots.txt + llms.txt | `pages/sitemap.xml.ts`, `pages/robots.txt.ts`, `pages/llms.txt.ts`, `lib/schema.ts` |
+
+### Flow conversion (klient odwiedza → wypełnia form)
+
+```
+1. Visitor lands z Google Ad: kowalski.pl/?gclid=Cj0KCQjw
+   ↓
+2. init.client.ts on page load:
+   - captureAllClickIds() → _gcl_aw cookie (90d)
+   - initConsentRuntime() — banner pokazuje się (no consent cookie)
+   - autoTrackClicks() wires phone/email CTAs
+   - trackEvent("page_view", {page_path, ...})
+   ↓
+3. User klika "Akceptuj wszystkie" w banner:
+   - mm_consent_v1 cookie zapisany (FULLY_GRANTED)
+   - gtag('consent', 'update', GRANTED)
+   - POST /api/events/consent (audit → D1)
+   - GA4/Meta/TikTok pixels aktywują
+   ↓
+4. User wypełnia form, submit:
+   - fireFormViewer fired wcześniej via IntersectionObserver (audience)
+   - Submit handler POST /api/contact (web-core/forms backend)
+   - On success: fireLeadConversion({form_id, service_interest, lead_id})
+     → trackEvent("lead_form_submit", {event_id, gclid, value, ...})
+     → Zaraz fans out: GA4 generate_lead, GAds conversion, Meta Lead, TikTok SubmitForm
+   - status region announces "Wysłano!" (SR + visible)
+   ↓
+5. (Server-side) mm-control-plane (Track J):
+   - /api/leads otrzymuje TransportLead (encrypted PII)
+   - sendMetaCapiEvents(...) — Meta dedupes z client Pixel via event_id
+   - Lead w D1 + Resend email do klienta + fallback queue jeśli down
+```
 
 ## Co działa (v0.0.1)
 

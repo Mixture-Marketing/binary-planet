@@ -1,16 +1,38 @@
 ---
 import CraftsmanLayout from "../themes/craftsman/layouts/CraftsmanLayout.astro";
+import BreadcrumbNav from "../themes/craftsman/components/BreadcrumbNav.astro";
 import OpeningHours from "../themes/craftsman/components/OpeningHours.astro";
 import ContactForm from "../themes/craftsman/components/ContactForm.astro";
-import clientConfig from "../client.config.ts";
-import { buildLocalBusinessJsonLd } from "../lib/schema.ts";
+import { breadcrumbItems, kontaktSeo } from "../lib/seo.ts";
 
-const title = `Kontakt — ${clientConfig.business.name}`;
-const description = `Skontaktuj się z ${clientConfig.business.name}. Telefon: ${clientConfig.contact.primaryPhone}. Adres: ${clientConfig.location.address.streetAddress}, ${clientConfig.location.address.city}.`;
-const jsonLd = [buildLocalBusinessJsonLd()];
+// Page-specific FAQ — pairs with FAQPage JSON-LD
+const faqs = [
+  {
+    question: "Jak szybko mogę liczyć na odpowiedź?",
+    answer: "Telefonicznie odbieramy zwykle od razu, najpóźniej w 15 minut. Na formularze odpisujemy w godzinach pracy w ciągu godziny.",
+  },
+  {
+    question: "Czy dojeżdżacie do mnie?",
+    answer:
+      "Tak, dojeżdżamy do klientów na terenie Rzeszowa oraz okolicznych miejscowości. Dla awaryjnych wezwań — 24/7.",
+  },
+  {
+    question: "Czy wystawiacie fakturę VAT?",
+    answer: "Tak, każda usługa kończy się fakturą VAT. Dostarczamy elektronicznie na podany email.",
+  },
+  {
+    question: "Czy mogę zarezerwować termin online?",
+    answer:
+      "Najszybciej telefonicznie — termin ustalamy w trakcie krótkiej rozmowy. Można też wypełnić formularz, oddzwaniamy z propozycjami.",
+  },
+];
+
+const { meta, jsonLd } = kontaktSeo(faqs);
 ---
 
-<CraftsmanLayout title={title} description={description} canonicalPath="/kontakt" jsonLd={jsonLd}>
+<CraftsmanLayout meta={meta} jsonLd={jsonLd}>
+  <BreadcrumbNav items={breadcrumbItems("Kontakt")} />
+
   <section class="section-py" style="background: var(--color-surface-muted);">
     <div class="container-px">
       <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: var(--color-brand);">Skontaktuj się</p>
@@ -24,5 +46,22 @@ const jsonLd = [buildLocalBusinessJsonLd()];
   </section>
 
   <OpeningHours />
+
+  <section aria-labelledby="faq-heading" class="section-py">
+    <div class="container-px" style="max-width: 50rem;">
+      <h2 id="faq-heading" style="font-size: clamp(1.75rem, 3.5vw, 2.5rem); font-weight: 700; margin: 0 0 2rem 0;">
+        Najczęstsze pytania
+      </h2>
+      <dl style="display: grid; gap: 1.5rem;">
+        {faqs.map((item) => (
+          <div style="background: var(--color-surface-muted); padding: 1.5rem; border-radius: var(--radius-md);">
+            <dt style="font-weight: 700; margin-bottom: 0.5rem;">{item.question}</dt>
+            <dd style="margin: 0; color: var(--color-text-muted);">{item.answer}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </section>
+
   <ContactForm heading="Wypełnij formularz" />
 </CraftsmanLayout>

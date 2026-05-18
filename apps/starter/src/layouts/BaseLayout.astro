@@ -1,64 +1,83 @@
 ---
 import "../styles/globals.css";
+
+import {
+  consentBannerCss,
+  consentBannerHtml,
+  defaultConsentScriptTag,
+  preferencesModalCss,
+  preferencesModalHtml,
+} from "@mixturemarketing/web-core/consent";
+import {
+  BREADCRUMB_CSS,
+  focusVisibleStyles,
+  skipLink,
+  VISUALLY_HIDDEN_CSS,
+} from "@mixturemarketing/web-core/a11y";
+import { buildMetaTags, type MetaInput } from "@mixturemarketing/web-core/seo";
+
 import clientConfig from "../client.config.ts";
 import { tokensCss } from "../themes/craftsman/tokens.ts";
 
 interface Props {
-  title: string;
-  description?: string;
-  /** Canonical path (relative). Defaults to current URL pathname. */
-  canonicalPath?: string;
-  /** JSON-LD blocks to inject into <head>. */
+  meta: MetaInput;
   jsonLd?: unknown[];
-  /** Open Graph image URL. */
-  ogImage?: string;
 }
 
-const {
-  title,
-  description = clientConfig.business.description,
-  canonicalPath,
-  jsonLd = [],
-  ogImage,
-} = Astro.props;
-
+const { meta, jsonLd = [] } = Astro.props;
 const nonce = Astro.locals.nonce ?? "";
-const canonicalUrl = `${clientConfig.domain.canonicalScheme}://${clientConfig.domain.primary}${canonicalPath ?? Astro.url.pathname}`;
 const tokens = tokensCss(clientConfig.theme.variant);
 const plausibleEnabled = clientConfig.integrations.plausible;
+
+// SEO: build meta tags from input. dev: log warnings.
+const { tags, warnings } = buildMetaTags(meta);
+if (import.meta.env.DEV && warnings.length > 0) {
+  for (const w of warnings) console.warn(`[SEO] ${w.field}: ${w.message}`);
+}
+
+// A11y components — render once globally
+const sl = skipLink({ targetId: "main" });
+
+// Consent — banner + modal
+const banner = consentBannerHtml({
+  businessName: clientConfig.business.name,
+  privacyUrl: clientConfig.rodo.privacyPolicyUrl ?? "/polityka-prywatnosci",
+  ...(clientConfig.rodo.termsUrl && { termsUrl: clientConfig.rodo.termsUrl }),
+  version: clientConfig.rodo.consentVersion,
+});
+const modal = preferencesModalHtml();
+
+// Combined global CSS
+const globalCss = [
+  VISUALLY_HIDDEN_CSS,
+  focusVisibleStyles({ outlineColor: "var(--color-brand)" }),
+  sl.css,
+  BREADCRUMB_CSS,
+  consentBannerCss(),
+  preferencesModalCss(),
+].join("\n");
 ---
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pl">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="var(--color-brand)" />
+    {/* Consent default state — MUST be before any tracker scripts */}
+    <Fragment set:html={defaultConsentScriptTag({ nonce })} />
 
-    <title>{title}</title>
-    <meta name="description" content={description} />
-    <link rel="canonical" href={canonicalUrl} />
+    {/* SEO tags built by web-core/seo */}
+    {tags.map((tag) => {
+      if (tag.kind === "title") return <title>{tag.content}</title>;
+      if (tag.kind === "link") return <link rel={tag.rel} href={tag.href} hreflang={tag.hreflang} type={tag.type} />;
+      return <meta name={tag.name} property={tag.property} content={tag.content} />;
+    })}
 
-    <!-- Open Graph -->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonicalUrl} />
-    <meta property="og:locale" content="pl_PL" />
-    {ogImage && <meta property="og:image" content={ogImage} />}
-
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={title} />
-    <meta name="twitter:description" content={description} />
-
-    <!-- Theme tokens -->
+    {/* Theme tokens (per-variant) */}
     <style set:html={`:root{${tokens}}`} nonce={nonce}></style>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    {/* Global a11y + consent CSS */}
+    <style is:global set:html={globalCss}></style>
 
-    <!-- Plausible (cookieless) -->
+    {/* Plausible (cookieless — always loads, no consent needed) */}
     {plausibleEnabled && (
       <script
         is:inline
@@ -68,13 +87,23 @@ const plausibleEnabled = clientConfig.integrations.plausible;
       ></script>
     )}
 
-    <!-- JSON-LD blocks -->
+    {/* JSON-LD structured data */}
     {jsonLd.map((block) => (
       <script type="application/ld+json" set:html={JSON.stringify(block)} nonce={nonce}></script>
     ))}
   </head>
   <body>
-    <a href="#main" class="skip-link">Przejdź do treści</a>
+    <Fragment set:html={sl.html} />
     <slot />
+
+    {/* Consent banner + preferences modal (hidden until runtime decides) */}
+    <Fragment set:html={banner} />
+    <Fragment set:html={modal} />
+
+    {/* Runtime init: consent + GCLID capture + auto-track clicks */}
+    <script>
+      import { initStarter } from "../scripts/init.client.ts";
+      initStarter();
+    </script>
   </body>
 </html>

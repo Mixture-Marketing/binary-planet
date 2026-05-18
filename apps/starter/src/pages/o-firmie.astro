@@ -1,16 +1,17 @@
 ---
 import CraftsmanLayout from "../themes/craftsman/layouts/CraftsmanLayout.astro";
+import BreadcrumbNav from "../themes/craftsman/components/BreadcrumbNav.astro";
 import ReviewsSection from "../themes/craftsman/components/ReviewsSection.astro";
 import ContactForm from "../themes/craftsman/components/ContactForm.astro";
 import clientConfig from "../client.config.ts";
-import { buildLocalBusinessJsonLd } from "../lib/schema.ts";
+import { breadcrumbItems, oFirmieSeo } from "../lib/seo.ts";
 
-const title = `O firmie — ${clientConfig.business.name}`;
-const description = clientConfig.business.description;
-const jsonLd = [buildLocalBusinessJsonLd()];
+const { meta, jsonLd } = oFirmieSeo();
 ---
 
-<CraftsmanLayout title={title} description={description} canonicalPath="/o-firmie" jsonLd={jsonLd}>
+<CraftsmanLayout meta={meta} jsonLd={jsonLd}>
+  <BreadcrumbNav items={breadcrumbItems("O firmie")} />
+
   <section class="section-py" style="background: var(--color-surface-muted);">
     <div class="container-px">
       <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: var(--color-brand);">Poznaj nas</p>
