@@ -31,7 +31,8 @@ d:\KOD\binary-planet\
 │   │   ├── src/forms/        ← ✅ Track F done — Turnstile + rate limit + Resend + fallback queue + AES-GCM PII + RODO
 │   │   ├── src/security/     ← ✅ Track K-security done — CSP strict + HSTS + Permissions-Policy + SRI + 11 integrations
 │   │   ├── src/programmatic/ ← ✅ Track E done — service × location engine + Jaccard similarity + HCU lint
-│   │   └── src/seo/          ← ✅ Track L-seo done — meta + Article + Org + Breadcrumb + FAQ + WebSite + WebPage + hreflang
+│   │   ├── src/seo/          ← ✅ Track L-seo done — meta + Article + Org + Breadcrumb + FAQ + WebSite + WebPage + hreflang
+│   │   └── src/a11y/         ← ✅ Track A11y done — skip link + focus trap + live region + disclosure + breadcrumb + WCAG contrast + reduced motion
 │   └── logger/               ← @mixturemarketing/logger (v0.0.1 funkcjonalny)
 ├── apps/
 │   ├── starter/          ← mm-starter — ✅ Track I done (Astro 5 + CF + Tailwind v4 + craftsman theme)

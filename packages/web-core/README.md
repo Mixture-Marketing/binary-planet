@@ -22,7 +22,7 @@ import { ConsentBanner, consentDefault } from "@mixturemarketing/web-core/consen
 | [`/seo`](src/seo) | Meta + Article + Org + Breadcrumb + FAQ + WebSite + WebPage + hreflang | **✅ DONE Track L-seo** |
 | [`/local`](src/local) | **LocalBusiness + 15 subtypów** + sitemap + robots + llms.txt + PL helpers | **✅ DONE Track D** |
 | [`/forms`](src/forms) | Turnstile + rate limit + Resend + fallback queue + RODO + AES-GCM PII | **✅ DONE Track F** |
-| [`/a11y`](src/a11y) | 8 a11y components + helpers, target axe 0 violations | P1 |
+| [`/a11y`](src/a11y) | Skip link + focus trap + live region + disclosure + breadcrumb + WCAG contrast + reduced motion | **✅ DONE Track A11y** |
 | [`/security`](src/security) | CSP + HSTS + Permissions-Policy + SRI + nonce + 11 integration extensions | **✅ DONE Track K-security** |
 | [`/feature-flags`](src/feature-flags) | Per-client toggles, budget caps, kill switches | P2 |
 | [`/regon`](src/regon) | GUS BIR1 SOAP client (NIP → firma) | P1 (gating: REGON key) |
