@@ -1,0 +1,52 @@
+---
+interface Props {
+  href: string;
+  title: string;
+  date: Date;
+  excerpt?: string;
+  coverImage?: string;
+  tags?: readonly string[];
+}
+
+const { href, title, date, excerpt, coverImage, tags = [] } = Astro.props;
+const dateStr = date.toISOString().slice(0, 10);
+const dateLabel = new Intl.DateTimeFormat("pl-PL", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+}).format(date);
+---
+
+<article
+  style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column;"
+>
+  {coverImage && (
+    <a href={href} aria-hidden="true" tabindex="-1" style="display: block;">
+      <img
+        src={coverImage}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        style="width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block;"
+      />
+    </a>
+  )}
+  <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; flex: 1;">
+    <time datetime={dateStr} style="color: var(--color-text-muted); font-size: 0.85rem;">
+      {dateLabel}
+    </time>
+    <h2 style="margin: 0; font-size: 1.15rem; line-height: 1.35;">
+      <a href={href} style="color: var(--color-text); text-decoration: none;">{title}</a>
+    </h2>
+    {excerpt && <p style="margin: 0; color: var(--color-text-muted); font-size: 0.95rem; line-height: 1.5;">{excerpt}</p>}
+    {tags.length > 0 && (
+      <ul style="display: flex; flex-wrap: wrap; gap: 0.4rem; list-style: none; margin: 0; padding: 0;">
+        {tags.map((t) => (
+          <li style="font-size: 0.75rem; color: var(--color-brand); background: rgba(0,0,0,0.04); padding: 0.15rem 0.5rem; border-radius: 999px;">
+            #{t}
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+</article>

@@ -1,0 +1,76 @@
+---
+import { getCollection, render } from "astro:content";
+
+import CraftsmanLayout from "../themes/craftsman/layouts/CraftsmanLayout.astro";
+import BreadcrumbNav from "../themes/craftsman/components/BreadcrumbNav.astro";
+import { faqSeo } from "../lib/seo.ts";
+
+const entries = (await getCollection("faq"))
+  .filter((f) => f.data.published)
+  .sort((a, b) => a.data.order - b.data.order);
+
+// Render each entry's markdown to HTML once for inline use + plain text for JSON-LD
+const renderedItems = await Promise.all(
+  entries.map(async (entry) => {
+    const { Content } = await render(entry);
+    return { entry, Content };
+  }),
+);
+
+// FAQPage JSON-LD needs plain-text answers — strip light markdown from raw body
+const faqItems = entries.map((e) => ({
+  question: e.data.question,
+  answer: (e.body ?? "")
+    .replace(/[*_`#>-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim(),
+}));
+
+const { meta, jsonLd } = faqSeo(faqItems);
+---
+
+<CraftsmanLayout meta={meta} jsonLd={jsonLd}>
+  <BreadcrumbNav items={[{ name: "Strona główna", url: "/" }, { name: "FAQ" }]} />
+  <section class="container-px" style="padding-block: 1.5rem 3rem; max-width: 48rem;">
+    <header style="margin-bottom: 2rem;">
+      <h1 style="margin: 0 0 0.5rem 0;">Najczęściej zadawane pytania</h1>
+      <p style="margin: 0; color: var(--color-text-muted);">
+        Nie znalazłeś odpowiedzi? Zadzwoń lub napisz — odpowiadamy w ciągu kilku godzin.
+      </p>
+    </header>
+
+    {renderedItems.length === 0 ? (
+      <p style="color: var(--color-text-muted);">Wkrótce dodamy pierwsze pytania.</p>
+    ) : (
+      <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem;">
+        {renderedItems.map(({ entry, Content }) => (
+          <li>
+            <details
+              style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; padding: 0;"
+            >
+              <summary
+                style="padding: 1rem 1.25rem; cursor: pointer; font-weight: 600; color: var(--color-text); list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 1rem;"
+              >
+                <span>{entry.data.question}</span>
+                <span aria-hidden="true" style="color: var(--color-text-muted); font-size: 1.2rem;">+</span>
+              </summary>
+              <div
+                class="prose"
+                style="padding: 0 1.25rem 1.25rem 1.25rem; color: var(--color-text); line-height: 1.6;"
+              >
+                <Content />
+              </div>
+            </details>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+</CraftsmanLayout>
+
+<style>
+  details[open] summary span[aria-hidden="true"] { transform: rotate(45deg); }
+  details summary::-webkit-details-marker { display: none; }
+  .prose :global(p) { margin: 0.5rem 0; }
+  .prose :global(a) { color: var(--color-brand); }
+</style>

@@ -6,11 +6,13 @@
  */
 
 import {
+  articleSchema,
   breadcrumbSchema,
   faqPageSchema,
   organizationSchema,
   webPageSchema,
   webSiteSchema,
+  type ArticleInput,
   type BreadcrumbItemInput,
   type FaqItem,
   type MetaInput,
@@ -173,6 +175,112 @@ export function kontaktSeo(faqs: ReadonlyArray<FaqItem> = []): PageSeoBundle {
     jsonLd.push(faqPageSchema({ url: canonicalUrl(path), items: faqs }));
   }
 
+  return { meta, jsonLd };
+}
+
+/** Aktualności (blog index) — WebPage + Breadcrumb. */
+export function aktualnosciSeo(): PageSeoBundle {
+  const path = "/aktualnosci";
+  const meta = baseMetaInput({
+    path,
+    title: `Aktualności — ${siteName}`,
+    description: `Porady, nowości i wpisy od ${siteName}. ${clientConfig.business.tagline}.`,
+    og: { type: "website", siteName },
+  });
+  return {
+    meta,
+    jsonLd: [
+      webPageSchema({
+        url: canonicalUrl(path),
+        name: meta.title,
+        description: meta.description,
+        isPartOf: baseUrl,
+        inLanguage: "pl-PL",
+      }),
+      breadcrumbSchema([
+        { name: "Strona główna", url: canonicalUrl("/") },
+        { name: "Aktualności" },
+      ]),
+    ],
+  };
+}
+
+/** Single post — BlogPosting + Breadcrumb + Organization (publisher). */
+export interface PostSeoInput {
+  slug: string;
+  title: string;
+  description: string;
+  datePublished: string; // ISO
+  dateModified?: string;
+  coverImage?: string; // path or full URL
+  tags?: readonly string[];
+}
+
+export function postSeo(post: PostSeoInput): PageSeoBundle {
+  const path = `/aktualnosci/${post.slug}`;
+  const url = canonicalUrl(path);
+  const absImage = post.coverImage
+    ? post.coverImage.startsWith("http")
+      ? post.coverImage
+      : `${baseUrl}${post.coverImage.startsWith("/") ? "" : "/"}${post.coverImage}`
+    : undefined;
+
+  const meta = baseMetaInput({
+    path,
+    title: `${post.title} — ${siteName}`,
+    description: post.description,
+    og: {
+      type: "article",
+      siteName,
+      ...(absImage && { image: { url: absImage } }),
+    },
+  });
+
+  const articleInput: ArticleInput = {
+    type: "BlogPosting",
+    url,
+    headline: post.title,
+    description: post.description,
+    datePublished: post.datePublished,
+    author: { type: "Organization", name: siteName, url: baseUrl },
+    publisher: { name: siteName },
+    inLanguage: "pl-PL",
+  };
+  if (post.dateModified) articleInput.dateModified = post.dateModified;
+  if (absImage) articleInput.image = { url: absImage };
+  if (post.tags && post.tags.length > 0) articleInput.keywords = post.tags;
+
+  return {
+    meta,
+    jsonLd: [
+      articleSchema(articleInput),
+      breadcrumbSchema([
+        { name: "Strona główna", url: canonicalUrl("/") },
+        { name: "Aktualności", url: canonicalUrl("/aktualnosci") },
+        { name: post.title },
+      ]),
+    ],
+  };
+}
+
+/** FAQ page — FAQPage + Breadcrumb + LocalBusiness. */
+export function faqSeo(faqs: ReadonlyArray<FaqItem>): PageSeoBundle {
+  const path = "/faq";
+  const meta = baseMetaInput({
+    path,
+    title: `Najczęściej zadawane pytania — ${siteName}`,
+    description: `Odpowiedzi na najczęściej zadawane pytania klientów ${siteName}.`,
+  });
+  const jsonLd: unknown[] = [
+    buildLocalBusinessJsonLd(),
+    breadcrumbSchema([
+      { name: "Strona główna", url: canonicalUrl("/") },
+      { name: "FAQ" },
+    ]),
+  ];
+  if (faqs.length > 0) {
+    jsonLd.push(faqPageSchema({ url: canonicalUrl(path), items: faqs }));
+  }
   return { meta, jsonLd };
 }
 

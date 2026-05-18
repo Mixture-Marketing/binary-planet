@@ -1,0 +1,107 @@
+---
+import { getCollection, render } from "astro:content";
+
+import CraftsmanLayout from "../../themes/craftsman/layouts/CraftsmanLayout.astro";
+import BreadcrumbNav from "../../themes/craftsman/components/BreadcrumbNav.astro";
+import { postSeo } from "../../lib/seo.ts";
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const posts = (await getCollection("posts")).filter((p) => p.data.published);
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const datePublishedIso = post.data.date.toISOString();
+const dateLabel = new Intl.DateTimeFormat("pl-PL", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+}).format(post.data.date);
+
+const description =
+  post.data.excerpt ?? `${post.data.title} — wpis na blogu.`;
+
+const { meta, jsonLd } = postSeo({
+  slug: post.id,
+  title: post.data.title,
+  description,
+  datePublished: datePublishedIso,
+  coverImage: post.data.coverImage,
+  tags: post.data.tags,
+});
+---
+
+<CraftsmanLayout meta={meta} jsonLd={jsonLd}>
+  <BreadcrumbNav
+    items={[
+      { name: "Strona główna", url: "/" },
+      { name: "Aktualności", url: "/aktualnosci" },
+      { name: post.data.title },
+    ]}
+  />
+  <article class="container-px" style="padding-block: 1.5rem 3rem; max-width: 48rem;">
+    <header style="margin-bottom: 2rem;">
+      <time
+        datetime={datePublishedIso}
+        style="color: var(--color-text-muted); font-size: 0.9rem;"
+      >
+        {dateLabel}
+      </time>
+      <h1 style="margin: 0.5rem 0 1rem 0; line-height: 1.2;">{post.data.title}</h1>
+      {post.data.excerpt && (
+        <p style="margin: 0; font-size: 1.1rem; color: var(--color-text-muted); line-height: 1.5;">
+          {post.data.excerpt}
+        </p>
+      )}
+    </header>
+
+    {post.data.coverImage && (
+      <img
+        src={post.data.coverImage}
+        alt=""
+        style="width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; margin-bottom: 2rem;"
+      />
+    )}
+
+    <div class="prose" style="line-height: 1.65;">
+      <Content />
+    </div>
+
+    {post.data.tags.length > 0 && (
+      <footer style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border);">
+        <strong style="font-size: 0.85rem; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Tagi:</strong>
+        <ul style="display: inline-flex; flex-wrap: wrap; gap: 0.5rem; list-style: none; margin: 0.5rem 0 0 0; padding: 0;">
+          {post.data.tags.map((t) => (
+            <li style="font-size: 0.85rem; color: var(--color-brand); background: rgba(0,0,0,0.04); padding: 0.2rem 0.6rem; border-radius: 999px;">
+              #{t}
+            </li>
+          ))}
+        </ul>
+      </footer>
+    )}
+
+    <p style="margin-top: 2rem;">
+      <a href="/aktualnosci" style="color: var(--color-brand);">← Wszystkie wpisy</a>
+    </p>
+  </article>
+</CraftsmanLayout>
+
+<style>
+  .prose :global(h2) { margin: 2rem 0 0.75rem 0; font-size: 1.5rem; }
+  .prose :global(h3) { margin: 1.5rem 0 0.5rem 0; font-size: 1.2rem; }
+  .prose :global(p) { margin: 0.75rem 0; }
+  .prose :global(ul), .prose :global(ol) { margin: 0.75rem 0; padding-left: 1.5rem; }
+  .prose :global(li) { margin: 0.25rem 0; }
+  .prose :global(a) { color: var(--color-brand); }
+  .prose :global(code) { background: rgba(0,0,0,0.05); padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.9em; }
+  .prose :global(blockquote) {
+    border-left: 3px solid var(--color-brand);
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: var(--color-text-muted);
+  }
+</style>
