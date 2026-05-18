@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>CMS — MixtureMarketing</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; }
+      .boot {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="boot">Ładowanie panelu treści…</div>
+    <!--
+      Sveltia CMS — git-based headless CMS (fork of Decap/Netlify CMS).
+      Loaded from CDN, single-page app. Reads /admin/config.yml for collections.
+      Auth: in dev → local backend via `npx @sveltia/cms-proxy-server`.
+              In prod (v0.2) → GitHub OAuth via Worker proxy at /api/auth/github.
+    -->
+    <script src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js" type="module"></script>
+  </body>
+</html>

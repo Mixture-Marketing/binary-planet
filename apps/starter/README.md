@@ -167,7 +167,7 @@ Hub D1 ma lead (lub fallback queue → drain cron retries)
 - **service × location pages** (programmatic) — Track E (`web-core/programmatic`)
 - **Review request flow** (SMS po form → opinia GBP) — Faza 5
 - **Blog (AI workflow)** — Faza 7
-- **Sveltia CMS integration** — config builder, oddzielny Track
+- **Sveltia CMS production auth** — local backend działa w dev (Track Sveltia v0.1), OAuth proxy = v0.2
 - **OG image generator** (satori) — fallback dla teraz, własny moduł `web-core/seo/og`
 - **GitHub Actions** (deploy + Lighthouse CI + axe) — Faza 5
 - **Multi-language (hreflang)** — odłożone

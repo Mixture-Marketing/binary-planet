@@ -1,0 +1,13 @@
+{
+  "heroOverride": null,
+  "promoBanner": {
+    "enabled": false,
+    "text": "",
+    "ctaLabel": "",
+    "ctaHref": ""
+  },
+  "announcementBar": {
+    "enabled": false,
+    "text": ""
+  }
+}

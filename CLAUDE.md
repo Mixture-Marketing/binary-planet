@@ -39,7 +39,7 @@ d:\KOD\binary-planet\
 │   │   └── src/ads/          ← ✅ Track Ads done — conversion helpers + GCLID + Meta CAPI server-side + GAds OCT
 │   └── logger/               ← @mixturemarketing/logger (v0.0.1 funkcjonalny)
 ├── apps/
-│   ├── starter/          ← mm-starter — ✅ Track I + I2 done (Astro 5 + CF + Tailwind v4 + craftsman theme + full web-core integration)
+│   ├── starter/          ← mm-starter — ✅ Track I + I2 + Sveltia done (Astro 5 + CF + Tailwind v4 + content collections + /admin Sveltia CMS)
 │   ├── control-plane/    ← mm-control-plane — ✅ Track J done (Hono hub API + cron + 24 tests)
 │   │   ├── migrations/   ← ✅ Track C done — 9 SQL files, 37 tables, 110 indexes
 │   │   ├── src/api/      ← Hono routes, middleware (auth/logger/error), lib
@@ -96,7 +96,7 @@ pnpm format
 - **Astro 5** + **Cloudflare Workers** (1 Worker per klient, migration-ready do multi-tenant) + **Tailwind v4**
 - Monorepo: **pnpm** + **turbo**
 - Pakiety: `@mixturemarketing/web-core` (lub `@mm-internal/*`) — scope do potwierdzenia
-- CMS: **Sveltia** git-based (embed w repo klienta)
+- CMS: **Sveltia** git-based (embed w repo klienta, ✅ mm-starter `/admin/` v0.1 — local backend dev, OAuth proxy v0.2)
 - Hub API: **Hono** + **D1** + **KV** + **R2** + **Cron Triggers**
 - AI: **Anthropic Claude** (Sonnet 4.6 / Opus 4.7)
 - Analytics: **Plausible self-hosted** (default, cookieless) + **CF Zaraz** (server-side GA4/Meta Pixel/Google Ads via consent)

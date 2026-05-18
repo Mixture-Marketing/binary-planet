@@ -1,0 +1,131 @@
+# Sveltia CMS configuration — MixtureMarketing klient template
+#
+# Edits commit directly to klient's git repo. Astro picks up new content
+# at next build (or via SSR for content collections under server output).
+#
+# Auth modes:
+#   - dev:     `local` backend via `npx @sveltia/cms-proxy-server` (no auth, fs writes)
+#   - prod:    `github` backend via OAuth proxy (TODO v0.2 — see README.md)
+
+# === Backend ===================================================================
+# In dev: use local backend (override at runtime — config.dev.yml or query string).
+# In prod: GitHub backend (after OAuth proxy wired up).
+backend:
+  name: github
+  repo: MixtureMarketing/binary-planet
+  branch: main
+  base_url: https://app.mixturemarketing.pl
+  auth_endpoint: api/auth/github
+
+# Enable local-fs backend when running with sveltia-cms-proxy-server
+local_backend: true
+
+# === Media =====================================================================
+media_folder: apps/starter/public/content/uploads
+public_folder: /content/uploads
+
+# === Editorial workflow (draft → review → publish) =============================
+publish_mode: editorial_workflow
+
+# === Logo + UI =================================================================
+logo_url: /favicon.svg
+site_url: https://kowalski-slusarz.pl
+display_url: https://kowalski-slusarz.pl
+locale: pl
+
+# === Collections ===============================================================
+collections:
+  # ---- BLOG / AKTUALNOŚCI ---------------------------------------------------
+  - name: posts
+    label: Aktualności
+    label_singular: Wpis
+    folder: apps/starter/content/posts
+    create: true
+    delete: true
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
+    summary: "{{title}} — {{date | date('YYYY-MM-DD')}}"
+    sortable_fields: [date, title]
+    view_filters:
+      - label: Opublikowane
+        field: published
+        pattern: true
+      - label: Szkice
+        field: published
+        pattern: false
+    fields:
+      - { label: Tytuł, name: title, widget: string, hint: "Max 180 znaków" }
+      - { label: Data publikacji, name: date, widget: datetime, time_format: false }
+      - { label: Streszczenie (excerpt), name: excerpt, widget: text, required: false, hint: "Pokazuje się w listingu — max 300 znaków" }
+      - { label: Obraz okładkowy, name: coverImage, widget: image, required: false }
+      - label: Tagi
+        name: tags
+        widget: list
+        required: false
+        default: []
+        hint: "Po przecinku — np. otwieranie-zamkow, awaryjne"
+      - { label: Opublikowany, name: published, widget: boolean, default: true }
+      - { label: Treść, name: body, widget: markdown }
+
+  # ---- FAQ ----------------------------------------------------------------
+  - name: faq
+    label: FAQ
+    label_singular: Pytanie
+    folder: apps/starter/content/faq
+    create: true
+    delete: true
+    slug: "{{slug}}"
+    summary: "{{question}}"
+    sortable_fields: [order, question]
+    fields:
+      - { label: Pytanie, name: question, widget: string }
+      - { label: Kolejność, name: order, widget: number, value_type: int, min: 0, default: 99 }
+      - { label: Opublikowane, name: published, widget: boolean, default: true }
+      - { label: Odpowiedź, name: body, widget: markdown }
+
+  # ---- GALERIA -------------------------------------------------------------
+  - name: gallery
+    label: Galeria
+    label_singular: Zdjęcie
+    folder: apps/starter/content/gallery
+    create: true
+    delete: true
+    slug: "{{slug}}"
+    summary: "{{caption}}"
+    extension: json
+    format: json
+    fields:
+      - { label: Zdjęcie, name: image, widget: image }
+      - { label: Podpis, name: caption, widget: string, required: false }
+      - { label: Kolejność, name: order, widget: number, value_type: int, min: 0, default: 99 }
+
+  # ---- OVERRIDES (singleton — promo banner, hero override) ----------------
+  - name: site
+    label: Ustawienia strony
+    files:
+      - label: Overrides
+        name: overrides
+        file: apps/starter/content/site/overrides.json
+        fields:
+          - label: Hero override (zostaw puste = domyślne z client.config)
+            name: heroOverride
+            widget: object
+            required: false
+            collapsed: true
+            fields:
+              - { label: Tytuł, name: title, widget: string, required: false }
+              - { label: Podtytuł, name: subtitle, widget: text, required: false }
+              - { label: Obraz tła, name: image, widget: image, required: false }
+          - label: Promo banner (na górze strony)
+            name: promoBanner
+            widget: object
+            fields:
+              - { label: Włączony, name: enabled, widget: boolean, default: false }
+              - { label: Tekst, name: text, widget: string, required: false, default: "" }
+              - { label: CTA — etykieta, name: ctaLabel, widget: string, required: false, default: "" }
+              - { label: CTA — link, name: ctaHref, widget: string, required: false, default: "" }
+          - label: Pasek ogłoszeń (pod nawigacją)
+            name: announcementBar
+            widget: object
+            fields:
+              - { label: Włączony, name: enabled, widget: boolean, default: false }
+              - { label: Tekst, name: text, widget: string, required: false, default: "" }
