@@ -32,7 +32,9 @@ d:\KOD\binary-planet\
 │   │   ├── src/security/     ← ✅ Track K-security done — CSP strict + HSTS + Permissions-Policy + SRI + 11 integrations
 │   │   ├── src/programmatic/ ← ✅ Track E done — service × location engine + Jaccard similarity + HCU lint
 │   │   ├── src/seo/          ← ✅ Track L-seo done — meta + Article + Org + Breadcrumb + FAQ + WebSite + WebPage + hreflang
-│   │   └── src/a11y/         ← ✅ Track A11y done — skip link + focus trap + live region + disclosure + breadcrumb + WCAG contrast + reduced motion
+│   │   ├── src/a11y/         ← ✅ Track A11y done — skip link + focus trap + live region + disclosure + breadcrumb + WCAG contrast + reduced motion
+│   │   ├── src/feature-flags/← ✅ Track Feature Flags done — KV-cached per-klient toggles + budget caps + kill switches
+│   │   └── src/consent/      ← ✅ Track Consent done — RODO banner + Google Consent Mode v2 + preferences modal + audit log
 │   └── logger/               ← @mixturemarketing/logger (v0.0.1 funkcjonalny)
 ├── apps/
 │   ├── starter/          ← mm-starter — ✅ Track I done (Astro 5 + CF + Tailwind v4 + craftsman theme)

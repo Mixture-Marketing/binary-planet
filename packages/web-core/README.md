@@ -24,10 +24,10 @@ import { ConsentBanner, consentDefault } from "@mixturemarketing/web-core/consen
 | [`/forms`](src/forms) | Turnstile + rate limit + Resend + fallback queue + RODO + AES-GCM PII | **✅ DONE Track F** |
 | [`/a11y`](src/a11y) | Skip link + focus trap + live region + disclosure + breadcrumb + WCAG contrast + reduced motion | **✅ DONE Track A11y** |
 | [`/security`](src/security) | CSP + HSTS + Permissions-Policy + SRI + nonce + 11 integration extensions | **✅ DONE Track K-security** |
-| [`/feature-flags`](src/feature-flags) | Per-client toggles, budget caps, kill switches | P2 |
+| [`/feature-flags`](src/feature-flags) | KV-cached per-klient toggles + budget caps + global kill switches | **✅ DONE Track Feature Flags** |
 | [`/regon`](src/regon) | GUS BIR1 SOAP client (NIP → firma) | P1 (gating: REGON key) |
 | [`/programmatic`](src/programmatic) | service × location pages z guard rails (HCU-safe + similarity lint) | **✅ DONE Track E** |
-| [`/consent`](src/consent) | Cookie banner + Google Consent Mode v2 | P1 (gating: RODO compliance) |
+| [`/consent`](src/consent) | RODO banner + Google Consent Mode v2 + preferences modal + audit log integration | **✅ DONE Track Consent** (gating: prawnik review) |
 | [`/zaraz`](src/zaraz) | CF Zaraz server-side tagging config | P2 |
 | [`/ads`](src/ads) | Conversion events ready + audiences | P3 (Faza 7 add-on) |
 
