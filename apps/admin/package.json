@@ -13,7 +13,8 @@
     "preview": "wrangler dev",
     "deploy": "astro build && wrangler deploy",
     "typecheck": "astro check",
-    "test": "node -e \"console.log('mm-admin: integration tests come in Track J3')\""
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.2.0",
@@ -28,6 +29,7 @@
     "@astrojs/check": "^0.9.4",
     "@cloudflare/workers-types": "^4.20241127.0",
     "typescript": "^5.6.3",
+    "vitest": "^2.1.5",
     "wrangler": "^3.91.0"
   }
 }
