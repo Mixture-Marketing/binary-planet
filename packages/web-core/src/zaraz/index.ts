@@ -1,26 +1,63 @@
 /**
  * @mixturemarketing/web-core/zaraz
  *
- * Scope: Cloudflare Zaraz server-side tag management config generator.
+ * Cloudflare Zaraz server-side tag manager — config generators + runtime event tracking.
  *
- *  - wrangler.toml [zaraz] block builder per klient
- *  - Tag generators per integration:
- *      - Plausible (cookieless, no consent — default ON)
- *      - GA4 server-side (z Consent Mode v2 signals)
- *      - Google Ads conversion + remarketing
- *      - Meta Pixel server-side (Conversions API)
- *      - Microsoft Clarity (wymaga consent — heatmaps to PII!)
- *      - TikTok Pixel server-side
- *  - Auto-generation z client.config.integrations
- *  - Event tracking helpers: trackEvent(name, params, consent_state)
+ * Reference: plan/I-analytics.md (I.1 Zaraz strategy).
  *
- * Korzyści (z planu I.1):
- *  - CWV boost: -200-400ms LCP vs client-side GTM
- *  - 30-40% traffic recovery vs adblockers (first-party origin)
- *  - Native Consent Mode v2 support
- *  - Free tier: 1M events/mc per Worker
+ * Two roles:
  *
- * Reference: plan/I-analytics.md (I.1).
+ *   1. **Build-time / provisioning** — `buildZarazTools(clientConfig.integrations)` returns
+ *      tool configs ready to send to CF Zaraz API. Use when onboarding a klient
+ *      (Faza 3 provisioning workflow).
+ *
+ *   2. **Runtime / spoke** — `trackEvent("lead_form_submit", {...})` dispatches events to
+ *      window.zaraz (preferred) or window.dataLayer (fallback). Use in form handlers,
+ *      click handlers, etc.
+ *
+ * Quick start (klient site):
+ *
+ *   <script>
+ *     import { trackEvent, autoTrackClicks } from "@mixturemarketing/web-core/zaraz";
+ *     autoTrackClicks();  // wires data-track-event attributes
+ *
+ *     form.addEventListener("submit", () => {
+ *       trackEvent("lead_form_submit", { form_id: "contact" });
+ *     });
+ *   </script>
+ *
+ *   HTML:
+ *   <a href="tel:..." data-track-event="phone_click" data-track-position="hero">
  */
 
 export const MODULE_NAME = "zaraz" as const;
+
+// Types
+export { STANDARD_EVENTS } from "./types.js";
+export type {
+  BuildToolsOutput,
+  EventParameters,
+  IntegrationFlags,
+  StandardEvent,
+  ZarazPurpose,
+  ZarazToolConfig,
+  ZarazToolType,
+} from "./types.js";
+
+// Tool config builders
+export {
+  clarityTool,
+  customHtmlTool,
+  ga4Tool,
+  googleAdsTool,
+  linkedinInsightTool,
+  metaPixelTool,
+  plausibleTool,
+  tiktokPixelTool,
+} from "./tool-configs.js";
+
+// Config builder (high-level)
+export { buildZarazTools } from "./config-builder.js";
+
+// Runtime
+export { autoTrackClicks, identifyVisitor, isZarazLoaded, trackEvent } from "./runtime.js";

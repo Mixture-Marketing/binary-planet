@@ -28,8 +28,8 @@ import { ConsentBanner, consentDefault } from "@mixturemarketing/web-core/consen
 | [`/regon`](src/regon) | GUS BIR1 SOAP client (NIP → firma) | P1 (gating: REGON key) |
 | [`/programmatic`](src/programmatic) | service × location pages z guard rails (HCU-safe + similarity lint) | **✅ DONE Track E** |
 | [`/consent`](src/consent) | RODO banner + Google Consent Mode v2 + preferences modal + audit log integration | **✅ DONE Track Consent** (gating: prawnik review) |
-| [`/zaraz`](src/zaraz) | CF Zaraz server-side tagging config | P2 |
-| [`/ads`](src/ads) | Conversion events ready + audiences | P3 (Faza 7 add-on) |
+| [`/zaraz`](src/zaraz) | CF Zaraz tool config generators (7 platforms) + runtime trackEvent + click auto-tracking | **✅ DONE Track Zaraz** |
+| [`/ads`](src/ads) | Conversion helpers + GCLID/click ID capture + Meta CAPI server-side + GAds OCT | **✅ DONE Track Ads** |
 
 ## Build
 

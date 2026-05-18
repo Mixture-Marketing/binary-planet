@@ -34,7 +34,9 @@ d:\KOD\binary-planet\
 │   │   ├── src/seo/          ← ✅ Track L-seo done — meta + Article + Org + Breadcrumb + FAQ + WebSite + WebPage + hreflang
 │   │   ├── src/a11y/         ← ✅ Track A11y done — skip link + focus trap + live region + disclosure + breadcrumb + WCAG contrast + reduced motion
 │   │   ├── src/feature-flags/← ✅ Track Feature Flags done — KV-cached per-klient toggles + budget caps + kill switches
-│   │   └── src/consent/      ← ✅ Track Consent done — RODO banner + Google Consent Mode v2 + preferences modal + audit log
+│   │   ├── src/consent/      ← ✅ Track Consent done — RODO banner + Google Consent Mode v2 + preferences modal + audit log
+│   │   ├── src/zaraz/        ← ✅ Track Zaraz done — CF Zaraz tool config generators (7 platforms) + runtime trackEvent
+│   │   └── src/ads/          ← ✅ Track Ads done — conversion helpers + GCLID + Meta CAPI server-side + GAds OCT
 │   └── logger/               ← @mixturemarketing/logger (v0.0.1 funkcjonalny)
 ├── apps/
 │   ├── starter/          ← mm-starter — ✅ Track I done (Astro 5 + CF + Tailwind v4 + craftsman theme)
