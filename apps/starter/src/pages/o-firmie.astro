@@ -1,0 +1,61 @@
+---
+import CraftsmanLayout from "../themes/craftsman/layouts/CraftsmanLayout.astro";
+import ReviewsSection from "../themes/craftsman/components/ReviewsSection.astro";
+import ContactForm from "../themes/craftsman/components/ContactForm.astro";
+import clientConfig from "../client.config.ts";
+import { buildLocalBusinessJsonLd } from "../lib/schema.ts";
+
+const title = `O firmie — ${clientConfig.business.name}`;
+const description = clientConfig.business.description;
+const jsonLd = [buildLocalBusinessJsonLd()];
+---
+
+<CraftsmanLayout title={title} description={description} canonicalPath="/o-firmie" jsonLd={jsonLd}>
+  <section class="section-py" style="background: var(--color-surface-muted);">
+    <div class="container-px">
+      <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: var(--color-brand);">Poznaj nas</p>
+      <h1 style="font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; margin: 0 0 1.5rem 0;">
+        O firmie {clientConfig.business.name}
+      </h1>
+      <p style="font-size: 1.15rem; line-height: 1.7; max-width: 50rem; white-space: pre-wrap; margin: 0;">
+        {clientConfig.business.longDescription}
+      </p>
+    </div>
+  </section>
+
+  <section class="section-py">
+    <div class="container-px" style="display: grid; gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+      {clientConfig.business.foundedYear && (
+        <div style="background: var(--color-surface-muted); padding: 1.75rem; border-radius: var(--radius-lg);">
+          <p style="font-size: 2.5rem; font-weight: 800; color: var(--color-brand); margin: 0;">
+            {new Date().getFullYear() - clientConfig.business.foundedYear}+
+          </p>
+          <p style="margin: 0.5rem 0 0 0; color: var(--color-text-muted);">lat doświadczenia</p>
+        </div>
+      )}
+      {clientConfig.reviews && clientConfig.reviews.length > 0 && (
+        <div style="background: var(--color-surface-muted); padding: 1.75rem; border-radius: var(--radius-lg);">
+          <p style="font-size: 2.5rem; font-weight: 800; color: var(--color-brand); margin: 0;">
+            {(clientConfig.reviews.reduce((s, r) => s + r.rating, 0) / clientConfig.reviews.length).toFixed(1)}⭐
+          </p>
+          <p style="margin: 0.5rem 0 0 0; color: var(--color-text-muted);">średnia ocena ({clientConfig.reviews.length} opinii)</p>
+        </div>
+      )}
+      <div style="background: var(--color-surface-muted); padding: 1.75rem; border-radius: var(--radius-lg);">
+        <p style="font-size: 2.5rem; font-weight: 800; color: var(--color-brand); margin: 0;">
+          {clientConfig.location.serviceArea.length}
+        </p>
+        <p style="margin: 0.5rem 0 0 0; color: var(--color-text-muted);">miejscowości w zasięgu</p>
+      </div>
+      <div style="background: var(--color-surface-muted); padding: 1.75rem; border-radius: var(--radius-lg);">
+        <p style="font-size: 2.5rem; font-weight: 800; color: var(--color-brand); margin: 0;">
+          24/7
+        </p>
+        <p style="margin: 0.5rem 0 0 0; color: var(--color-text-muted);">awaryjne wezwania</p>
+      </div>
+    </div>
+  </section>
+
+  <ReviewsSection />
+  <ContactForm />
+</CraftsmanLayout>

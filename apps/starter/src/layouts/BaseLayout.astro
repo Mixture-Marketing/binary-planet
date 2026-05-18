@@ -1,0 +1,80 @@
+---
+import "../styles/globals.css";
+import clientConfig from "../client.config.ts";
+import { tokensCss } from "../themes/craftsman/tokens.ts";
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Canonical path (relative). Defaults to current URL pathname. */
+  canonicalPath?: string;
+  /** JSON-LD blocks to inject into <head>. */
+  jsonLd?: unknown[];
+  /** Open Graph image URL. */
+  ogImage?: string;
+}
+
+const {
+  title,
+  description = clientConfig.business.description,
+  canonicalPath,
+  jsonLd = [],
+  ogImage,
+} = Astro.props;
+
+const nonce = Astro.locals.nonce ?? "";
+const canonicalUrl = `${clientConfig.domain.canonicalScheme}://${clientConfig.domain.primary}${canonicalPath ?? Astro.url.pathname}`;
+const tokens = tokensCss(clientConfig.theme.variant);
+const plausibleEnabled = clientConfig.integrations.plausible;
+---
+
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="var(--color-brand)" />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:locale" content="pl_PL" />
+    {ogImage && <meta property="og:image" content={ogImage} />}
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+
+    <!-- Theme tokens -->
+    <style set:html={`:root{${tokens}}`} nonce={nonce}></style>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Plausible (cookieless) -->
+    {plausibleEnabled && (
+      <script
+        is:inline
+        defer
+        data-domain={clientConfig.domain.primary}
+        src="https://plausible.io/js/script.js"
+      ></script>
+    )}
+
+    <!-- JSON-LD blocks -->
+    {jsonLd.map((block) => (
+      <script type="application/ld+json" set:html={JSON.stringify(block)} nonce={nonce}></script>
+    ))}
+  </head>
+  <body>
+    <a href="#main" class="skip-link">Przejdź do treści</a>
+    <slot />
+  </body>
+</html>

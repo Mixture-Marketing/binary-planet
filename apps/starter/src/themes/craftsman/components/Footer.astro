@@ -1,0 +1,70 @@
+---
+import clientConfig from "../../../client.config.ts";
+
+const year = new Date().getFullYear();
+---
+
+<footer role="contentinfo" style="background: var(--color-text); color: var(--color-surface); margin-top: 4rem;" class="section-py">
+  <div class="container-px">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 2.5rem; margin-bottom: 2.5rem;">
+      <div>
+        <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem 0; color: var(--color-surface);">
+          {clientConfig.business.name}
+        </h3>
+        <address style="font-style: normal; color: var(--color-border); line-height: 1.8; margin: 0;">
+          {clientConfig.location.address.streetAddress}<br />
+          {clientConfig.location.address.postalCode} {clientConfig.location.address.city}<br />
+          NIP: {clientConfig.business.nip}
+        </address>
+      </div>
+
+      <div>
+        <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem 0; color: var(--color-surface);">
+          Kontakt
+        </h3>
+        <ul style="list-style: none; margin: 0; padding: 0; color: var(--color-border); line-height: 1.8;">
+          <li>
+            <a href={`tel:${clientConfig.contact.primaryPhone}`} style="color: var(--color-surface); text-decoration: none; font-weight: 500;">
+              📞 {clientConfig.contact.primaryPhone}
+            </a>
+          </li>
+          <li>
+            <a href={`mailto:${clientConfig.contact.email}`} style="color: var(--color-surface); text-decoration: none; font-weight: 500;">
+              ✉️ {clientConfig.contact.email}
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem 0; color: var(--color-surface);">
+          Strona
+        </h3>
+        <ul style="list-style: none; margin: 0; padding: 0; color: var(--color-border); line-height: 1.8;">
+          <li><a href="/" style="color: var(--color-border); text-decoration: none;">Start</a></li>
+          <li><a href="/oferta" style="color: var(--color-border); text-decoration: none;">Oferta</a></li>
+          <li><a href="/o-firmie" style="color: var(--color-border); text-decoration: none;">O firmie</a></li>
+          <li><a href="/kontakt" style="color: var(--color-border); text-decoration: none;">Kontakt</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem 0; color: var(--color-surface);">
+          Obsługujemy
+        </h3>
+        <p style="color: var(--color-border); margin: 0;">
+          {clientConfig.location.serviceArea.join(", ")}
+        </p>
+      </div>
+    </div>
+
+    <div style="padding-top: 2rem; border-top: 1px solid #444; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; color: var(--color-border); font-size: 0.9rem;">
+      <p style="margin: 0;">
+        © {year} {clientConfig.business.name}. Wszystkie prawa zastrzeżone.
+      </p>
+      <p style="margin: 0;">
+        Strona stworzona przez <a href="https://mixturemarketing.pl" style="color: var(--color-border); text-decoration: underline;">MixtureMarketing</a>
+      </p>
+    </div>
+  </div>
+</footer>

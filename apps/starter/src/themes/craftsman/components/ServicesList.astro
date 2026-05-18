@@ -1,0 +1,66 @@
+---
+import clientConfig from "../../../client.config.ts";
+
+interface Props {
+  /** Heading text override. */
+  heading?: string;
+  /** Show "more details" link to service slug? Default true. */
+  linkToDetails?: boolean;
+}
+
+const { heading = "Co robię", linkToDetails = false } = Astro.props;
+const { services } = clientConfig;
+
+const iconForKey = (key: string | undefined): string => {
+  switch (key) {
+    case "key": return "🗝️";
+    case "duplicate": return "🔑";
+    case "shield": return "🛡️";
+    case "wrench": return "🔧";
+    case "lock": return "🔒";
+    default: return "✓";
+  }
+};
+---
+
+<section aria-labelledby="services-heading" class="section-py">
+  <div class="container-px">
+    <h2 id="services-heading" style="font-size: clamp(1.75rem, 3.5vw, 2.5rem); font-weight: 700; margin: 0 0 0.5rem 0;">
+      {heading}
+    </h2>
+    <p style="color: var(--color-text-muted); font-size: 1.1rem; margin: 0 0 2.5rem 0;">
+      Pełen zakres usług ślusarskich — zadzwoń po wycenę
+    </p>
+
+    <ul style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); list-style: none; margin: 0; padding: 0;">
+      {services.map((service) => (
+        <li
+          style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 1.75rem; display: flex; flex-direction: column; gap: 0.75rem;"
+        >
+          <div style="font-size: 2rem; line-height: 1;" aria-hidden="true">
+            {iconForKey(service.iconKey)}
+          </div>
+          <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0;">
+            {service.name}
+          </h3>
+          <p style="color: var(--color-text-muted); margin: 0; flex-grow: 1;">
+            {service.description}
+          </p>
+          {service.priceFrom && (
+            <p style="margin: 0; font-weight: 600; color: var(--color-brand);">
+              Cena: {service.priceFrom}
+            </p>
+          )}
+          {linkToDetails && (
+            <a
+              href={`/uslugi/${service.slug}`}
+              style="color: var(--color-brand); text-decoration: underline; font-weight: 500; margin-top: 0.5rem;"
+            >
+              Dowiedz się więcej →
+            </a>
+          )}
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>

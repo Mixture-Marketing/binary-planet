@@ -1,0 +1,41 @@
+{
+  "name": "@mixturemarketing/logger",
+  "version": "0.0.1",
+  "description": "Structured logging for Cloudflare Workers — captured by Logpush, indexed in R2 parquet",
+  "type": "module",
+  "sideEffects": false,
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mixturemarketing/binary-planet.git",
+    "directory": "packages/logger"
+  },
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -b --watch",
+    "clean": "rm -rf dist .tsbuildinfo",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5"
+  }
+}

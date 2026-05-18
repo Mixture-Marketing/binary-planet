@@ -1,0 +1,28 @@
+---
+import CraftsmanLayout from "../themes/craftsman/layouts/CraftsmanLayout.astro";
+import ServicesList from "../themes/craftsman/components/ServicesList.astro";
+import ContactForm from "../themes/craftsman/components/ContactForm.astro";
+import clientConfig from "../client.config.ts";
+import { buildLocalBusinessJsonLd } from "../lib/schema.ts";
+
+const title = `Oferta — ${clientConfig.business.name}`;
+const description = `Pełna oferta usług: ${clientConfig.services.map((s) => s.name).join(", ")}. ${clientConfig.business.description}`;
+const jsonLd = [buildLocalBusinessJsonLd()];
+---
+
+<CraftsmanLayout title={title} description={description} canonicalPath="/oferta" jsonLd={jsonLd}>
+  <section class="section-py" style="background: var(--color-surface-muted);">
+    <div class="container-px">
+      <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: var(--color-brand);">Co robimy</p>
+      <h1 style="font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; margin: 0 0 1rem 0;">
+        Pełna oferta usług
+      </h1>
+      <p style="color: var(--color-text-muted); font-size: 1.15rem; max-width: 50rem; margin: 0;">
+        {clientConfig.business.tagline}. Pracujemy na {clientConfig.location.serviceArea.join(", ")}.
+      </p>
+    </div>
+  </section>
+
+  <ServicesList heading="Lista usług" linkToDetails={false} />
+  <ContactForm heading="Potrzebujesz wyceny?" />
+</CraftsmanLayout>

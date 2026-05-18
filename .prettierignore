@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+.turbo/
+.astro/
+.wrangler/
+.output/
+coverage/
+pnpm-lock.yaml
+*.tsbuildinfo
+plan/

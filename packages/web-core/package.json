@@ -1,0 +1,88 @@
+{
+  "name": "@mixturemarketing/web-core",
+  "version": "0.0.1",
+  "description": "Core SEO + local + forms + a11y + security primitives for MixtureMarketing client sites",
+  "type": "module",
+  "sideEffects": false,
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mixturemarketing/binary-planet.git",
+    "directory": "packages/web-core"
+  },
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./seo": {
+      "types": "./dist/seo/index.d.ts",
+      "import": "./dist/seo/index.js"
+    },
+    "./local": {
+      "types": "./dist/local/index.d.ts",
+      "import": "./dist/local/index.js"
+    },
+    "./forms": {
+      "types": "./dist/forms/index.d.ts",
+      "import": "./dist/forms/index.js"
+    },
+    "./a11y": {
+      "types": "./dist/a11y/index.d.ts",
+      "import": "./dist/a11y/index.js"
+    },
+    "./security": {
+      "types": "./dist/security/index.d.ts",
+      "import": "./dist/security/index.js"
+    },
+    "./feature-flags": {
+      "types": "./dist/feature-flags/index.d.ts",
+      "import": "./dist/feature-flags/index.js"
+    },
+    "./regon": {
+      "types": "./dist/regon/index.d.ts",
+      "import": "./dist/regon/index.js"
+    },
+    "./programmatic": {
+      "types": "./dist/programmatic/index.d.ts",
+      "import": "./dist/programmatic/index.js"
+    },
+    "./consent": {
+      "types": "./dist/consent/index.d.ts",
+      "import": "./dist/consent/index.js"
+    },
+    "./zaraz": {
+      "types": "./dist/zaraz/index.d.ts",
+      "import": "./dist/zaraz/index.js"
+    },
+    "./ads": {
+      "types": "./dist/ads/index.d.ts",
+      "import": "./dist/ads/index.js"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -b --watch",
+    "clean": "rm -rf dist .tsbuildinfo",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5"
+  }
+}

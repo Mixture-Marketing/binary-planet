@@ -1,0 +1,27 @@
+---
+import CraftsmanLayout from "../themes/craftsman/layouts/CraftsmanLayout.astro";
+import clientConfig from "../client.config.ts";
+---
+
+<CraftsmanLayout
+  title={`Strona nie znaleziona — ${clientConfig.business.name}`}
+  description="Strona której szukasz nie istnieje lub została przeniesiona."
+>
+  <section class="section-py" style="min-height: 60vh; display: grid; place-items: center; text-align: center;">
+    <div class="container-px">
+      <p style="font-size: 6rem; font-weight: 800; color: var(--color-brand); margin: 0; line-height: 1;">404</p>
+      <h1 style="font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 700; margin: 1rem 0;">
+        Strona nie znaleziona
+      </h1>
+      <p style="color: var(--color-text-muted); font-size: 1.1rem; margin: 0 0 2rem 0; max-width: 32rem; margin-inline: auto;">
+        Adres który próbujesz odwiedzić nie istnieje. Wróć na stronę główną lub skontaktuj się z nami.
+      </p>
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+        <a href="/" class="btn-primary">Strona główna</a>
+        <a href={`tel:${clientConfig.contact.primaryPhone}`} class="btn-outline">
+          📞 {clientConfig.contact.primaryPhone}
+        </a>
+      </div>
+    </div>
+  </section>
+</CraftsmanLayout>

@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.turbo/
+.astro/
+.wrangler/
+.output/
+
+# Test outputs
+coverage/
+*.lcov
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Local env / secrets — NEVER commit
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+*.pem
+*.key
+service-account*.json
+credentials.json
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+
+# Cloudflare
+wrangler.toml.local
+.wrangler/
+
+# pnpm
+.pnpm-debug.log
+
+# Temporary
+tmp/
+temp/
+*.tmp

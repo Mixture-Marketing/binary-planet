@@ -1,0 +1,22 @@
+---
+import CraftsmanLayout from "../themes/craftsman/layouts/CraftsmanLayout.astro";
+import Hero from "../themes/craftsman/components/Hero.astro";
+import ServicesList from "../themes/craftsman/components/ServicesList.astro";
+import OpeningHours from "../themes/craftsman/components/OpeningHours.astro";
+import ReviewsSection from "../themes/craftsman/components/ReviewsSection.astro";
+import ContactForm from "../themes/craftsman/components/ContactForm.astro";
+import clientConfig from "../client.config.ts";
+import { buildLocalBusinessJsonLd } from "../lib/schema.ts";
+
+const title = `${clientConfig.business.name} — ${clientConfig.location.address.city} | ${clientConfig.business.tagline}`;
+const description = clientConfig.business.description;
+const jsonLd = [buildLocalBusinessJsonLd()];
+---
+
+<CraftsmanLayout title={title} description={description} canonicalPath="/" jsonLd={jsonLd}>
+  <Hero />
+  <ServicesList linkToDetails={false} />
+  <ReviewsSection />
+  <OpeningHours />
+  <ContactForm />
+</CraftsmanLayout>

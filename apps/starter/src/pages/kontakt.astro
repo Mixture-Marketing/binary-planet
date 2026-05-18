@@ -1,0 +1,28 @@
+---
+import CraftsmanLayout from "../themes/craftsman/layouts/CraftsmanLayout.astro";
+import OpeningHours from "../themes/craftsman/components/OpeningHours.astro";
+import ContactForm from "../themes/craftsman/components/ContactForm.astro";
+import clientConfig from "../client.config.ts";
+import { buildLocalBusinessJsonLd } from "../lib/schema.ts";
+
+const title = `Kontakt — ${clientConfig.business.name}`;
+const description = `Skontaktuj się z ${clientConfig.business.name}. Telefon: ${clientConfig.contact.primaryPhone}. Adres: ${clientConfig.location.address.streetAddress}, ${clientConfig.location.address.city}.`;
+const jsonLd = [buildLocalBusinessJsonLd()];
+---
+
+<CraftsmanLayout title={title} description={description} canonicalPath="/kontakt" jsonLd={jsonLd}>
+  <section class="section-py" style="background: var(--color-surface-muted);">
+    <div class="container-px">
+      <p style="margin: 0 0 0.5rem 0; font-weight: 600; color: var(--color-brand);">Skontaktuj się</p>
+      <h1 style="font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; margin: 0 0 1rem 0;">
+        Kontakt
+      </h1>
+      <p style="color: var(--color-text-muted); font-size: 1.15rem; max-width: 50rem; margin: 0;">
+        Najszybciej odpowiem na telefon. Możesz też napisać — odzywam się tego samego dnia w godzinach pracy.
+      </p>
+    </div>
+  </section>
+
+  <OpeningHours />
+  <ContactForm heading="Wypełnij formularz" />
+</CraftsmanLayout>

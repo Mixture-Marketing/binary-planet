@@ -1,0 +1,90 @@
+---
+import clientConfig from "../../../client.config.ts";
+
+const { hours, contact, location } = clientConfig;
+
+const DAYS: Array<[keyof typeof hours, string]> = [
+  ["monday", "Poniedziałek"],
+  ["tuesday", "Wtorek"],
+  ["wednesday", "Środa"],
+  ["thursday", "Czwartek"],
+  ["friday", "Piątek"],
+  ["saturday", "Sobota"],
+  ["sunday", "Niedziela"],
+];
+
+function renderHours(value: unknown): string {
+  if (value === "closed") return "Zamknięte";
+  if (Array.isArray(value) && value.length === 2) {
+    return `${value[0]} – ${value[1]}`;
+  }
+  return "Zamknięte";
+}
+
+const today = new Date().getDay(); // 0=Sun, 1=Mon ... 6=Sat
+const todayKey: keyof typeof hours = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][today]! as keyof typeof hours;
+---
+
+<section aria-labelledby="hours-heading" class="section-py" style="background: var(--color-surface-muted);">
+  <div class="container-px" style="display: grid; gap: 2.5rem; align-items: start;">
+    <div>
+      <h2 id="hours-heading" style="font-size: clamp(1.75rem, 3.5vw, 2.5rem); font-weight: 700; margin: 0 0 1rem 0;">
+        Godziny otwarcia
+      </h2>
+      <p style="color: var(--color-text-muted); font-size: 1.1rem; margin: 0 0 1.5rem 0;">
+        {hours.note ?? "Pełny dostęp w godzinach pracy. Awaryjne wezwania możliwe po umowie."}
+      </p>
+
+      <div role="region" aria-label="Tabela godzin otwarcia">
+        <dl style="display: grid; gap: 0.5rem; margin: 0;">
+          {DAYS.map(([key, label]) => {
+            const value = hours[key];
+            const isToday = key === todayKey;
+            const closed = value === "closed";
+            return (
+              <div style={`display: flex; justify-content: space-between; padding: 0.6rem 1rem; background: ${isToday ? "var(--color-surface)" : "transparent"}; border-radius: var(--radius-sm); ${isToday ? "border: 2px solid var(--color-brand);" : ""}`}>
+                <dt style={`font-weight: ${isToday ? "700" : "500"};`}>
+                  {label}
+                  {isToday && <span style="color: var(--color-brand); margin-left: 0.5rem; font-size: 0.85rem;">(dziś)</span>}
+                </dt>
+                <dd style={`margin: 0; color: ${closed ? "var(--color-text-muted)" : "var(--color-text)"}; font-weight: ${closed ? "500" : "600"};`}>
+                  {renderHours(value)}
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
+      </div>
+    </div>
+
+    <div style="background: var(--color-surface); padding: 1.75rem; border-radius: var(--radius-lg); border: 1px solid var(--color-border);">
+      <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0 0 1rem 0;">Adres</h3>
+      <address style="font-style: normal; color: var(--color-text); line-height: 1.8; margin: 0 0 1.5rem 0;">
+        <strong>{clientConfig.business.name}</strong><br>
+        {location.address.streetAddress}<br>
+        {location.address.postalCode} {location.address.city}<br>
+        woj. {location.address.voivodeship}
+      </address>
+
+      <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+        <a
+          href={`tel:${contact.primaryPhone}`}
+          data-track-event="phone_click"
+          data-track-position="hours_card"
+          style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--color-brand); font-weight: 600; text-decoration: none;"
+        >
+          <span aria-hidden="true">📞</span>
+          {contact.primaryPhone}
+        </a>
+        <a
+          href={`mailto:${contact.email}`}
+          data-track-event="email_click"
+          style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--color-brand); font-weight: 600; text-decoration: none;"
+        >
+          <span aria-hidden="true">✉️</span>
+          {contact.email}
+        </a>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,100 @@
+# wrangler.toml — mm-control-plane (hub)
+# Reference: plan/J-hub-spoke.md
+
+name = "mm-control-plane"
+main = "src/index.ts"
+compatibility_date = "2026-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Static custom domain (Faza 1 after CF Workers Paid + DNS setup):
+# routes = [
+#   { pattern = "api.mixturemarketing.pl/*", custom_domain = true },
+#   { pattern = "app.mixturemarketing.pl/*", custom_domain = true },
+# ]
+
+# ---------------------------------------------------------------------------
+# D1
+# ---------------------------------------------------------------------------
+[[d1_databases]]
+binding = "DB"
+database_name = "mm-control-plane"
+# database_id = "<UUID>"   # filled in after `wrangler d1 create mm-control-plane`
+migrations_dir = "migrations"
+
+# ---------------------------------------------------------------------------
+# KV namespaces
+# ---------------------------------------------------------------------------
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+# id = "<KV_ID>"
+# preview_id = "<KV_ID_PREVIEW>"
+
+[[kv_namespaces]]
+binding = "CONFIG"           # kill switches, feature flag overrides cached
+# id = "<KV_ID>"
+
+[[kv_namespaces]]
+binding = "DEDUP"            # webhook dedup cache (KV TTL ~5 min)
+# id = "<KV_ID>"
+
+# ---------------------------------------------------------------------------
+# R2 buckets
+# ---------------------------------------------------------------------------
+[[r2_buckets]]
+binding = "BACKUPS"
+bucket_name = "mm-backups"
+preview_bucket_name = "mm-backups-preview"
+
+[[r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "mm-uploads"
+preview_bucket_name = "mm-uploads-preview"
+
+# ---------------------------------------------------------------------------
+# Scheduled tasks (cron triggers — Workers Paid required)
+# ---------------------------------------------------------------------------
+[triggers]
+crons = [
+  "*/5 * * * *",  # health-check  (every 5 min)
+  "0 2 * * *",    # gsc-daily-pull
+  "0 3 * * *",    # ga4-daily-pull
+  "0 4 * * *",    # gbp-daily-pull
+  "0 5 * * 1",    # dataforseo-weekly (Mon)
+  "0 6 * * *",    # backup-daily
+  "0 9 * * *",    # daily-digest (admin emails)
+  "0 0 1 * *",    # monthly-reports
+]
+
+# ---------------------------------------------------------------------------
+# Build (workers-types only — no bundling beyond wrangler's default)
+# ---------------------------------------------------------------------------
+[build]
+# wrangler handles esbuild internally for TS
+
+# ---------------------------------------------------------------------------
+# Production-only overrides
+# ---------------------------------------------------------------------------
+[env.production]
+vars = { HUB_BASE_URL = "https://api.mixturemarketing.pl", LOG_LEVEL = "info" }
+
+[env.staging]
+vars = { HUB_BASE_URL = "https://staging-api.mixturemarketing.pl", LOG_LEVEL = "debug" }
+
+# ---------------------------------------------------------------------------
+# Secrets (NEVER commit; managed via `wrangler secret put`)
+# ---------------------------------------------------------------------------
+# ANTHROPIC_API_KEY
+# DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD
+# RESEND_API_KEY, RESEND_FROM
+# SMSAPI_TOKEN
+# STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+# P24_MERCHANT_ID, P24_CRC_KEY, P24_API_KEY
+# FAKTUROWNIA_API_TOKEN
+# REGON_USER_KEY
+# OVH_APP_KEY, OVH_APP_SECRET, OVH_CONSUMER_KEY
+# GH_APP_PRIVATE_KEY
+# GOOGLE_SERVICE_ACCOUNT_B64
+# TURNSTILE_SECRET_KEY
+# JWT_SIGNING_KEY
+# D1_ENCRYPTION_KEY
+# BACKUP_ENCRYPTION_KEY

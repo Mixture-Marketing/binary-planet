@@ -1,0 +1,127 @@
+/**
+ * Scheduled dispatcher. Cron triggers from wrangler.toml fire `scheduled()` —
+ * we route by cron expression to the right handler.
+ *
+ * Each handler:
+ *   - logs job_runs row (start)
+ *   - executes its work
+ *   - updates job_runs (status, duration, items processed)
+ *   - throws on critical errors → Worker treats as failed run (visible in CF dashboard)
+ */
+
+import { Logger } from "@mixturemarketing/logger";
+
+import type { Env } from "../env.js";
+import { backupDaily } from "./backup.js";
+import { healthCheck } from "./health-check.js";
+
+export type ScheduledJobName =
+  | "health_check_5min"
+  | "gsc_daily_pull"
+  | "ga4_daily_pull"
+  | "gbp_daily_pull"
+  | "dataforseo_weekly"
+  | "backup_daily"
+  | "daily_digest"
+  | "monthly_reports";
+
+/** Map cron expression (as fired by wrangler) to job name + handler. */
+const CRON_ROUTES: Record<string, ScheduledJobName> = {
+  "*/5 * * * *": "health_check_5min",
+  "0 2 * * *": "gsc_daily_pull",
+  "0 3 * * *": "ga4_daily_pull",
+  "0 4 * * *": "gbp_daily_pull",
+  "0 5 * * 1": "dataforseo_weekly",
+  "0 6 * * *": "backup_daily",
+  "0 9 * * *": "daily_digest",
+  "0 0 1 * *": "monthly_reports",
+};
+
+/** Cloudflare ScheduledController event surface. */
+interface ScheduledEventLike {
+  cron: string;
+  scheduledTime: number;
+}
+
+export async function runScheduled(event: ScheduledEventLike, env: Env): Promise<void> {
+  const jobName = CRON_ROUTES[event.cron] ?? "unknown";
+  const log = new Logger({
+    requestId: `cron-${event.scheduledTime}`,
+    module: "scheduled",
+    workerName: "mm-control-plane",
+  });
+
+  const start = Date.now();
+  log.info("cron.start", { cron: event.cron, job: jobName });
+
+  const insertCronRun = await env.DB.prepare(
+    `INSERT INTO cron_runs (job_name, cron_expression, started_at, status, items_processed, items_failed)
+     VALUES (?, ?, datetime('now'), 'running', 0, 0)
+     RETURNING id`,
+  )
+    .bind(jobName, event.cron)
+    .first<{ id: number }>();
+  const runId = insertCronRun?.id;
+
+  let processed = 0;
+  let failed = 0;
+  let status: "success" | "partial_success" | "failed" = "success";
+  let errorMessage: string | undefined;
+
+  try {
+    switch (jobName) {
+      case "health_check_5min": {
+        const result = await healthCheck(env, log);
+        processed = result.checked;
+        failed = result.failed;
+        if (failed > 0 && failed < processed) status = "partial_success";
+        break;
+      }
+      case "backup_daily": {
+        await backupDaily(env, log);
+        processed = 1;
+        break;
+      }
+      // v0.1 stubs — implementations in Faza 5
+      case "gsc_daily_pull":
+      case "ga4_daily_pull":
+      case "gbp_daily_pull":
+      case "dataforseo_weekly":
+      case "daily_digest":
+      case "monthly_reports":
+        log.info("cron.stub", { job: jobName, note: "not yet implemented" });
+        break;
+      default:
+        log.warn("cron.unknown", { cron: event.cron });
+        status = "failed";
+        errorMessage = `unknown cron: ${event.cron}`;
+    }
+  } catch (e) {
+    status = "failed";
+    errorMessage = e instanceof Error ? e.message : "scheduled job threw";
+    log.error("cron.error", e instanceof Error ? e : new Error(String(e)), { job: jobName });
+  }
+
+  const duration = Date.now() - start;
+  if (runId !== undefined) {
+    await env.DB.prepare(
+      `UPDATE cron_runs
+          SET finished_at = datetime('now'),
+              duration_ms = ?,
+              status = ?,
+              items_processed = ?,
+              items_failed = ?,
+              error = ?
+        WHERE id = ?`,
+    )
+      .bind(duration, status, processed, failed, errorMessage ?? null, runId)
+      .run();
+  }
+
+  log.info("cron.end", { job: jobName, status, duration_ms: duration, processed, failed });
+
+  // Re-throw so CF marks the scheduled run as failed (visible in dashboard).
+  if (status === "failed" && errorMessage) {
+    throw new Error(`Scheduled ${jobName} failed: ${errorMessage}`);
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "binary-planet",
+  "version": "0.0.0",
+  "private": true,
+  "description": "MixtureMarketing internal SaaS — local SEO sites for Polish micro-businesses",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,cjs,json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,cjs,json,md,yml,yaml}\"",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@typescript-eslint/eslint-plugin": "^8.15.0",
+    "@typescript-eslint/parser": "^8.15.0",
+    "eslint": "^9.15.0",
+    "prettier": "^3.3.3",
+    "turbo": "^2.3.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5"
+  }
+}
