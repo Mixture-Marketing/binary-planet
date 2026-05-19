@@ -69,6 +69,10 @@
     "./ui": {
       "types": "./dist/ui/index.d.ts",
       "import": "./dist/ui/index.js"
+    },
+    "./chatbot": {
+      "types": "./dist/chatbot/index.d.ts",
+      "import": "./dist/chatbot/index.js"
     }
   },
   "files": ["dist", "README.md"],
