@@ -39,6 +39,10 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+    # Skip workflow on the template repo itself — only klient repos should auto-deploy.
+    # Binary-planet template doesn't have Worker bindings and CF org secrets won't pass through
+    # to private repos on GitHub Free anyway.
+    if: github.event.repository.name != 'binary-planet'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
