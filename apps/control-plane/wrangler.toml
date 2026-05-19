@@ -18,7 +18,7 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "mm-control-plane"
-# database_id = "<UUID>"   # filled in after `wrangler d1 create mm-control-plane`
+database_id = "5edb7097-1e5c-4fbe-b186-fbd1956b9f3c"
 migrations_dir = "migrations"
 
 # ---------------------------------------------------------------------------
@@ -26,16 +26,15 @@ migrations_dir = "migrations"
 # ---------------------------------------------------------------------------
 [[kv_namespaces]]
 binding = "RATE_LIMIT"
-# id = "<KV_ID>"
-# preview_id = "<KV_ID_PREVIEW>"
+id = "56d5d0836ac7403a9f525626ea9426ac"
 
 [[kv_namespaces]]
 binding = "CONFIG"           # kill switches, feature flag overrides cached
-# id = "<KV_ID>"
+id = "48f9c8ee78244474883b0ad0d8878f02"
 
 [[kv_namespaces]]
 binding = "DEDUP"            # webhook dedup cache (KV TTL ~5 min)
-# id = "<KV_ID>"
+id = "19a1757b844349dc91c5e08a671987c7"
 
 # ---------------------------------------------------------------------------
 # R2 buckets
@@ -54,18 +53,22 @@ preview_bucket_name = "mm-uploads-preview"
 # Scheduled tasks (cron triggers — Workers Paid required)
 # ---------------------------------------------------------------------------
 [triggers]
+# Free plan limit: 5 crons / account. Upgrade to Workers Paid ($5/mc) to unlock all 10.
+# Most important 4 active; remaining 6 triggered manually via /api/admin/cron/run-now
+# or external scheduler (cron-job.org) — patrz docs/FREE-PLAN-NOTES.md
 crons = [
   "*/5 * * * *",  # health-check  (every 5 min)
   "*/2 * * * *",  # provision-pending (Track 4 — picks up pending client configs)
-  "0 8 * * 1",    # ai-blog (Track 8 — Monday 08:00, bi-weekly per klient with blog_ai module)
-  "0 2 * * *",    # gsc-daily-pull
-  "0 3 * * *",    # ga4-daily-pull
-  "0 4 * * *",    # gbp-daily-pull
-  "0 5 * * 1",    # dataforseo-weekly (Mon)
+  "0 8 * * 1",    # ai-blog (Track 8 — Monday 08:00)
   "0 6 * * *",    # backup-daily
-  "0 9 * * *",    # daily-digest (admin emails)
-  "0 0 1 * *",    # monthly-reports
 ]
+# UNCOMMENT after Workers Paid upgrade:
+# "0 2 * * *",    # gsc-daily-pull
+# "0 3 * * *",    # ga4-daily-pull
+# "0 4 * * *",    # gbp-daily-pull
+# "0 5 * * 1",    # dataforseo-weekly (Mon)
+# "0 9 * * *",    # daily-digest (admin emails)
+# "0 0 1 * *",    # monthly-reports
 
 # ---------------------------------------------------------------------------
 # Build (workers-types only — no bundling beyond wrangler's default)
