@@ -29,6 +29,12 @@ export interface Env {
   SMSAPI_TOKEN?: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
+  /** Stripe Price IDs per tier (TIER_PRICE_IDS env JSON or individual). */
+  STRIPE_PRICE_STARTER?: string;   // price_xxx for 149 zł/mc
+  STRIPE_PRICE_STANDARD?: string;  // price_xxx for 199 zł/mc
+  STRIPE_PRICE_PREMIUM?: string;   // price_xxx for 299 zł/mc
+  /** Base URL for Stripe Checkout success/cancel redirects (admin or panel). Default admin. */
+  STRIPE_CHECKOUT_RETURN_URL?: string; // e.g. "https://app.mixturemarketing.pl"
   P24_MERCHANT_ID?: string;
   P24_CRC_KEY?: string;
   P24_API_KEY?: string;

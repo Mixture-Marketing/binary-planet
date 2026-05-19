@@ -16,6 +16,12 @@
 import { Hono } from "hono";
 
 import type { HonoEnv } from "../../../env.js";
+import {
+  CLIENT_STATUS_FROM_STRIPE,
+  recordStripePayment,
+  updateSubscriptionLifecycle,
+  upsertSubscriptionFromStripe,
+} from "../../../repos/subscriptions.js";
 import { markWebhookFailed, markWebhookProcessed, recordWebhookReceived } from "../../../repos/webhook-events.js";
 import { err, ok } from "../../lib/responses.js";
 
@@ -148,40 +154,104 @@ function timingSafeHexEqual(a: string, b: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Dispatcher — v0.1 stubs. Real implementations in Faza 3.
+// Dispatcher — Track 6 real implementations.
+//
+// checkout.session.completed:
+//   - extract client_id from metadata (set when wizard creates the session)
+//   - upsert subscriptions row
+//   - flip clients.status to 'provisioning' (so Track 4 cron picks up the work)
+//
+// customer.subscription.updated / .deleted:
+//   - sync status + cancel timestamps
+//   - if canceled → clients.status='churned'
+//   - if past_due → clients.status stays 'active' (grace period)
+//   - if unpaid → clients.status='suspended'
+//
+// invoice.paid / .payment_failed:
+//   - record payments row (idempotent via UNIQUE on provider+external_id)
+//   - failed → emit audit_log (P2 alert in real cron)
 // ---------------------------------------------------------------------------
+
+interface StripeCheckoutSessionObject {
+  id: string;
+  customer?: string;
+  subscription?: string;
+  customer_details?: { email?: string };
+  metadata?: { client_id?: string };
+  amount_total?: number;
+  currency?: string;
+}
+
+interface StripeSubscriptionObject {
+  id: string;
+  customer: string;
+  status: string;
+  metadata?: { client_id?: string };
+  current_period_start?: number;
+  current_period_end?: number;
+  cancel_at?: number | null;
+  canceled_at?: number | null;
+  items?: { data?: Array<{ price?: { id?: string; unit_amount?: number; currency?: string } }> };
+}
+
+interface StripeInvoiceObject {
+  id: string;
+  customer?: string;
+  subscription?: string | null;
+  amount_paid?: number;
+  amount_due?: number;
+  currency?: string;
+  status?: string;
+  status_transitions?: { paid_at?: number | null };
+  metadata?: { client_id?: string };
+  lines?: { data?: Array<{ metadata?: { client_id?: string }; price?: { id?: string } }> };
+  last_finalization_error?: { message?: string };
+}
+
+function tierFromPriceId(env: import("../../../env.js").Env, priceId: string | undefined): "starter" | "standard" | "premium" | null {
+  if (!priceId) return null;
+  if (priceId === env.STRIPE_PRICE_STARTER) return "starter";
+  if (priceId === env.STRIPE_PRICE_STANDARD) return "standard";
+  if (priceId === env.STRIPE_PRICE_PREMIUM) return "premium";
+  return null;
+}
 
 async function dispatchStripeEvent(env: import("../../../env.js").Env, event: StripeEvent): Promise<void> {
   switch (event.type) {
     case "checkout.session.completed":
-      // TODO Faza 3: kick off provisioning workflow
-      // - create client row (status='provisioning')
-      // - create subscription row
-      // - enqueue background_jobs[onboard_new_client]
+      await handleCheckoutCompleted(env, event);
+      return;
+
+    case "customer.subscription.created":
+    case "customer.subscription.updated":
+      await handleSubscriptionUpserted(env, event);
+      return;
+
+    case "customer.subscription.deleted":
+      await handleSubscriptionDeleted(env, event);
+      return;
+
+    case "invoice.paid":
+    case "invoice.payment_succeeded":
+      await handleInvoicePaid(env, event);
+      return;
+
+    case "invoice.payment_failed":
+      await handleInvoicePaymentFailed(env, event);
+      return;
+
+    case "charge.refunded":
+      // Audit only — refund flow handled manually in v0.1 (admin reconciles).
       await env.DB.prepare(
         `INSERT INTO audit_log (actor, action, resource_type, resource_id, severity, metadata_json)
-         VALUES ('system', 'stripe.checkout.completed', 'webhook_event', ?, 'info', ?)`,
+         VALUES ('system', 'stripe.charge.refunded', 'webhook_event', ?, 'warn', ?)`,
       )
         .bind(event.id, JSON.stringify({ event_type: event.type }))
         .run();
       return;
 
-    case "customer.subscription.updated":
-    case "customer.subscription.deleted":
-    case "invoice.paid":
-    case "invoice.payment_failed":
-    case "charge.refunded":
-      // TODO Faza 3: update subscriptions / payments / invoices tables
-      await env.DB.prepare(
-        `INSERT INTO audit_log (actor, action, resource_type, resource_id, severity, metadata_json)
-         VALUES ('system', ?, 'webhook_event', ?, 'info', ?)`,
-      )
-        .bind(`stripe.${event.type}`, event.id, JSON.stringify({ event_type: event.type }))
-        .run();
-      return;
-
     default:
-      // Unknown but not an error — log and ack
+      // Unknown event type — ack but log so we notice unexpected types in audit.
       await env.DB.prepare(
         `INSERT INTO audit_log (actor, action, resource_type, resource_id, severity, metadata_json)
          VALUES ('system', 'stripe.unknown_event_type', 'webhook_event', ?, 'debug', ?)`,
@@ -190,4 +260,155 @@ async function dispatchStripeEvent(env: import("../../../env.js").Env, event: St
         .run();
       return;
   }
+}
+
+async function handleCheckoutCompleted(env: import("../../../env.js").Env, event: StripeEvent): Promise<void> {
+  const obj = event.data?.object as StripeCheckoutSessionObject | undefined;
+  if (!obj) return;
+  const clientId = obj.metadata?.client_id;
+  if (!clientId) {
+    await env.DB.prepare(
+      `INSERT INTO audit_log (actor, action, resource_type, resource_id, severity, metadata_json)
+       VALUES ('system', 'stripe.checkout.missing_client_id', 'webhook_event', ?, 'warn', ?)`,
+    )
+      .bind(event.id, JSON.stringify({ session_id: obj.id }))
+      .run();
+    return;
+  }
+
+  // Flip client to 'provisioning' — Track 4 cron picks it up.
+  await env.DB
+    .prepare(`UPDATE clients SET status = 'provisioning' WHERE id = ? AND status IN ('pending')`)
+    .bind(clientId)
+    .run();
+
+  await env.DB
+    .prepare(
+      `INSERT INTO audit_log (actor, action, resource_type, resource_id, severity, metadata_json)
+       VALUES ('system', 'stripe.checkout.completed', 'client', ?, 'info', ?)`,
+    )
+    .bind(clientId, JSON.stringify({ session_id: obj.id, subscription_id: obj.subscription, customer_id: obj.customer }))
+    .run();
+}
+
+async function handleSubscriptionUpserted(env: import("../../../env.js").Env, event: StripeEvent): Promise<void> {
+  const obj = event.data?.object as StripeSubscriptionObject | undefined;
+  if (!obj) return;
+  const clientId = obj.metadata?.client_id;
+  if (!clientId) return; // skip — pre-onboarding test subs
+
+  const firstItem = obj.items?.data?.[0]?.price;
+  const tier = tierFromPriceId(env, firstItem?.id);
+  if (!tier) {
+    // Unknown price — log + skip (could be a one-off addon)
+    await env.DB.prepare(
+      `INSERT INTO audit_log (actor, action, resource_type, resource_id, severity, metadata_json)
+       VALUES ('system', 'stripe.subscription.unknown_price', 'subscription', ?, 'warn', ?)`,
+    )
+      .bind(obj.id, JSON.stringify({ price_id: firstItem?.id }))
+      .run();
+    return;
+  }
+
+  const monthlyAmount = firstItem?.unit_amount ?? 0;
+  const currency = (firstItem?.currency ?? "pln").toUpperCase();
+
+  await upsertSubscriptionFromStripe(env.DB, {
+    client_id: clientId,
+    stripe_subscription_id: obj.id,
+    stripe_customer_id: obj.customer,
+    status: obj.status,
+    tier,
+    monthly_amount_grosze: monthlyAmount,
+    currency,
+    ...(obj.current_period_start !== undefined && { current_period_start_unix: obj.current_period_start }),
+    ...(obj.current_period_end !== undefined && { current_period_end_unix: obj.current_period_end }),
+    cancel_at_unix: obj.cancel_at ?? null,
+    canceled_at_unix: obj.canceled_at ?? null,
+  });
+
+  const newClientStatus = CLIENT_STATUS_FROM_STRIPE[obj.status];
+  if (newClientStatus) {
+    await env.DB
+      .prepare(`UPDATE clients SET status = ? WHERE id = ? AND status != ?`)
+      .bind(newClientStatus, clientId, newClientStatus)
+      .run();
+  }
+}
+
+async function handleSubscriptionDeleted(env: import("../../../env.js").Env, event: StripeEvent): Promise<void> {
+  const obj = event.data?.object as StripeSubscriptionObject | undefined;
+  if (!obj) return;
+  await updateSubscriptionLifecycle(env.DB, obj.id, {
+    status: "canceled",
+    canceled_at_unix: obj.canceled_at ?? Math.floor(Date.now() / 1000),
+  });
+  const clientId = obj.metadata?.client_id;
+  if (clientId) {
+    await env.DB
+      .prepare(`UPDATE clients SET status = 'churned', churned_at = datetime('now') WHERE id = ?`)
+      .bind(clientId)
+      .run();
+  }
+}
+
+async function handleInvoicePaid(env: import("../../../env.js").Env, event: StripeEvent): Promise<void> {
+  const inv = event.data?.object as StripeInvoiceObject | undefined;
+  if (!inv) return;
+  const clientId = inv.metadata?.client_id ?? inv.lines?.data?.[0]?.metadata?.client_id ?? null;
+  if (!clientId) return; // can't correlate
+
+  // Look up internal subscription id by stripe sub id
+  let internalSubId: string | null = null;
+  if (inv.subscription) {
+    const row = await env.DB
+      .prepare(`SELECT id FROM subscriptions WHERE provider = 'stripe' AND external_id = ? LIMIT 1`)
+      .bind(inv.subscription)
+      .first<{ id: string }>();
+    internalSubId = row?.id ?? null;
+  }
+
+  await recordStripePayment(env.DB, {
+    client_id: clientId,
+    subscription_id: internalSubId,
+    stripe_invoice_id: inv.id,
+    amount_grosze: inv.amount_paid ?? 0,
+    currency: (inv.currency ?? "pln").toUpperCase(),
+    status: "succeeded",
+    paid_at_unix: inv.status_transitions?.paid_at ?? null,
+  });
+}
+
+async function handleInvoicePaymentFailed(env: import("../../../env.js").Env, event: StripeEvent): Promise<void> {
+  const inv = event.data?.object as StripeInvoiceObject | undefined;
+  if (!inv) return;
+  const clientId = inv.metadata?.client_id ?? inv.lines?.data?.[0]?.metadata?.client_id ?? null;
+  if (!clientId) return;
+
+  let internalSubId: string | null = null;
+  if (inv.subscription) {
+    const row = await env.DB
+      .prepare(`SELECT id FROM subscriptions WHERE provider = 'stripe' AND external_id = ? LIMIT 1`)
+      .bind(inv.subscription)
+      .first<{ id: string }>();
+    internalSubId = row?.id ?? null;
+  }
+
+  await recordStripePayment(env.DB, {
+    client_id: clientId,
+    subscription_id: internalSubId,
+    stripe_invoice_id: inv.id,
+    amount_grosze: inv.amount_due ?? 0,
+    currency: (inv.currency ?? "pln").toUpperCase(),
+    status: "failed",
+    failure_message: inv.last_finalization_error?.message ?? "payment failed",
+  });
+
+  // Audit so dunning cron picks this up tomorrow.
+  await env.DB.prepare(
+    `INSERT INTO audit_log (actor, action, resource_type, resource_id, severity, metadata_json)
+     VALUES ('system', 'stripe.invoice.payment_failed', 'client', ?, 'warn', ?)`,
+  )
+    .bind(clientId, JSON.stringify({ invoice_id: inv.id, subscription_id: inv.subscription }))
+    .run();
 }

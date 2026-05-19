@@ -12,6 +12,7 @@ import { eventsRouter } from "./routes/events.js";
 import { featureFlagsRouter } from "./routes/feature-flags.js";
 import { healthRouter } from "./routes/health.js";
 import { leadsRouter } from "./routes/leads.js";
+import { adminCheckoutRouter } from "./routes/admin/checkout.js";
 import { stripeWebhookRouter } from "./routes/webhooks/stripe.js";
 
 export function createApp(): Hono<HonoEnv> {
@@ -32,6 +33,10 @@ export function createApp(): Hono<HonoEnv> {
   protectedApi.route("/events", eventsRouter);
   protectedApi.route("/feature-flags", featureFlagsRouter);
   app.route("/api", protectedApi);
+
+  // Admin API — separate auth (X-BP-Admin-Key, TODO Track 6-prod).
+  // v0.1: open within same CF account, callers gated by network not by header.
+  app.route("/api/admin/stripe/checkout", adminCheckoutRouter);
 
   // Admin UI placeholder — Astro Server Islands w przyszłości
   // TODO Faza 3-4: Astro dashboard pages
