@@ -46,6 +46,8 @@ P24_MERCHANT_ID=""
 P24_CRC_KEY=""
 P24_API_KEY=""
 FAKTUROWNIA_API_TOKEN=""
+FAKTUROWNIA_LOGIN=""               # subdomain z URL: https://{login}.fakturownia.pl
+FAKTUROWNIA_DRY_RUN="true"         # set "false" for real invoice generation
 
 # --- Polish business data ---
 REGON_USER_KEY=""

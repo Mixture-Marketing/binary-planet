@@ -368,15 +368,40 @@ async function handleInvoicePaid(env: import("../../../env.js").Env, event: Stri
     internalSubId = row?.id ?? null;
   }
 
+  const amountGrosze = inv.amount_paid ?? 0;
+  const currency = (inv.currency ?? "pln").toUpperCase();
   await recordStripePayment(env.DB, {
     client_id: clientId,
     subscription_id: internalSubId,
     stripe_invoice_id: inv.id,
-    amount_grosze: inv.amount_paid ?? 0,
-    currency: (inv.currency ?? "pln").toUpperCase(),
+    amount_grosze: amountGrosze,
+    currency,
     status: "succeeded",
     paid_at_unix: inv.status_transitions?.paid_at ?? null,
   });
+
+  // Look up internal payment.id we just created so invoice row can FK to it.
+  const pmt = await env.DB
+    .prepare(`SELECT id FROM payments WHERE provider = 'stripe' AND external_id = ? LIMIT 1`)
+    .bind(inv.id)
+    .first<{ id: string }>();
+
+  // Generate Fakturownia VAT invoice (Track 7). Best-effort — failure here doesn't reject webhook.
+  if (pmt) {
+    try {
+      const { generateMonthlyInvoice } = await import("../../../scheduled/fakturownia-invoice.js");
+      await generateMonthlyInvoice(env, {
+        client_id: clientId,
+        payment_id: pmt.id,
+        amount_grosze: amountGrosze,
+        currency,
+        external_payment_ref: inv.id,
+      });
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn(`Fakturownia generation failed for ${inv.id}:`, e instanceof Error ? e.message : e);
+    }
+  }
 }
 
 async function handleInvoicePaymentFailed(env: import("../../../env.js").Env, event: StripeEvent): Promise<void> {

@@ -39,6 +39,10 @@ export interface Env {
   P24_CRC_KEY?: string;
   P24_API_KEY?: string;
   FAKTUROWNIA_API_TOKEN?: string;
+  /** Fakturownia subdomain (login). e.g. "mixturemarketing" → https://mixturemarketing.fakturownia.pl */
+  FAKTUROWNIA_LOGIN?: string;
+  /** Skip Fakturownia API calls in tests/dev. Default false (auto-skipped if token missing). */
+  FAKTUROWNIA_DRY_RUN?: string;
   REGON_USER_KEY?: string;
   OVH_APP_KEY?: string;
   OVH_APP_SECRET?: string;
