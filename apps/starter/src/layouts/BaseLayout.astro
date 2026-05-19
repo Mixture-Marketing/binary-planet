@@ -20,6 +20,7 @@ import { buildLeadpopHtml } from "@mixturemarketing/web-core/leadpop";
 import { buildFomoHtml } from "@mixturemarketing/web-core/fomo";
 import { buildBooksyHtml } from "@mixturemarketing/web-core/booksy";
 import { buildNewsletterHtml } from "@mixturemarketing/web-core/newsletter";
+import { buildDeliveryHtml } from "@mixturemarketing/web-core/delivery";
 
 import clientConfig from "../client.config.ts";
 import { tokensCss } from "../themes/craftsman/tokens.ts";
@@ -95,6 +96,17 @@ const booksyHtml = booksyUrl
 // Instagram embed (Track 24f-5) — section rendered before footer when configured
 const igEmbedUrl = (runtimeEnv as { INSTAGRAM_EMBED_URL?: string } | undefined)?.INSTAGRAM_EMBED_URL?.trim() ?? "";
 const igSectionTitle = (runtimeEnv as { INSTAGRAM_SECTION_TITLE?: string } | undefined)?.INSTAGRAM_SECTION_TITLE ?? "Instagram";
+
+// Delivery widget (Track 24f-6) — sticky bottom-left "Zamów online"
+const deliveryUrl = (runtimeEnv as { DELIVERY_URL?: string } | undefined)?.DELIVERY_URL?.trim() ?? "";
+const deliveryProvider = (runtimeEnv as { DELIVERY_PROVIDER?: string } | undefined)?.DELIVERY_PROVIDER as "wolt" | "glovo" | "pyszne" | "uber_eats" | "generic" | undefined;
+const deliveryHtml = deliveryUrl
+  ? buildDeliveryHtml({
+      deliveryUrl,
+      brandColor: "var(--c-brand, #047857)",
+      ...(deliveryProvider && { provider: deliveryProvider }),
+    })
+  : "";
 
 // Newsletter widget (Track 24f-4) — bottom-right sticky card, after 6s
 const newsletterEnabled = isOn((runtimeEnv as { NEWSLETTER_SMS_ENABLED?: string } | undefined)?.NEWSLETTER_SMS_ENABLED);
@@ -203,6 +215,9 @@ const globalCss = [
 
     {/* Track 24f-4 — Newsletter subscribe widget */}
     {newsletterEnabled && <Fragment set:html={newsletterHtml} />}
+
+    {/* Track 24f-6 — Delivery sticky CTA (Wolt/Glovo/Pyszne) */}
+    {deliveryUrl && <Fragment set:html={deliveryHtml} />}
 
     {/* Track 24f-5 — Instagram embed section (renders inline iframe from SnapWidget/Lightwidget/etc.) */}
     {igEmbedUrl && (
