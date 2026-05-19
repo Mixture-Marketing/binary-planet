@@ -16,6 +16,9 @@ import {
 } from "@mixturemarketing/web-core/a11y";
 import { buildMetaTags, type MetaInput } from "@mixturemarketing/web-core/seo";
 import { buildChatWidgetHtml } from "@mixturemarketing/web-core/chatbot";
+import { buildLeadpopHtml } from "@mixturemarketing/web-core/leadpop";
+import { buildFomoHtml } from "@mixturemarketing/web-core/fomo";
+import { buildBooksyHtml } from "@mixturemarketing/web-core/booksy";
 
 import clientConfig from "../client.config.ts";
 import { tokensCss } from "../themes/craftsman/tokens.ts";
@@ -30,14 +33,61 @@ const nonce = Astro.locals.nonce ?? "";
 const tokens = tokensCss(clientConfig.theme.variant);
 const plausibleEnabled = clientConfig.integrations.plausible;
 
-// Track 24f — Chatbot widget (rendered server-side, runs only when CHATBOT_ENABLED=true env)
-const chatbotEnabled = String((Astro.locals.runtime?.env as { CHATBOT_ENABLED?: string } | undefined)?.CHATBOT_ENABLED ?? "").toLowerCase() === "true";
+// Track 24f / 24f-2 / Faza A — feature flag toggles
+const runtimeEnv = Astro.locals.runtime?.env as {
+  CHATBOT_ENABLED?: string;
+  LEADPOP_ENABLED?: string;
+  FOMO_COUNTER_ENABLED?: string;
+  BOOKSY_URL?: string;
+} | undefined;
+
+const isOn = (v?: string): boolean => String(v ?? "").toLowerCase() === "true";
+
+// Chatbot (Track 24f)
+const chatbotEnabled = isOn(runtimeEnv?.CHATBOT_ENABLED);
 const chatWidgetHtml = chatbotEnabled
   ? buildChatWidgetHtml({
       apiPath: "/api/chat",
       brandColor: "var(--c-brand, #047857)",
       introMessage: `Cześć! Jestem asystentem ${clientConfig.business.name}. W czym mogę pomóc?`,
       businessName: clientConfig.business.name,
+    })
+  : "";
+
+// Leadpop (Faza A)
+const leadpopEnabled = isOn(runtimeEnv?.LEADPOP_ENABLED);
+const leadpopHtml = leadpopEnabled
+  ? buildLeadpopHtml({
+      title: "Specjalna oferta dla nowych klientów",
+      body: `Zostaw email i dostań -10% na pierwszą wizytę w ${clientConfig.business.name}.`,
+      discountCode: "PIERWSZE10",
+      brandColor: "var(--c-brand, #047857)",
+    })
+  : "";
+
+// FOMO counter (Faza A)
+const fomoEnabled = isOn(runtimeEnv?.FOMO_COUNTER_ENABLED);
+const cityName = clientConfig.address?.city ?? "okolicy";
+const fomoHtml = fomoEnabled
+  ? buildFomoHtml({
+      messages: [
+        `<strong>Nowy zapytanie</strong> z ${cityName} — przed chwilą.`,
+        `<strong>${cityName}</strong> — 12 osób skorzystało w tym tygodniu.`,
+        `<strong>Klient</strong> zostawił 5★ opinię 2 godz. temu.`,
+      ],
+      brandColor: "var(--c-brand, #047857)",
+    })
+  : "";
+
+// Booksy embed (Faza A) — also available baseline in Starter pakiet per Track 25.
+// BOOKSY_URL = klient's Booksy/Calendly profile (set in wizard, then injected as env var by provisioning).
+const booksyUrl = runtimeEnv?.BOOKSY_URL?.trim() ?? "";
+const booksyHtml = booksyUrl
+  ? buildBooksyHtml({
+      bookingUrl: booksyUrl,
+      ctaLabel: "Zarezerwuj wizytę",
+      brandColor: "var(--c-brand, #047857)",
+      mode: "sticky",
     })
   : "";
 
@@ -124,5 +174,14 @@ const globalCss = [
 
     {/* Track 24f — Chatbot widget (only when CHATBOT_ENABLED=true) */}
     {chatbotEnabled && <Fragment set:html={chatWidgetHtml} />}
+
+    {/* Faza A — Booksy sticky CTA (BOOKSY_URL set per-klient) */}
+    {booksyUrl && <Fragment set:html={booksyHtml} />}
+
+    {/* Faza A — FOMO counter (FOMO_COUNTER_ENABLED) */}
+    {fomoEnabled && <Fragment set:html={fomoHtml} />}
+
+    {/* Faza A — Leadpop modal (LEADPOP_ENABLED) — last because it's modal */}
+    {leadpopEnabled && <Fragment set:html={leadpopHtml} />}
   </body>
 </html>
