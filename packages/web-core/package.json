@@ -89,6 +89,10 @@
     "./newsletter": {
       "types": "./dist/newsletter/index.d.ts",
       "import": "./dist/newsletter/index.js"
+    },
+    "./delivery": {
+      "types": "./dist/delivery/index.d.ts",
+      "import": "./dist/delivery/index.js"
     }
   },
   "files": ["dist", "README.md"],
