@@ -8,13 +8,15 @@ assets = { directory = "./dist", binding = "ASSETS" }
 
 # ---------------------------------------------------------------------------
 # KV (form rate limit + fallback queue — see web-core/forms)
+# Provisioning script fills IDs per-klient before deploy (`pnpm wrangler kv namespace create`).
+# Uncomment + populate before enabling form features. TEST_MODE deploy skips these.
 # ---------------------------------------------------------------------------
-[[kv_namespaces]]
-binding = "RATE_LIMIT"
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT"
 # id = "<KV_ID>"
-
-[[kv_namespaces]]
-binding = "FALLBACK_QUEUE"
+#
+# [[kv_namespaces]]
+# binding = "FALLBACK_QUEUE"
 # id = "<KV_ID>"
 
 # ---------------------------------------------------------------------------
