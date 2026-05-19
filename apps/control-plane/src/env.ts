@@ -54,6 +54,9 @@ export interface Env {
   GH_APP_PRIVATE_KEY?: string;
   /** GitHub Personal Access Token (scope: repo). For Track 4 provisioning (fork + commit). */
   GITHUB_PAT?: string;
+  /** GitHub OAuth App client ID — used by Sveltia OAuth proxy (Track 9). */
+  GITHUB_OAUTH_CLIENT_ID?: string;
+  GITHUB_OAUTH_CLIENT_SECRET?: string;
   /** GitHub org/owner under which klient repos are created. Default "MixtureMarketing". */
   GITHUB_ORG?: string;
   /** GitHub source repo path. Default "MixtureMarketing/binary-planet". */

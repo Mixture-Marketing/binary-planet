@@ -13,6 +13,7 @@ import { featureFlagsRouter } from "./routes/feature-flags.js";
 import { healthRouter } from "./routes/health.js";
 import { leadsRouter } from "./routes/leads.js";
 import { adminCheckoutRouter } from "./routes/admin/checkout.js";
+import { sveltiaOauthRouter } from "./routes/sveltia-oauth.js";
 import { stripeWebhookRouter } from "./routes/webhooks/stripe.js";
 
 export function createApp(): Hono<HonoEnv> {
@@ -24,6 +25,8 @@ export function createApp(): Hono<HonoEnv> {
   // Public — no auth
   app.route("/api/health", healthRouter);
   app.route("/api/webhooks/stripe", stripeWebhookRouter);
+  // Sveltia CMS OAuth proxy — public (this IS auth handshake, klient-facing)
+  app.route("/api/sveltia", sveltiaOauthRouter);
   // TODO Faza 3: P24 webhook, Fakturownia webhook, Resend webhook
 
   // Protected — require X-BP-Client-Key

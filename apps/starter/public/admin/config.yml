@@ -5,19 +5,23 @@
 #
 # Auth modes:
 #   - dev:     `local` backend via `npx @sveltia/cms-proxy-server` (no auth, fs writes)
-#   - prod:    `github` backend via OAuth proxy (TODO v0.2 — see README.md)
+#   - prod:    `github` backend via OAuth proxy at api.mixturemarketing.pl/api/sveltia
 
 # === Backend ===================================================================
-# In dev: use local backend (override at runtime — config.dev.yml or query string).
-# In prod: GitHub backend (after OAuth proxy wired up).
+# Production: GitHub via OAuth proxy. Sveltia popup → /api/sveltia/auth → GitHub →
+# /api/sveltia/callback → returns access_token via postMessage to popup opener.
+#
+# Per-klient deploys MUST update `repo:` to point at klient's own MixtureMarketing/{slug}-site repo.
+# Provisioning workflow (Track 4) generates this YAML with correct repo string baked in.
 backend:
   name: github
-  repo: MixtureMarketing/binary-planet
+  repo: MixtureMarketing/CHANGE-ME-PER-KLIENT
   branch: main
-  base_url: https://app.mixturemarketing.pl
-  auth_endpoint: api/auth/github
+  base_url: https://api.mixturemarketing.pl/api/sveltia
+  auth_endpoint: auth
 
-# Enable local-fs backend when running with sveltia-cms-proxy-server
+# Local dev: when running `npx @sveltia/cms-proxy-server` on localhost,
+# Sveltia auto-detects and uses local-fs backend.
 local_backend: true
 
 # === Media =====================================================================

@@ -14,6 +14,10 @@ OVH_ENDPOINT="ovh-eu"
 GITHUB_PAT=""
 GITHUB_ORG="MixtureMarketing"
 GITHUB_SOURCE_REPO="MixtureMarketing/binary-planet"
+# GitHub OAuth App (Track 9 — Sveltia OAuth proxy). Separate from GITHUB_PAT.
+# Create at: https://github.com/organizations/MixtureMarketing/settings/applications/new
+GITHUB_OAUTH_CLIENT_ID=""
+GITHUB_OAUTH_CLIENT_SECRET=""
 
 # Cloudflare — Worker custom domain (after wrangler deploy via GH Actions)
 CF_API_TOKEN=""
