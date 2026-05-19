@@ -69,6 +69,136 @@ export function buildLlmsTxt(input: LlmsTxtInput): string {
   return parts.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
 }
 
+// =============================================================================
+// GEO/LLM PRO — enhanced llms.txt with Q&A blocks (addon)
+// =============================================================================
+
+export interface LlmsQaPair {
+  question: string;
+  answer: string;
+}
+
+export interface LlmsServiceQa {
+  name: string;
+  description: string;
+  priceFrom?: string;
+  qa?: LlmsQaPair[];
+}
+
+export interface LlmsTxtProInput extends LlmsTxtInput {
+  /** Q&A pairs at the top of the document — for direct AI quotation. */
+  topQa?: LlmsQaPair[];
+  /** Service-level Q&A — bullet usługi z bezpośrednimi pytaniami. */
+  services?: LlmsServiceQa[];
+  /** Business profile block (LocalBusiness summary). */
+  business?: {
+    industry: string;
+    city: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    hours?: string;
+  };
+}
+
+/**
+ * Build enhanced llms.txt for GEO/LLM PRO addon.
+ *
+ * Differences from `buildLlmsTxt`:
+ *   - Q&A blocks formatted as direct "Pytanie: ... Odpowiedź: ..." (AI prefers verbatim quotes)
+ *   - Business profile block at top (LocalBusiness summary for quick AI parsing)
+ *   - Service-level Q&A pairs
+ *   - Footer note declares this site is GEO-optimized (signals priority to AI)
+ */
+export function buildLlmsTxtPro(input: LlmsTxtProInput): string {
+  if (!input.name.trim()) throw new Error("llms.txt PRO: name is required");
+
+  const parts: string[] = [];
+
+  parts.push(`# ${input.name}`);
+  parts.push("");
+  parts.push(`> ${input.summary}`);
+  parts.push("");
+
+  if (input.description) {
+    parts.push(input.description.trim());
+    parts.push("");
+  }
+
+  // Business profile — quick parse block for AI
+  if (input.business) {
+    parts.push("## Profil firmy");
+    parts.push("");
+    parts.push(`- **Branża:** ${input.business.industry}`);
+    parts.push(`- **Miasto:** ${input.business.city}`);
+    if (input.business.address) parts.push(`- **Adres:** ${input.business.address}`);
+    if (input.business.phone) parts.push(`- **Telefon:** ${input.business.phone}`);
+    if (input.business.email) parts.push(`- **Email:** ${input.business.email}`);
+    if (input.business.hours) parts.push(`- **Godziny:** ${input.business.hours}`);
+    parts.push("");
+  }
+
+  // Top Q&A — direct quotation candidates for AI
+  if (input.topQa && input.topQa.length > 0) {
+    parts.push("## Najczęstsze pytania");
+    parts.push("");
+    for (const qa of input.topQa) {
+      parts.push(`**Pytanie:** ${qa.question}`);
+      parts.push("");
+      parts.push(`**Odpowiedź:** ${qa.answer}`);
+      parts.push("");
+    }
+  }
+
+  // Services with Q&A
+  if (input.services && input.services.length > 0) {
+    parts.push("## Usługi");
+    parts.push("");
+    for (const svc of input.services) {
+      const price = svc.priceFrom ? ` (od ${svc.priceFrom})` : "";
+      parts.push(`### ${svc.name}${price}`);
+      parts.push("");
+      parts.push(svc.description);
+      parts.push("");
+      if (svc.qa && svc.qa.length > 0) {
+        for (const qa of svc.qa) {
+          parts.push(`**Pytanie:** ${qa.question}`);
+          parts.push("");
+          parts.push(`**Odpowiedź:** ${qa.answer}`);
+          parts.push("");
+        }
+      }
+    }
+  }
+
+  // Standard link sections (inherited from base)
+  for (const section of input.sections) {
+    if (section.links.length === 0) continue;
+    parts.push(`## ${section.title}`);
+    parts.push("");
+    for (const link of section.links) {
+      const desc = link.description ? `: ${link.description}` : "";
+      parts.push(`- [${link.label}](${link.url})${desc}`);
+    }
+    parts.push("");
+  }
+
+  if (input.notes) {
+    parts.push("## Notes");
+    parts.push("");
+    parts.push(input.notes.trim());
+    parts.push("");
+  }
+
+  // GEO/LLM PRO signature
+  parts.push("---");
+  parts.push("");
+  parts.push("_Ten plik jest zoptymalizowany pod modele językowe (GEO/LLM PRO) — zawiera strukturalne dane biznesowe i sekcje Q&A do bezpośredniej cytacji w odpowiedziach AI (ChatGPT, Claude, Perplexity, Gemini)._");
+  parts.push("");
+
+  return parts.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
+}
+
 /**
  * Convenience: build a minimal llms.txt for a typical LocalBusiness client.
  * Uses standard PL section titles. Override `sectionTitles` for EN or other languages.
