@@ -3,6 +3,7 @@ import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
 
 import clientConfig from "../client.config.ts";
+import { getProgrammaticPages } from "../lib/programmatic.ts";
 
 export const prerender = false;
 
@@ -25,6 +26,26 @@ export const GET: APIRoute = async () => {
   const posts = (await getCollection("posts"))
     .filter((p) => p.data.published)
     .sort((a, b) => +b.data.date - +a.data.date);
+
+  // Programmatic pages section
+  const programmatic = await getProgrammaticPages();
+  if (programmatic.pages.length > 0) {
+    sections.push({
+      title: "Usługi w okolicach",
+      links: [
+        { url: `${base}/uslugi`, label: "Mapa usług", description: "Wszystkie usługi z podziałem na miejscowości" },
+        ...programmatic.pages.map((p) => {
+          const sSlug = p.combo.service.slug;
+          const lSlug = p.combo.location.slug ?? p.combo.location.name.toLowerCase();
+          return {
+            url: `${base}/uslugi/${sSlug}/${lSlug}`,
+            label: `${p.combo.service.name} — ${p.combo.location.name}`,
+            description: p.slots.description.slice(0, 140),
+          };
+        }),
+      ],
+    });
+  }
 
   if (posts.length > 0) {
     sections.push({

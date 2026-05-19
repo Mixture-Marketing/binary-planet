@@ -3,6 +3,7 @@ import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
 
 import clientConfig from "../client.config.ts";
+import { getProgrammaticPages } from "../lib/programmatic.ts";
 
 export const prerender = false;
 
@@ -26,6 +27,20 @@ export const GET: APIRoute = async () => {
       loc: `${base}/aktualnosci/${post.id}`,
       lastmod: post.data.date.toISOString().slice(0, 10),
       priority: 0.6,
+      changefreq: "monthly",
+    });
+  }
+
+  // Programmatic service × location pages
+  entries.push({ loc: `${base}/uslugi`, lastmod: today, priority: 0.8, changefreq: "monthly" });
+  const programmatic = await getProgrammaticPages();
+  for (const page of programmatic.pages) {
+    const sSlug = page.combo.service.slug;
+    const lSlug = page.combo.location.slug ?? page.combo.location.name.toLowerCase();
+    entries.push({
+      loc: `${base}/uslugi/${sSlug}/${lSlug}`,
+      lastmod: today,
+      priority: 0.7,
       changefreq: "monthly",
     });
   }

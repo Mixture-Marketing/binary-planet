@@ -1,0 +1,179 @@
+---
+import CraftsmanLayout from "../../../themes/craftsman/layouts/CraftsmanLayout.astro";
+import BreadcrumbNav from "../../../themes/craftsman/components/BreadcrumbNav.astro";
+import { programmaticSeo } from "../../../lib/seo.ts";
+import { getProgrammaticPages } from "../../../lib/programmatic.ts";
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const result = await getProgrammaticPages();
+  return result.pages.map((page) => ({
+    params: {
+      service: page.combo.service.slug,
+      location: page.combo.location.slug ?? page.combo.location.name.toLowerCase(),
+    },
+    props: { page },
+  }));
+}
+
+const { page } = Astro.props;
+const slots = page.slots;
+const service = page.combo.service;
+const location = page.combo.location;
+const locationSlug = location.slug ?? location.name.toLowerCase();
+
+const { meta, jsonLd } = programmaticSeo({
+  path: `/uslugi/${service.slug}/${locationSlug}`,
+  title: slots.title,
+  description: slots.description,
+  h1: slots.h1,
+  serviceName: service.name,
+  serviceSlug: service.slug,
+  locationName: location.name,
+  faqs: slots.faqs,
+});
+
+// Naive markdown → HTML for body (h2/h3/p/strong/ol/li/blockquote-safe).
+// Real markdown processing would use astro:content rendered MDX, but
+// programmatic content is built in-memory — small render footprint is fine.
+function renderBody(md: string): string {
+  const lines = md.split("\n");
+  const out: string[] = [];
+  let inList = false;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) {
+      if (inList) {
+        out.push("</ol>");
+        inList = false;
+      }
+      continue;
+    }
+    if (line.startsWith("### ")) {
+      if (inList) { out.push("</ol>"); inList = false; }
+      out.push(`<h3>${escape(line.slice(4))}</h3>`);
+    } else if (line.startsWith("## ")) {
+      if (inList) { out.push("</ol>"); inList = false; }
+      out.push(`<h2>${escape(line.slice(3))}</h2>`);
+    } else if (/^\d+\.\s/.test(line)) {
+      if (!inList) { out.push("<ol>"); inList = true; }
+      out.push(`<li>${inlineMd(line.replace(/^\d+\.\s/, ""))}</li>`);
+    } else {
+      if (inList) { out.push("</ol>"); inList = false; }
+      out.push(`<p>${inlineMd(line)}</p>`);
+    }
+  }
+  if (inList) out.push("</ol>");
+  return out.join("\n");
+}
+function escape(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function inlineMd(s: string): string {
+  return escape(s)
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+}
+
+const bodyHtml = renderBody(slots.body);
+---
+
+<CraftsmanLayout meta={meta} jsonLd={jsonLd}>
+  <BreadcrumbNav
+    items={[
+      { name: "Strona główna", url: "/" },
+      { name: "Usługi", url: "/uslugi" },
+      { name: service.name, url: `/uslugi/${service.slug}` },
+      { name: location.name },
+    ]}
+  />
+  <article class="container-px" style="padding-block: 1.5rem 3rem; max-width: 52rem;">
+    <header style="margin-bottom: 2rem;">
+      <h1 style="margin: 0 0 0.75rem 0; line-height: 1.15;">{slots.h1}</h1>
+      <p style="margin: 0; font-size: 1.15rem; color: var(--color-text-muted); line-height: 1.5;">
+        {slots.hero}
+      </p>
+      <div style="margin-top: 1.25rem;">
+        <a
+          href={`tel:${slots.ctaText.replace(/[^\d+]/g, "")}`}
+          class="btn-primary"
+          data-track-event="phone_click"
+          data-track-position="programmatic_hero"
+          aria-label={slots.ctaText}
+        >
+          📞 {slots.ctaText}
+        </a>
+      </div>
+    </header>
+
+    <div class="prose" style="line-height: 1.65;" set:html={bodyHtml}></div>
+
+    {slots.faqs.length > 0 && (
+      <section style="margin-top: 2.5rem;">
+        <h2 style="margin: 0 0 1rem 0;">Najczęstsze pytania — {location.name}</h2>
+        <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem;">
+          {slots.faqs.map((f) => (
+            <li>
+              <details
+                style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px;"
+              >
+                <summary style="padding: 1rem 1.25rem; cursor: pointer; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 1rem;">
+                  <span>{f.question}</span>
+                  <span aria-hidden="true" style="color: var(--color-text-muted);">+</span>
+                </summary>
+                <p style="padding: 0 1.25rem 1.25rem 1.25rem; margin: 0; color: var(--color-text); line-height: 1.6;">
+                  {f.answer}
+                </p>
+              </details>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    {slots.testimonials.length > 0 && (
+      <section style="margin-top: 2.5rem;">
+        <h2 style="margin: 0 0 1rem 0;">Opinia klienta</h2>
+        {slots.testimonials.map((t) => (
+          <blockquote style="border-left: 3px solid var(--color-brand); padding: 0.5rem 1rem; margin: 0; background: var(--color-surface);">
+            <p style="margin: 0; font-style: italic;">„{t.text}"</p>
+            <footer style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--color-text-muted);">
+              — {t.author} {t.date && <span>· {t.date}</span>} · {"★".repeat(t.rating)}
+            </footer>
+          </blockquote>
+        ))}
+      </section>
+    )}
+
+    {slots.landmarks.length > 0 && (
+      <section style="margin-top: 2.5rem;">
+        <h2 style="margin: 0 0 1rem 0;">Okolice które obsługuję</h2>
+        <ul style="list-style: none; padding: 0; margin: 0;">
+          {slots.landmarks.map((l) => (
+            <li style="padding: 0.6rem 0; border-bottom: 1px solid var(--color-border);">
+              <strong>{l.name}</strong>
+              <span style="color: var(--color-text-muted);"> — {l.context}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    <p style="margin-top: 2.5rem;">
+      <a href="/uslugi" style="color: var(--color-brand);">← Wszystkie usługi w okolicy</a>
+    </p>
+  </article>
+</CraftsmanLayout>
+
+<style>
+  .prose :global(h2) { margin: 2rem 0 0.75rem 0; font-size: 1.5rem; }
+  .prose :global(h3) { margin: 1.5rem 0 0.5rem 0; font-size: 1.2rem; }
+  .prose :global(p) { margin: 0.75rem 0; }
+  .prose :global(ol) { margin: 0.75rem 0; padding-left: 1.5rem; }
+  .prose :global(li) { margin: 0.25rem 0; }
+  .prose :global(a) { color: var(--color-brand); }
+  .prose :global(strong) { font-weight: 700; }
+  details[open] summary span[aria-hidden="true"] { transform: rotate(45deg); }
+  details summary::-webkit-details-marker { display: none; }
+</style>

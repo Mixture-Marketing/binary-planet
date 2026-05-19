@@ -1,0 +1,92 @@
+---
+import CraftsmanLayout from "../../themes/craftsman/layouts/CraftsmanLayout.astro";
+import BreadcrumbNav from "../../themes/craftsman/components/BreadcrumbNav.astro";
+import { uslugiHubSeo } from "../../lib/seo.ts";
+import { getProgrammaticPages } from "../../lib/programmatic.ts";
+
+export const prerender = true;
+
+const { meta, jsonLd } = uslugiHubSeo();
+const result = await getProgrammaticPages();
+
+// Group pages by service for a clean matrix layout
+type Row = {
+  serviceName: string;
+  serviceSlug: string;
+  servicePrice?: string;
+  locations: Array<{ name: string; slug: string; priority: number }>;
+};
+const grouped = new Map<string, Row>();
+for (const page of result.pages) {
+  const sSlug = page.combo.service.slug;
+  if (!grouped.has(sSlug)) {
+    const row: Row = {
+      serviceName: page.combo.service.name,
+      serviceSlug: sSlug,
+      locations: [],
+    };
+    if (page.combo.service.priceFrom) row.servicePrice = page.combo.service.priceFrom;
+    grouped.set(sSlug, row);
+  }
+  grouped.get(sSlug)!.locations.push({
+    name: page.combo.location.name,
+    slug: page.combo.location.slug ?? page.combo.location.name.toLowerCase(),
+    priority: page.combo.priority,
+  });
+}
+const rows = Array.from(grouped.values()).sort((a, b) =>
+  Math.max(...b.locations.map((l) => l.priority)) -
+  Math.max(...a.locations.map((l) => l.priority)),
+);
+---
+
+<CraftsmanLayout meta={meta} jsonLd={jsonLd}>
+  <BreadcrumbNav items={[{ name: "Strona główna", url: "/" }, { name: "Usługi" }]} />
+  <section class="container-px" style="padding-block: 1.5rem 3rem;">
+    <header style="margin-bottom: 2rem;">
+      <h1 style="margin: 0 0 0.5rem 0;">Usługi według lokalizacji</h1>
+      <p style="margin: 0; color: var(--color-text-muted); max-width: 42rem;">
+        Wybierz usługę i miejscowość — szczegóły, czasy dojazdu i ceny w Twojej okolicy.
+        Standardowa strefa obsługi: Rzeszów + 5 sąsiednich miejscowości.
+      </p>
+    </header>
+
+    <div style="display: flex; flex-direction: column; gap: 2rem;">
+      {rows.map((row) => (
+        <article style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; padding: 1.5rem;">
+          <header style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: baseline; justify-content: space-between; margin-bottom: 1rem;">
+            <h2 style="margin: 0; font-size: 1.25rem;">
+              <a href={`/uslugi/${row.serviceSlug}/${row.locations[0]!.slug}`} style="color: var(--color-text); text-decoration: none;">
+                {row.serviceName}
+              </a>
+            </h2>
+            {row.servicePrice && (
+              <span style="font-size: 0.95rem; color: var(--color-text-muted);">
+                {row.servicePrice}
+              </span>
+            )}
+          </header>
+          <ul style="display: flex; flex-wrap: wrap; gap: 0.5rem; list-style: none; margin: 0; padding: 0;">
+            {row.locations.map((loc) => (
+              <li>
+                <a
+                  href={`/uslugi/${row.serviceSlug}/${loc.slug}`}
+                  style="display: inline-block; padding: 0.5rem 0.9rem; background: rgba(0,0,0,0.04); color: var(--color-text); text-decoration: none; border-radius: 6px; font-size: 0.9rem;"
+                >
+                  {loc.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </article>
+      ))}
+    </div>
+
+    {result.cappedOut.length > 0 && (
+      <p style="margin-top: 2rem; color: var(--color-text-muted); font-size: 0.85rem;">
+        Pokazuje {result.pages.length} stron. Pozostałe {result.cappedOut.length} kombinacji
+        zostanie odblokowanych po pierwszych 6 miesiącach (cap HCU).
+      </p>
+    )}
+  </section>
+</CraftsmanLayout>

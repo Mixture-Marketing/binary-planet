@@ -284,6 +284,75 @@ export function faqSeo(faqs: ReadonlyArray<FaqItem>): PageSeoBundle {
   return { meta, jsonLd };
 }
 
+/** Programmatic service × location page — LocalBusiness + Service + FAQPage + Breadcrumb. */
+export interface ProgrammaticSeoInput {
+  path: string; // e.g. /uslugi/awaryjne-otwieranie-zamkow/rzeszow
+  title: string;
+  description: string;
+  h1: string;
+  serviceName: string;
+  serviceSlug: string;
+  locationName: string;
+  faqs: ReadonlyArray<FaqItem>;
+  body?: string;
+}
+
+export function programmaticSeo(input: ProgrammaticSeoInput): PageSeoBundle {
+  const url = canonicalUrl(input.path);
+  const meta = baseMetaInput({
+    path: input.path,
+    title: input.title,
+    description: input.description,
+  });
+
+  const jsonLd: unknown[] = [
+    buildLocalBusinessJsonLd(),
+    webPageSchema({
+      url,
+      name: input.title,
+      description: input.description,
+      isPartOf: baseUrl,
+      inLanguage: "pl-PL",
+    }),
+    breadcrumbSchema([
+      { name: "Strona główna", url: canonicalUrl("/") },
+      { name: "Usługi", url: canonicalUrl("/uslugi") },
+      { name: input.serviceName, url: canonicalUrl(`/uslugi/${input.serviceSlug}`) },
+      { name: input.locationName },
+    ]),
+  ];
+  if (input.faqs.length > 0) {
+    jsonLd.push(faqPageSchema({ url, items: input.faqs }));
+  }
+  return { meta, jsonLd };
+}
+
+/** /uslugi hub index — WebPage + Breadcrumb. */
+export function uslugiHubSeo(): PageSeoBundle {
+  const path = "/uslugi";
+  const meta = baseMetaInput({
+    path,
+    title: `Usługi — ${siteName}`,
+    description: `Pełna mapa usług ${siteName} z podziałem na miejscowości: ${clientConfig.location.serviceArea.join(", ")}. ${clientConfig.business.tagline}.`,
+  });
+  return {
+    meta,
+    jsonLd: [
+      webPageSchema({
+        url: canonicalUrl(path),
+        name: meta.title,
+        description: meta.description,
+        isPartOf: baseUrl,
+        inLanguage: "pl-PL",
+      }),
+      breadcrumbSchema([
+        { name: "Strona główna", url: canonicalUrl("/") },
+        { name: "Usługi" },
+      ]),
+    ],
+  };
+}
+
 /** Generic 404 — no JSON-LD, just meta. */
 export function notFoundSeo(): PageSeoBundle {
   return {
