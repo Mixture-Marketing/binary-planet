@@ -20,6 +20,13 @@ assets = { directory = "./dist", binding = "ASSETS" }
 # id = "<KV_ID>"
 
 # ---------------------------------------------------------------------------
+# Workers AI binding (chatbot_basic / chatbot_pro addons)
+# Free tier: ~10k Neurons/day. No setup required — just enable the binding.
+# ---------------------------------------------------------------------------
+[ai]
+binding = "AI"
+
+# ---------------------------------------------------------------------------
 # Vars (per-deploy; filled by provisioning workflow)
 # ---------------------------------------------------------------------------
 [vars]
