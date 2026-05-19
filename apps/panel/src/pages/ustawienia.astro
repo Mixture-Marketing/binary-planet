@@ -1,0 +1,87 @@
+---
+import PanelLayout from "../layouts/PanelLayout.astro";
+import Icon from "../components/Icon.astro";
+import { getClientFullConfig, getClientContact } from "../lib/db.ts";
+
+const env = Astro.locals.runtime?.env;
+const client = Astro.locals.client;
+if (!env?.DB || !client) return new Response("Runtime not ready", { status: 500 });
+
+const cfg = await getClientFullConfig(env.DB, client.id);
+const contact = await getClientContact(env.DB, client.id);
+---
+
+<PanelLayout title="Ustawienia">
+  <header style="margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.6rem;">
+      <Icon name="settings" size={28} /> Ustawienia
+    </h1>
+    <p style="margin: 0; color: var(--c-text-muted);">
+      Aktualne dane Twojej firmy w MixtureMarketing. Edycja przez kontakt z agencją (v0.2 — edycja w panelu).
+    </p>
+  </header>
+
+  {cfg && (
+    <section class="card" style="margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem 0;">Dane firmy</h2>
+      <dl style="display: grid; grid-template-columns: max-content 1fr; gap: 0.6rem 1.5rem; font-size: 0.9rem;">
+        <dt style="color: var(--c-text-muted);">Nazwa</dt><dd style="margin: 0;">{cfg.business_name}</dd>
+        {cfg.legal_name && <><dt style="color: var(--c-text-muted);">Nazwa prawna</dt><dd style="margin: 0;">{cfg.legal_name}</dd></>}
+        {cfg.nip && <><dt style="color: var(--c-text-muted);">NIP</dt><dd style="margin: 0; font-family: ui-monospace, monospace;">{cfg.nip}</dd></>}
+        <dt style="color: var(--c-text-muted);">Branża</dt><dd style="margin: 0;">{cfg.industry}</dd>
+        <dt style="color: var(--c-text-muted);">Miasto</dt><dd style="margin: 0;">{cfg.city}{cfg.postal_code ? `, ${cfg.postal_code}` : ""}</dd>
+        {cfg.voivodeship && <><dt style="color: var(--c-text-muted);">Województwo</dt><dd style="margin: 0;">{cfg.voivodeship}</dd></>}
+        {cfg.primary_domain && (
+          <><dt style="color: var(--c-text-muted);">Domena</dt><dd style="margin: 0;"><a href={`https://${cfg.primary_domain}`} target="_blank" rel="noopener" style="color: var(--c-brand); display: inline-flex; align-items: center; gap: 0.3rem;">{cfg.primary_domain} <Icon name="external-link" size={12} /></a></dd></>
+        )}
+      </dl>
+    </section>
+  )}
+
+  <section class="card" style="margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem 0;">Pakiet i status</h2>
+    <dl style="display: grid; grid-template-columns: max-content 1fr; gap: 0.6rem 1.5rem; font-size: 0.9rem;">
+      <dt style="color: var(--c-text-muted);">Pakiet</dt>
+      <dd style="margin: 0;"><span class="badge badge-brand">{cfg?.tier ?? client.tier}</span></dd>
+      <dt style="color: var(--c-text-muted);">Status</dt>
+      <dd style="margin: 0;"><span class={`badge ${cfg?.status === "active" ? "badge-success" : "badge-warning"}`}>{cfg?.status ?? client.status}</span></dd>
+      {cfg?.activated_at && (
+        <><dt style="color: var(--c-text-muted);">Aktywacja</dt><dd style="margin: 0;">{new Date(cfg.activated_at).toLocaleDateString("pl-PL")}</dd></>
+      )}
+      {cfg?.has_lock_in === 1 && cfg.lock_in_until && (
+        <><dt style="color: var(--c-text-muted);">Lock-in do</dt><dd style="margin: 0;">{new Date(cfg.lock_in_until).toLocaleDateString("pl-PL")}</dd></>
+      )}
+    </dl>
+  </section>
+
+  {contact && (
+    <section class="card" style="margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem 0;">Kontakt</h2>
+      <dl style="display: grid; grid-template-columns: max-content 1fr; gap: 0.6rem 1.5rem; font-size: 0.9rem;">
+        <dt style="color: var(--c-text-muted);">Osoba kontaktowa</dt><dd style="margin: 0;">{contact.contact_name}</dd>
+        <dt style="color: var(--c-text-muted);">Email (hash)</dt>
+        <dd style="margin: 0; font-family: ui-monospace, monospace; font-size: 0.8rem; color: var(--c-text-muted);">{contact.contact_email_hash.slice(0, 16)}…</dd>
+        {contact.contact_phone_hash && (
+          <><dt style="color: var(--c-text-muted);">Telefon (hash)</dt><dd style="margin: 0; font-family: ui-monospace, monospace; font-size: 0.8rem; color: var(--c-text-muted);">{contact.contact_phone_hash.slice(0, 16)}…</dd></>
+        )}
+      </dl>
+      <p style="margin-top: 1rem; color: var(--c-text-muted); font-size: 0.85rem;">
+        Aby zmienić dane kontaktowe, napisz na <a href="mailto:info@mixturemarketing.pl" style="color: var(--c-brand);">info@mixturemarketing.pl</a>.
+      </p>
+    </section>
+  )}
+
+  <details class="card">
+    <summary style="cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;">
+      <Icon name="info" size={16} /> Co możesz edytować w v0.2?
+    </summary>
+    <ul style="margin-top: 1rem; padding-left: 1.5rem; color: var(--c-text-muted); font-size: 0.9rem; line-height: 1.7;">
+      <li>Godziny otwarcia + numer telefonu</li>
+      <li>Treść hero + tagline strony</li>
+      <li>Opis usług (krótki + długi)</li>
+      <li>Zdjęcia w galerii + logo firmy</li>
+      <li>Treści blogowe (Sveltia CMS — już dostępne na <code>twojadomena.pl/admin/</code>)</li>
+      <li>Lista usług + cennik</li>
+    </ul>
+  </details>
+</PanelLayout>

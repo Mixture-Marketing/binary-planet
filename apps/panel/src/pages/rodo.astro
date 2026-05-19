@@ -1,0 +1,102 @@
+---
+import PanelLayout from "../layouts/PanelLayout.astro";
+import Icon from "../components/Icon.astro";
+import { getConsentSummary } from "../lib/db.ts";
+
+const env = Astro.locals.runtime?.env;
+const client = Astro.locals.client;
+if (!env?.DB || !client) return new Response("Runtime not ready", { status: 500 });
+
+const consents = await getConsentSummary(env.DB, client.id);
+---
+
+<PanelLayout title="RODO">
+  <header style="margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.6rem;">
+      <Icon name="shield-check" size={28} /> RODO i prywatność
+    </h1>
+    <p style="margin: 0; color: var(--c-text-muted);">
+      Twoje obowiązki i prawa wynikające z RODO. MixtureMarketing działa jako podmiot przetwarzający (Art. 28).
+    </p>
+  </header>
+
+  <section style="display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 2rem;">
+    <article class="card">
+      <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase;">Leady w bazie</p>
+      <p style="margin: 0.5rem 0 0 0; font-size: 1.75rem; font-weight: 800;">{consents.total_leads}</p>
+    </article>
+    <article class="card">
+      <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase;">Zgody marketingowe</p>
+      <p style="margin: 0.5rem 0 0 0; font-size: 1.75rem; font-weight: 800;">{consents.consent_marketing_count}</p>
+      <p style="margin: 0; font-size: 0.8rem; color: var(--c-text-muted);">
+        {consents.total_leads > 0 ? `${Math.round((consents.consent_marketing_count / consents.total_leads) * 100)}% leadów` : ""}
+      </p>
+    </article>
+    <article class="card">
+      <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase;">Retencja default</p>
+      <p style="margin: 0.5rem 0 0 0; font-size: 1.75rem; font-weight: 800;">24 mc</p>
+      <p style="margin: 0; font-size: 0.8rem; color: var(--c-text-muted);">automatyczne usunięcie</p>
+    </article>
+  </section>
+
+  <section class="card" style="margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem 0;">Dokumenty</h2>
+    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem;">
+      <li>
+        <a href="https://mixturemarketing.pl/polityka-prywatnosci" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 0.4rem; color: var(--c-brand); text-decoration: none; font-weight: 600;">
+          <Icon name="file-text" size={16} /> Polityka prywatności <Icon name="external-link" size={12} />
+        </a>
+      </li>
+      <li>
+        <a href="https://mixturemarketing.pl/dpa" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 0.4rem; color: var(--c-brand); text-decoration: none; font-weight: 600;">
+          <Icon name="file-text" size={16} /> Umowa powierzenia przetwarzania (DPA) <Icon name="external-link" size={12} />
+        </a>
+      </li>
+      <li>
+        <a href="https://mixturemarketing.pl/regulamin" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 0.4rem; color: var(--c-brand); text-decoration: none; font-weight: 600;">
+          <Icon name="file-text" size={16} /> Regulamin usługi <Icon name="external-link" size={12} />
+        </a>
+      </li>
+    </ul>
+  </section>
+
+  <section class="card" style="margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 0.5rem 0;">Twoje obowiązki jako administratora danych</h2>
+    <p style="color: var(--c-text-muted); font-size: 0.9rem; margin: 0 0 1rem 0;">
+      Jesteś administratorem danych osobowych klientów którzy wypełniają formularz na Twojej stronie.
+      MixtureMarketing przetwarza je w Twoim imieniu jako procesor.
+    </p>
+    <ul style="margin: 0; padding-left: 1.5rem; color: var(--c-text); font-size: 0.9rem; line-height: 1.7;">
+      <li>Realizacja praw osób fizycznych (dostęp / sprostowanie / usunięcie)</li>
+      <li>Zgłaszanie naruszeń ochrony danych w 72h (Art. 33)</li>
+      <li>Prowadzenie rejestru czynności przetwarzania (RCPD)</li>
+      <li>Reagowanie na zgłoszenia od osób — wymagamy odpowiedzi w 30 dni</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 0.5rem 0;">Zgłoszenie usunięcia danych klienta końcowego</h2>
+    <p style="color: var(--c-text-muted); font-size: 0.9rem; margin: 0 0 1rem 0;">
+      Jeśli osoba fizyczna chce żebyś usunął jej dane — wypełnij to zgłoszenie. Usuniemy zaszyfrowane dane
+      z bazy w ciągu 72 godzin (zachowując hash do dedup + log audytowy).
+    </p>
+    <form method="POST" action="/api/rodo/erasure" style="display: flex; flex-direction: column; gap: 0.75rem;">
+      <label style="display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem;">
+        Email osoby do usunięcia
+        <input type="email" name="email" required placeholder="jan.kowalski@example.com"
+               style="padding: 0.6rem 0.8rem; border: 1px solid var(--c-border); border-radius: 6px;" />
+      </label>
+      <label style="display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem;">
+        Powód (audyt)
+        <textarea name="reason" rows="2" placeholder="np. żądanie usunięcia danych RODO Art. 17"
+                  style="padding: 0.6rem 0.8rem; border: 1px solid var(--c-border); border-radius: 6px;"></textarea>
+      </label>
+      <button type="submit" class="btn btn-primary" style="align-self: flex-start;" disabled>
+        <Icon name="x-circle" size={16} /> Zgłoś usunięcie (v0.2)
+      </button>
+      <p style="margin: 0; color: var(--c-text-muted); font-size: 0.8rem;">
+        Funkcja aktywna w v0.2. Tymczasowo — wyślij prośbę na <a href="mailto:rodo@mixturemarketing.pl" style="color: var(--c-brand);">rodo@mixturemarketing.pl</a>.
+      </p>
+    </form>
+  </section>
+</PanelLayout>

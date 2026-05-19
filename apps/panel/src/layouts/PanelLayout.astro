@@ -1,0 +1,35 @@
+---
+import "../styles/panel.css";
+
+import Sidebar from "../components/Sidebar.astro";
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const client = Astro.locals.client;
+const nonce = Astro.locals.nonce ?? "";
+if (!client) {
+  return Astro.redirect("/login");
+}
+---
+
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} — {client.businessName}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <div style="display: grid; grid-template-columns: 260px 1fr; min-height: 100vh;">
+      <Sidebar client={client} />
+      <main style="padding: 2rem 2.5rem; max-width: 1400px; width: 100%;" data-nonce={nonce}>
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>

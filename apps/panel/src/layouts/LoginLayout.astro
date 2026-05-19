@@ -1,0 +1,31 @@
+---
+import "../styles/panel.css";
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body style="min-height: 100vh; display: grid; place-items: center; padding: 2rem;">
+    <div style="max-width: 28rem; width: 100%;">
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem 0;">MixtureMarketing</h1>
+        <p style="color: var(--c-text-muted); margin: 0;">Panel klienta</p>
+      </div>
+      <div class="card">
+        <slot />
+      </div>
+    </div>
+  </body>
+</html>

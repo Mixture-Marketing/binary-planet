@@ -1,0 +1,35 @@
+---
+import { buildSessionCookie, verifyMagicLink } from "../../lib/auth.ts";
+
+const url = new URL(Astro.request.url);
+const token = url.searchParams.get("token");
+const next = url.searchParams.get("next") ?? "/";
+
+const env = Astro.locals.runtime?.env;
+if (!env?.DB) {
+  return new Response("Runtime not ready", { status: 500 });
+}
+
+if (!token) {
+  return Astro.redirect("/login?error=invalid_token");
+}
+
+const client = await verifyMagicLink(env.DB, token);
+if (!client) {
+  return Astro.redirect("/login?error=invalid_token");
+}
+
+const sessionId = token.split(".")[0];
+if (!sessionId) {
+  return Astro.redirect("/login?error=invalid_token");
+}
+
+// Astro dev runs HTTP; CF prod is HTTPS. We mark Secure unconditionally — browsers
+// permit Secure cookies over localhost.
+const cookie = buildSessionCookie(sessionId, true);
+const headers = new Headers({
+  "Set-Cookie": cookie,
+  Location: next,
+});
+return new Response(null, { status: 302, headers });
+---

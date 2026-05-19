@@ -1,0 +1,77 @@
+---
+import PanelLayout from "../layouts/PanelLayout.astro";
+import Icon from "../components/Icon.astro";
+
+const env = Astro.locals.runtime?.env;
+const client = Astro.locals.client;
+if (!env?.DB || !client) return new Response("Runtime not ready", { status: 500 });
+
+// v0.2 — list from `invoices` table joined with Fakturownia PDFs in R2.
+// For v0.1 there are no invoices yet (Track 6 = Stripe + Fakturownia).
+const invoices: Array<{ id: string; number: string; issued_at: string; gross_pln: number; status: string; pdf_url: string }> = [];
+---
+
+<PanelLayout title="Faktury">
+  <header style="margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.6rem;">
+      <Icon name="file-text" size={28} /> Faktury
+    </h1>
+    <p style="margin: 0; color: var(--c-text-muted);">
+      Historia faktur za subskrypcję. Generowane automatycznie 1. dnia każdego miesiąca.
+    </p>
+  </header>
+
+  <div class="card" style="padding: 0;">
+    {invoices.length === 0 ? (
+      <div style="padding: 3rem 2rem; text-align: center;">
+        <p style="margin: 0 0 0.5rem 0; color: var(--c-text-muted);">Brak wystawionych faktur.</p>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted);">
+          Pierwsza faktura zostanie wystawiona 1. dnia miesiąca po aktywacji subskrypcji.
+        </p>
+      </div>
+    ) : (
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Numer</th>
+            <th>Wystawiono</th>
+            <th>Kwota brutto</th>
+            <th>Status</th>
+            <th>PDF</th>
+          </tr>
+        </thead>
+        <tbody>
+          {invoices.map((inv) => (
+            <tr>
+              <td style="font-family: ui-monospace, monospace; font-size: 0.85rem;">{inv.number}</td>
+              <td>{new Date(inv.issued_at).toLocaleDateString("pl-PL")}</td>
+              <td>{inv.gross_pln.toLocaleString("pl-PL")} zł</td>
+              <td>
+                <span class={`badge ${inv.status === "paid" ? "badge-success" : "badge-warning"}`}>{inv.status}</span>
+              </td>
+              <td>
+                <a href={inv.pdf_url} style="color: var(--c-brand); display: inline-flex; align-items: center; gap: 0.3rem;">
+                  <Icon name="file-text" size={14} /> Pobierz
+                </a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+
+  <details class="card" style="margin-top: 1.5rem;">
+    <summary style="cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;">
+      <Icon name="info" size={16} /> Jak są wystawiane faktury?
+    </summary>
+    <p style="margin-top: 1rem; color: var(--c-text-muted); font-size: 0.9rem; line-height: 1.6;">
+      Faktury są generowane automatycznie przez Fakturownia.pl 1. dnia każdego miesiąca po pobraniu opłaty
+      przez Stripe lub Przelewy24. Dostajesz email z PDF jednocześnie z wystawieniem. PDF jest też dostępny tutaj
+      do pobrania przez 7 lat (wymogi księgowe).
+    </p>
+    <p style="color: var(--c-text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+      Pytania o rozliczenia: <a href="mailto:rozliczenia@mixturemarketing.pl" style="color: var(--c-brand);">rozliczenia@mixturemarketing.pl</a>.
+    </p>
+  </details>
+</PanelLayout>

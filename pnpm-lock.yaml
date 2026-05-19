@@ -101,6 +101,46 @@ importers:
         specifier: ^3.91.0
         version: 3.114.17(@cloudflare/workers-types@4.20260518.1)
 
+  apps/panel:
+    dependencies:
+      '@astrojs/cloudflare':
+        specifier: ^12.2.0
+        version: 12.6.13(@types/node@22.19.19)(astro@5.18.1(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.4)(typescript@5.9.3)(yaml@2.9.0))(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0)
+      '@mixturemarketing/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@mixturemarketing/web-core':
+        specifier: workspace:*
+        version: link:../../packages/web-core
+      '@tailwindcss/vite':
+        specifier: ^4.0.0
+        version: 4.3.0(vite@6.4.2(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))
+      astro:
+        specifier: ^5.1.0
+        version: 5.18.1(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.4)(typescript@5.9.3)(yaml@2.9.0)
+      tailwindcss:
+        specifier: ^4.0.0
+        version: 4.3.0
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
+    devDependencies:
+      '@astrojs/check':
+        specifier: ^0.9.4
+        version: 0.9.9(prettier@3.8.3)(typescript@5.9.3)
+      '@cloudflare/workers-types':
+        specifier: ^4.20241127.0
+        version: 4.20260518.1
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.5
+        version: 2.1.9(@types/node@22.19.19)(happy-dom@15.11.7)(lightningcss@1.32.0)
+      wrangler:
+        specifier: ^3.91.0
+        version: 3.114.17(@cloudflare/workers-types@4.20260518.1)
+
   apps/starter:
     dependencies:
       '@astrojs/cloudflare':

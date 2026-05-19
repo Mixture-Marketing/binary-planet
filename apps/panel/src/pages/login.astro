@@ -1,0 +1,67 @@
+---
+import LoginLayout from "../layouts/LoginLayout.astro";
+import Icon from "../components/Icon.astro";
+
+const url = new URL(Astro.request.url);
+const next = url.searchParams.get("next") ?? "/";
+const sent = url.searchParams.get("sent") === "1";
+const error = url.searchParams.get("error");
+
+const errorMessages: Record<string, string> = {
+  invalid_email: "Nieprawidłowy format email.",
+  not_found: "Nie znaleźliśmy klienta z tym adresem email. Sprawdź czy używasz adresu podanego przy zakładaniu konta.",
+  send_failed: "Nie udało się wysłać emaila. Spróbuj za chwilę.",
+  invalid_token: "Link wygasł lub został już użyty. Wygeneruj nowy.",
+};
+---
+
+<LoginLayout title="Logowanie — Panel klienta">
+  {sent ? (
+    <>
+      <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 0.5rem 0; color: var(--c-success); display: flex; align-items: center; gap: 0.5rem;">
+        <Icon name="check-circle-2" size={22} /> Wysłano link logowania
+      </h2>
+      <p style="color: var(--c-text-muted); margin: 0 0 1rem 0;">
+        Sprawdź skrzynkę e-mail. Link wygaśnie za 15 minut.
+      </p>
+      <p style="font-size: 0.85rem; color: var(--c-text-muted); margin: 0;">
+        Nie widzisz emaila? Sprawdź spam lub <a href="/login" style="color: var(--c-brand); text-decoration: underline;">spróbuj ponownie</a>.
+      </p>
+    </>
+  ) : (
+    <>
+      <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 0.5rem 0;">Zaloguj się</h2>
+      <p style="color: var(--c-text-muted); margin: 0 0 1.5rem 0; font-size: 0.9rem;">
+        Wpisz adres email podany przy podpisywaniu umowy. Wyślemy link logowania (ważny 15 minut).
+      </p>
+
+      {error && errorMessages[error] && (
+        <p style="background: #fef2f2; color: var(--c-danger); padding: 0.75rem; border-radius: 6px; margin: 0 0 1rem 0; font-size: 0.9rem;">
+          {errorMessages[error]}
+        </p>
+      )}
+
+      <form method="POST" action="/api/auth/send-link">
+        <input type="hidden" name="next" value={next} />
+        <label style="display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem;">
+          <span style="font-size: 0.85rem; font-weight: 600;">Adres email</span>
+          <input
+            type="email"
+            name="email"
+            required
+            autocomplete="email"
+            placeholder="kontakt@twojafirma.pl"
+            style="padding: 0.65rem 0.8rem; border: 1px solid var(--c-border); border-radius: 6px; font-size: 0.95rem;"
+          />
+        </label>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          Wyślij link logowania
+        </button>
+      </form>
+
+      <p style="font-size: 0.8rem; color: var(--c-text-muted); margin: 1.5rem 0 0 0; text-align: center;">
+        Problem z logowaniem? Skontaktuj się z nami: <a href="mailto:info@mixturemarketing.pl" style="color: var(--c-brand);">info@mixturemarketing.pl</a>
+      </p>
+    </>
+  )}
+</LoginLayout>
