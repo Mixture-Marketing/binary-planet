@@ -12,6 +12,7 @@
 import { Logger } from "@mixturemarketing/logger";
 
 import type { Env } from "../env.js";
+import { generateAiBlogDrafts } from "./ai-blog-draft.js";
 import { backupDaily } from "./backup.js";
 import { healthCheck } from "./health-check.js";
 import { provisionPending } from "./provision-client.js";
@@ -19,6 +20,7 @@ import { provisionPending } from "./provision-client.js";
 export type ScheduledJobName =
   | "health_check_5min"
   | "provision_pending_2min"
+  | "ai_blog_weekly"
   | "gsc_daily_pull"
   | "ga4_daily_pull"
   | "gbp_daily_pull"
@@ -31,6 +33,7 @@ export type ScheduledJobName =
 const CRON_ROUTES: Record<string, ScheduledJobName> = {
   "*/5 * * * *": "health_check_5min",
   "*/2 * * * *": "provision_pending_2min",
+  "0 8 * * 1": "ai_blog_weekly",
   "0 2 * * *": "gsc_daily_pull",
   "0 3 * * *": "ga4_daily_pull",
   "0 4 * * *": "gbp_daily_pull",
@@ -90,6 +93,14 @@ export async function runScheduled(event: ScheduledEventLike, env: Env): Promise
         processed = result.processed;
         failed = result.failed;
         if (failed > 0 && failed < processed) status = "partial_success";
+        break;
+      }
+      case "ai_blog_weekly": {
+        const result = await generateAiBlogDrafts(env);
+        processed = result.processed;
+        failed = result.failed;
+        if (failed > 0 && failed < processed) status = "partial_success";
+        log.info("ai_blog.complete", { processed: result.processed, successful: result.successful, skipped: result.skipped, failed: result.failed });
         break;
       }
       // v0.1 stubs — implementations in Faza 5

@@ -16,6 +16,10 @@ export interface GithubResult {
   repo_url?: string;
   /** Commit SHA when committed. */
   commit_sha?: string;
+  /** PR number when PR created. */
+  pr_number?: number;
+  /** PR URL when PR created. */
+  pr_url?: string;
 }
 
 function dryRun(env: Env): boolean {
@@ -123,5 +127,111 @@ export async function githubCommitFile(
     return { ok: true, message: "File committed", commit_sha: json.commit?.sha };
   } catch (e) {
     return { ok: false, message: `GitHub commit fetch failed: ${e instanceof Error ? e.message : "unknown"}` };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Pull Requests — Track 8 (AI blog drafts open PR for klient review)
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a new branch from base, commit a file, open PR. Returns PR URL.
+ * Used by AI blog workflow: each draft = separate branch + PR.
+ */
+export async function githubOpenPullRequest(
+  env: Env,
+  params: {
+    repo_owner: string;
+    repo_name: string;
+    base_branch?: string;
+    new_branch: string;
+    file_path: string;
+    file_content: string;
+    commit_message: string;
+    pr_title: string;
+    pr_body: string;
+  },
+): Promise<GithubResult> {
+  const baseBranch = params.base_branch ?? "main";
+  const repoUrl = `https://github.com/${params.repo_owner}/${params.repo_name}`;
+
+  if (dryRun(env)) {
+    const fakePrNumber = Math.floor(Math.random() * 1000) + 1;
+    return {
+      ok: true,
+      message: `[DRY-RUN] Would open PR in ${repoUrl} (branch ${params.new_branch} from ${baseBranch}, file ${params.file_path})`,
+      pr_number: fakePrNumber,
+      pr_url: `${repoUrl}/pull/${fakePrNumber}`,
+      commit_sha: `dryrun-${Date.now().toString(16)}`,
+    };
+  }
+  if (!env.GITHUB_PAT) return { ok: false, message: "GITHUB_PAT missing" };
+
+  const headers = {
+    "Authorization": `Bearer ${env.GITHUB_PAT}`,
+    "Accept": "application/vnd.github+json",
+    "Content-Type": "application/json",
+    "User-Agent": "mm-control-plane",
+  };
+  const repoApi = `https://api.github.com/repos/${params.repo_owner}/${params.repo_name}`;
+
+  try {
+    // 1. Get base branch SHA
+    const baseRes = await fetch(`${repoApi}/git/ref/heads/${baseBranch}`, { headers });
+    if (!baseRes.ok) {
+      return { ok: false, message: `GH get base ref ${baseRes.status}: ${(await baseRes.text()).slice(0, 200)}` };
+    }
+    const baseRef = (await baseRes.json()) as { object: { sha: string } };
+
+    // 2. Create new branch (POST refs)
+    const newBranchRes = await fetch(`${repoApi}/git/refs`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ ref: `refs/heads/${params.new_branch}`, sha: baseRef.object.sha }),
+    });
+    if (!newBranchRes.ok && newBranchRes.status !== 422 /* already exists */) {
+      return { ok: false, message: `GH create branch ${newBranchRes.status}: ${(await newBranchRes.text()).slice(0, 200)}` };
+    }
+
+    // 3. Commit file on new branch (PUT contents)
+    const fileRes = await fetch(`${repoApi}/contents/${params.file_path}`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({
+        message: params.commit_message,
+        content: btoa(unescape(encodeURIComponent(params.file_content))),
+        branch: params.new_branch,
+      }),
+    });
+    if (!fileRes.ok) {
+      return { ok: false, message: `GH commit file ${fileRes.status}: ${(await fileRes.text()).slice(0, 200)}` };
+    }
+    const fileJson = (await fileRes.json()) as { commit?: { sha?: string } };
+
+    // 4. Open PR
+    const prRes = await fetch(`${repoApi}/pulls`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        title: params.pr_title,
+        head: params.new_branch,
+        base: baseBranch,
+        body: params.pr_body,
+      }),
+    });
+    if (!prRes.ok) {
+      return { ok: false, message: `GH open PR ${prRes.status}: ${(await prRes.text()).slice(0, 200)}` };
+    }
+    const prJson = (await prRes.json()) as { number: number; html_url: string };
+
+    return {
+      ok: true,
+      message: `PR #${prJson.number} opened`,
+      pr_number: prJson.number,
+      pr_url: prJson.html_url,
+      commit_sha: fileJson.commit?.sha,
+    };
+  } catch (e) {
+    return { ok: false, message: `GH PR flow failed: ${e instanceof Error ? e.message : "unknown"}` };
   }
 }

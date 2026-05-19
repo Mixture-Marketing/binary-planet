@@ -29,6 +29,7 @@ SMSAPI_FROM="INFO"
 
 # --- AI ---
 ANTHROPIC_API_KEY=""
+BLOG_AI_DRY_RUN="true"   # Track 8 — set "false" to enable real Anthropic + GH PR creation
 
 # --- SEO / data ---
 DATAFORSEO_LOGIN=""

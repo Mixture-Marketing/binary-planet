@@ -22,6 +22,8 @@ export interface Env {
 
   // Secrets (wrangler secret put)
   ANTHROPIC_API_KEY?: string;
+  /** Skip Anthropic API + GH PR in dev/tests. Default false (auto-skipped if key missing). */
+  BLOG_AI_DRY_RUN?: string;
   DATAFORSEO_LOGIN?: string;
   DATAFORSEO_PASSWORD?: string;
   RESEND_API_KEY?: string;
