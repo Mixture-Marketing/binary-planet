@@ -135,6 +135,11 @@ export interface FormHandlerEnv {
   /** "From" address for Resend emails — must match a verified domain. */
   RESEND_FROM?: string;
 
+  /** SMSAPI.pl OAuth token for sending lead notification SMS to klient. */
+  SMSAPI_TOKEN?: string;
+  /** SMSAPI sender alpha-name (max 11 chars). Default "INFO". */
+  SMSAPI_FROM?: string;
+
   /** Optional per-tenant PII encryption key (32 bytes base64). v0.1 may pass undefined → hash-only. */
   PII_ENCRYPTION_KEY_B64?: string;
 
@@ -158,6 +163,12 @@ export interface FormHandlerConfig {
 
   /** Klient's phone — included in auto-reply for accessibility. */
   contactPhone?: string;
+
+  /** Klient's mobile (E.164) for SMS lead notifications. If absent, SMS dispatch is skipped. */
+  notificationPhone?: string;
+
+  /** Klient city — used in SMS body so klient knows lead is local. */
+  notificationCity?: string;
 
   /** Klient's primary domain — used in CSP allowlist + email signatures. */
   primaryDomain: string;

@@ -22,6 +22,7 @@ import { decodeKey, encryptString, normalizeEmail, sha256Hex } from "./pii.js";
 import { checkSubmitLimits } from "./rate-limit.js";
 import { forwardLeadToKlient } from "./resend.js";
 import { renderConsentText } from "./rodo.js";
+import { sendLeadSmsToKlient } from "./smsapi.js";
 import { verifyTurnstileToken } from "./turnstile.js";
 import { validateLeadInput } from "./validation.js";
 import type {
@@ -283,7 +284,30 @@ async function processSubmit(request: Request, deps: ProcessDeps): Promise<Submi
         )
       : Promise.resolve({ ok: false, error: "resend not configured" });
 
-  const [hubResult, emailResult] = await Promise.all([hubPromise, emailPromise]);
+  // SMS notification — best-effort, parallel with email. Klient sees lead in 30s instead of 6h.
+  const smsPromise =
+    deps.env.SMSAPI_TOKEN && deps.config.notificationPhone
+      ? sendLeadSmsToKlient(
+          {
+            token: deps.env.SMSAPI_TOKEN,
+            ...(deps.env.SMSAPI_FROM && { from: deps.env.SMSAPI_FROM }),
+            fetchImpl: deps.fetchImpl,
+          },
+          {
+            toPhone: deps.config.notificationPhone,
+            businessName: deps.config.businessName,
+            lead: validated,
+            clientLeadId,
+            ...(deps.config.notificationCity && { city: deps.config.notificationCity }),
+          },
+        )
+      : Promise.resolve({ ok: false, error: "smsapi not configured or notificationPhone missing" });
+
+  const [hubResult, emailResult, smsResult] = await Promise.all([
+    hubPromise,
+    emailPromise,
+    smsPromise,
+  ]);
 
   // 10. If hub failed retriably → enqueue to fallback (klient already got email)
   if (!hubResult.ok && hubResult.isRetriable !== false) {
@@ -296,7 +320,7 @@ async function processSubmit(request: Request, deps: ProcessDeps): Promise<Submi
       userMessage: emailResult.ok
         ? "Dziękujemy! Wiadomość została wysłana — odpowiedź wkrótce."
         : "Dziękujemy! Wiadomość została zapisana — odezwiemy się wkrótce.",
-      internalMessage: `hub fallback: ${hubResult.error ?? "unknown"}; email_ok=${emailResult.ok}`,
+      internalMessage: `hub fallback: ${hubResult.error ?? "unknown"}; email_ok=${emailResult.ok}; sms_ok=${smsResult.ok}`,
     };
   }
 
@@ -308,7 +332,7 @@ async function processSubmit(request: Request, deps: ProcessDeps): Promise<Submi
     clientLeadId,
     userMessage: "Dziękujemy! Wiadomość została wysłana — odezwiemy się wkrótce.",
     ...(hubResult.error !== undefined && {
-      internalMessage: `hub_ok=${hubResult.ok}; email_ok=${emailResult.ok}; hub_err=${hubResult.error}`,
+      internalMessage: `hub_ok=${hubResult.ok}; email_ok=${emailResult.ok}; sms_ok=${smsResult.ok}; hub_err=${hubResult.error}`,
     }),
   };
 }

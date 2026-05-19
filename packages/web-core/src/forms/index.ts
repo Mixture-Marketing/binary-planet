@@ -92,6 +92,10 @@ export type { HubSyncDeps, HubSyncOptions, HubSyncResult } from "./hub-sync.js";
 export { forwardLeadToKlient } from "./resend.js";
 export type { ForwardLeadInput, ResendDeps, ResendResult } from "./resend.js";
 
+// SMSAPI.pl — SMS lead notification to klient
+export { renderSmsBody, sendLeadSmsToKlient } from "./smsapi.js";
+export type { SmsapiDeps, SmsLeadInput, SmsResult } from "./smsapi.js";
+
 // Fallback queue
 export { drainQueue, enqueueLead, MAX_QUEUE_RETRIES, queueDepth } from "./fallback-queue.js";
 export type {
