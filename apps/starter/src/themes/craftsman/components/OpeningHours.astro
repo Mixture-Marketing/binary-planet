@@ -1,5 +1,6 @@
 ---
 import clientConfig from "../../../client.config.ts";
+import Icon from "./Icon.astro";
 
 const { hours, contact, location } = clientConfig;
 
@@ -73,7 +74,7 @@ const todayKey: keyof typeof hours = ["sunday", "monday", "tuesday", "wednesday"
           data-track-position="hours_card"
           style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--color-brand); font-weight: 600; text-decoration: none;"
         >
-          <span aria-hidden="true">📞</span>
+          <Icon name="phone" size={16} />
           {contact.primaryPhone}
         </a>
         <a
@@ -81,7 +82,7 @@ const todayKey: keyof typeof hours = ["sunday", "monday", "tuesday", "wednesday"
           data-track-event="email_click"
           style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--color-brand); font-weight: 600; text-decoration: none;"
         >
-          <span aria-hidden="true">✉️</span>
+          <Icon name="mail" size={16} />
           {contact.email}
         </a>
       </div>

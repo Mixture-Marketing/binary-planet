@@ -1,5 +1,6 @@
 ---
 import LoginLayout from "../layouts/LoginLayout.astro";
+import Icon from "../components/Icon.astro";
 
 const url = new URL(Astro.request.url);
 const next = url.searchParams.get("next") ?? "/";
@@ -10,8 +11,8 @@ const error = url.searchParams.get("error");
 <LoginLayout title="Logowanie — MM Admin">
   {sent ? (
     <>
-      <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 0.5rem 0; color: var(--c-success);">
-        ✓ Wysłano link logowania
+      <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 0.5rem 0; color: var(--c-success); display: flex; align-items: center; gap: 0.5rem;">
+        <Icon name="check-circle-2" size={22} /> Wysłano link logowania
       </h2>
       <p style="color: var(--c-text-muted); margin: 0 0 1rem 0;">
         Sprawdź skrzynkę e-mail. Link wygaśnie za 15 minut.

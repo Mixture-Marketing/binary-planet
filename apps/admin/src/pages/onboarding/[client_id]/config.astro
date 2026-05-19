@@ -1,5 +1,6 @@
 ---
 import AdminLayout from "../../../layouts/AdminLayout.astro";
+import Icon from "../../../components/Icon.astro";
 
 const env = Astro.locals.runtime?.env;
 if (!env?.DB) return new Response("Runtime not ready", { status: 500 });
@@ -69,7 +70,7 @@ const statusBadgeClass = (s: string): string => {
 <AdminLayout title={`Config — ${row.business_name}`}>
   <header style="margin-bottom: 1.5rem;">
     <p style="margin: 0 0 0.5rem 0;"><a href="/onboarding" style="color: var(--c-brand);">← Kolejka onboarding</a></p>
-    <h1 style="font-size: 1.5rem; font-weight: 800; margin: 0 0 0.5rem 0;">⚙️ {row.business_name} — provisioning</h1>
+    <h1 style="font-size: 1.5rem; font-weight: 800; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.6rem;"><Icon name="settings" size={24} /> {row.business_name} — provisioning</h1>
     <p style="margin: 0; color: var(--c-text-muted); font-size: 0.9rem;">
       Domena: <strong>{row.primary_domain ?? "—"}</strong> ·
       Wygenerowano: {new Date(row.generated_at).toLocaleString("pl-PL")} ·
@@ -80,12 +81,12 @@ const statusBadgeClass = (s: string): string => {
 
   <!-- Trigger dry-run -->
   <div class="card" style="margin-bottom: 1.5rem;">
-    <h2 style="font-size: 1rem; margin: 0 0 0.5rem 0;">🧪 Dry-run provisioning</h2>
+    <h2 style="font-size: 1rem; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.4rem;"><Icon name="flask-conical" size={18} /> Dry-run provisioning</h2>
     <p style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: var(--c-text-muted);">
       Symulacja Track 4 — bez prawdziwych wywołań OVH/GitHub/CF. Walidacja pełnego cyklu i widoczność co by się stało.
     </p>
-    <button id="dry-run-btn" type="button" class="btn btn-primary" data-client-id={client_id}>
-      ▶️ Uruchom dry-run
+    <button id="dry-run-btn" type="button" class="btn btn-primary" data-client-id={client_id} style="display: inline-flex; align-items: center; gap: 0.4rem;">
+      <Icon name="play" size={16} /> Uruchom dry-run
     </button>
     <span id="dry-run-status" style="margin-left: 0.75rem; color: var(--c-text-muted); font-size: 0.85rem;"></span>
   </div>
@@ -93,11 +94,13 @@ const statusBadgeClass = (s: string): string => {
   <!-- Steps timeline -->
   {steps.length > 0 && (
     <div class="card" style="margin-bottom: 1.5rem;">
-      <h2 style="font-size: 1rem; margin: 0 0 1rem 0;">📋 Kroki provisioning</h2>
+      <h2 style="font-size: 1rem; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.4rem;"><Icon name="clipboard-list" size={18} /> Kroki provisioning</h2>
       <ol style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
         {steps.map((s) => (
           <li style="display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.75rem; background: rgba(0,0,0,0.02); border-radius: 6px; border-left: 3px solid var(--c-brand);">
-            <span style="font-size: 1.25rem;" aria-hidden="true">{s.ok ? "✅" : "❌"}</span>
+            <span style={`color: ${s.ok ? "var(--c-success, #16a34a)" : "var(--c-danger, #dc2626)"};`} aria-hidden="true">
+              <Icon name={s.ok ? "check-circle-2" : "x-circle"} size={22} />
+            </span>
             <div style="flex: 1;">
               <div style="display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap;">
                 <strong style="font-family: ui-monospace, monospace; font-size: 0.85rem;">{s.step}</strong>
@@ -116,7 +119,7 @@ const statusBadgeClass = (s: string): string => {
   )}
 
   <details class="card" style="margin-bottom: 1rem;">
-    <summary style="cursor: pointer; font-weight: 600;">📋 Manualny fallback (production bez Track 4-prod)</summary>
+    <summary style="cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;"><Icon name="file-text" size={16} /> Manualny fallback (production bez Track 4-prod)</summary>
     <ol style="margin: 1rem 0 0 0; padding-left: 1.25rem; font-size: 0.9rem; line-height: 1.65; color: var(--c-text);">
       <li>Skopiuj zawartość <code>client.config.ts</code> poniżej.</li>
       <li>Sklonuj <code>mm-starter</code>, podmień <code>src/client.config.ts</code> na powyższą zawartość, commit + push do <code>MixtureMarketing/{client_id}-site</code>.</li>
@@ -129,7 +132,7 @@ const statusBadgeClass = (s: string): string => {
   <h2 style="font-size: 1.1rem; margin: 1.5rem 0 0.5rem 0;">src/client.config.ts</h2>
   <pre style="background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.8rem; line-height: 1.5; max-height: 70vh;"><code>{tsContent}</code></pre>
 
-  <button id="copy-btn" type="button" class="btn btn-primary" style="margin-top: 1rem;">📋 Skopiuj do schowka</button>
+  <button id="copy-btn" type="button" class="btn btn-primary" style="margin-top: 1rem; display: inline-flex; align-items: center; gap: 0.4rem;"><Icon name="clipboard-list" size={16} /> Skopiuj do schowka</button>
 
   <script is:inline define:vars={{ tsContent, client_id }}>
     document.getElementById("copy-btn").addEventListener("click", async () => {
@@ -137,7 +140,7 @@ const statusBadgeClass = (s: string): string => {
         await navigator.clipboard.writeText(tsContent);
         const btn = document.getElementById("copy-btn");
         const orig = btn.textContent;
-        btn.textContent = "✅ Skopiowano!";
+        btn.textContent = "Skopiowano!";
         setTimeout(() => { btn.textContent = orig; }, 1500);
       } catch (e) {
         alert("Nie udało się skopiować: " + e.message);
@@ -158,17 +161,17 @@ const statusBadgeClass = (s: string): string => {
         });
         const json = await res.json();
         if (json.ok) {
-          statusEl.textContent = `✓ ${json.steps.length} kroków OK — odświeżam stronę…`;
+          statusEl.textContent = `OK · ${json.steps.length} kroków — odświeżam stronę…`;
           setTimeout(() => window.location.reload(), 700);
         } else {
-          statusEl.textContent = "✗ " + (json.error || "Nieznany błąd");
+          statusEl.textContent = "Błąd: " + (json.error || "Nieznany błąd");
           btn.disabled = false;
-          btn.textContent = "▶️ Uruchom dry-run";
+          btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.18em;"><polygon points="6 3 20 12 6 21 6 3"/></svg> Uruchom dry-run`;
         }
       } catch (e) {
-        statusEl.textContent = "✗ " + e.message;
+        statusEl.textContent = "Błąd sieci: " + e.message;
         btn.disabled = false;
-        btn.textContent = "▶️ Uruchom dry-run";
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.18em;"><polygon points="6 3 20 12 6 21 6 3"/></svg> Uruchom dry-run`;
       }
     });
   </script>

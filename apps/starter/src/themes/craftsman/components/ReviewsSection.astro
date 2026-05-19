@@ -1,5 +1,6 @@
 ---
 import clientConfig from "../../../client.config.ts";
+import Icon from "./Icon.astro";
 
 const { reviews = [] } = clientConfig;
 const limit = 3;
@@ -25,7 +26,9 @@ const formatDate = (iso: string): string => {
         {avg && (
           <p style="margin: 0; font-size: 1.15rem; color: var(--color-text-muted);">
             <strong style="color: var(--color-brand); font-size: 1.5rem;">{avg}</strong>
-            <span style="margin-left: 0.5rem;">⭐⭐⭐⭐⭐</span>
+            <span style="margin-left: 0.5rem; color: var(--color-accent); display: inline-flex; gap: 0.1rem; vertical-align: middle;">
+              {[1,2,3,4,5].map(() => <Icon name="star" size={18} />)}
+            </span>
             <span style="margin-left: 0.5rem;">({reviews.length} opinii)</span>
           </p>
         )}
@@ -36,8 +39,8 @@ const formatDate = (iso: string): string => {
           <li
             style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 1.75rem; display: flex; flex-direction: column; gap: 1rem;"
           >
-            <div aria-label={`Ocena: ${review.rating} z 5`} style="color: var(--color-accent); font-size: 1.15rem;">
-              {"⭐".repeat(review.rating)}
+            <div aria-label={`Ocena: ${review.rating} z 5`} style="color: var(--color-accent); display: flex; gap: 0.1rem;">
+              {Array.from({ length: review.rating }, () => <Icon name="star" size={18} />)}
             </div>
             <p style="margin: 0; color: var(--color-text); font-style: italic;">
               „{review.text}"

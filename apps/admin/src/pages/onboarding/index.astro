@@ -1,5 +1,6 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import Icon from "../../components/Icon.astro";
 
 const env = Astro.locals.runtime?.env;
 if (!env?.DB) return new Response("Runtime not ready", { status: 500 });
@@ -39,7 +40,7 @@ const statusBadgeClass = (s: string): string => {
 <AdminLayout title="Onboarding">
   <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap;">
     <div>
-      <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0;">🚀 Onboarding</h1>
+      <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.6rem;"><Icon name="rocket" size={28} /> Onboarding</h1>
       <p style="color: var(--c-text-muted); margin: 0;">
         Kolejka klientów oczekujących na provisioning + historia.
       </p>
@@ -91,7 +92,7 @@ const statusBadgeClass = (s: string): string => {
   </div>
 
   <details style="margin-top: 2rem;" class="card">
-    <summary style="cursor: pointer; font-weight: 600;">ℹ️ Co dzieje się po Submit?</summary>
+    <summary style="cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;"><Icon name="info" size={16} /> Co dzieje się po Submit?</summary>
     <div style="margin-top: 1rem; color: var(--c-text-muted); font-size: 0.9rem; line-height: 1.6;">
       <ol style="margin: 0; padding-left: 1.25rem;">
         <li>Wpis trafia do <code>client_provisioning_configs</code> ze statusem <code>pending</code>.</li>

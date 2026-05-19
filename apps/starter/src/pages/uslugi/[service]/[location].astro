@@ -1,6 +1,7 @@
 ---
 import CraftsmanLayout from "../../../themes/craftsman/layouts/CraftsmanLayout.astro";
 import BreadcrumbNav from "../../../themes/craftsman/components/BreadcrumbNav.astro";
+import Icon from "../../../themes/craftsman/components/Icon.astro";
 import { programmaticSeo } from "../../../lib/seo.ts";
 import { getProgrammaticPages } from "../../../lib/programmatic.ts";
 
@@ -101,8 +102,9 @@ const bodyHtml = renderBody(slots.body);
           data-track-event="phone_click"
           data-track-position="programmatic_hero"
           aria-label={slots.ctaText}
+          style="display: inline-flex; align-items: center; gap: 0.4rem;"
         >
-          📞 {slots.ctaText}
+          <Icon name="phone" size={16} /> {slots.ctaText}
         </a>
       </div>
     </header>

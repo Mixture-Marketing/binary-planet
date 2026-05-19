@@ -34,22 +34,22 @@ const formatRelative = (iso: string): string => {
   </header>
 
   <section aria-label="Statystyki" style="display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 2.5rem;">
-    <StatCard label="Klienci łącznie" value={stats.totalClients} icon="🏢" />
+    <StatCard label="Klienci łącznie" value={stats.totalClients} icon="building-2" />
     <StatCard
       label="Aktywni"
       value={stats.activeClients}
       delta={`${stats.totalClients - stats.activeClients} nieaktywnych`}
       deltaTone={stats.activeClients === stats.totalClients ? "positive" : "neutral"}
-      icon="✓"
+      icon="check-circle-2"
     />
-    <StatCard label="Leady dzisiaj" value={stats.leadsToday} icon="📥" />
-    <StatCard label="Leady (7d)" value={stats.leadsThisWeek} icon="📊" />
+    <StatCard label="Leady dzisiaj" value={stats.leadsToday} icon="inbox" />
+    <StatCard label="Leady (7d)" value={stats.leadsThisWeek} icon="layout-dashboard" />
     <StatCard
       label="Otwarte alerty"
       value={stats.openAlerts}
       deltaTone={stats.openAlerts === 0 ? "positive" : "negative"}
       delta={stats.openAlerts === 0 ? "Wszystko OK" : "Wymagana uwaga"}
-      icon="🚨"
+      icon="bell"
     />
   </section>
 

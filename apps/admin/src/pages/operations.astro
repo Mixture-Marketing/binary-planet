@@ -1,5 +1,6 @@
 ---
 import AdminLayout from "../layouts/AdminLayout.astro";
+import Icon from "../components/Icon.astro";
 
 const env = Astro.locals.runtime?.env;
 if (!env?.DB) return new Response("Runtime not available", { status: 500 });
@@ -46,7 +47,7 @@ const formatDuration = (started: string, finished: string | null): string => {
 
 <AdminLayout title="Operations">
   <header style="margin-bottom: 2rem;">
-    <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0;">⚙️ Operations</h1>
+    <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.6rem;"><Icon name="settings" size={28} /> Operations</h1>
     <p style="color: var(--c-text-muted); margin: 0;">
       Status zaplecza: crony, AI quota, health checks.
     </p>

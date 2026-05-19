@@ -1,5 +1,6 @@
 ---
 import clientConfig from "../../../client.config.ts";
+import Icon from "./Icon.astro";
 
 const navItems = [
   { href: "/", label: "Start" },
@@ -42,7 +43,7 @@ const currentPath = Astro.url.pathname.replace(/\/+$/, "") || "/";
       aria-label={`Zadzwoń ${clientConfig.contact.primaryPhone}`}
       style="font-size: 0.95rem; padding: 0.6rem 1rem;"
     >
-      <span aria-hidden="true">📞</span>
+      <Icon name="phone" size={16} />
       <span class="hidden sm:inline">{clientConfig.contact.primaryPhone}</span>
       <span class="sm:hidden">Zadzwoń</span>
     </a>

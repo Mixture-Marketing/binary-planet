@@ -1,5 +1,6 @@
 ---
 import CraftsmanLayout from "../themes/craftsman/layouts/CraftsmanLayout.astro";
+import Icon from "../themes/craftsman/components/Icon.astro";
 import clientConfig from "../client.config.ts";
 import { notFoundSeo } from "../lib/seo.ts";
 
@@ -23,8 +24,9 @@ const { meta, jsonLd } = notFoundSeo();
           class="btn-outline"
           data-track-event="phone_click"
           data-track-position="404"
+          style="display: inline-flex; align-items: center; gap: 0.4rem;"
         >
-          📞 {clientConfig.contact.primaryPhone}
+          <Icon name="phone" size={16} /> {clientConfig.contact.primaryPhone}
         </a>
       </div>
     </div>

@@ -1,11 +1,14 @@
 ---
+import Icon from "./Icon.astro";
+import type { IconName } from "@mixturemarketing/web-core/ui";
+
 interface Props {
   label: string;
   value: string | number;
   /** Optional delta (e.g. "+12% vs last week"). */
   delta?: string;
   deltaTone?: "positive" | "negative" | "neutral";
-  icon?: string;
+  icon?: IconName;
 }
 
 const { label, value, delta, deltaTone = "neutral", icon } = Astro.props;
@@ -19,7 +22,7 @@ const deltaColor = {
 
 <div class="card" style="display: flex; flex-direction: column; gap: 0.5rem;">
   <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--c-text-muted);">
-    {icon && <span aria-hidden="true" style="font-size: 1.1rem;">{icon}</span>}
+    {icon && <Icon name={icon} size={18} />}
     <p style="margin: 0; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
       {label}
     </p>

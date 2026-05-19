@@ -65,6 +65,10 @@
     "./ads": {
       "types": "./dist/ads/index.d.ts",
       "import": "./dist/ads/index.js"
+    },
+    "./ui": {
+      "types": "./dist/ui/index.d.ts",
+      "import": "./dist/ui/index.js"
     }
   },
   "files": ["dist", "README.md"],

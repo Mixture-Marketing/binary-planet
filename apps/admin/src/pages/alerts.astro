@@ -1,5 +1,6 @@
 ---
 import AdminLayout from "../layouts/AdminLayout.astro";
+import Icon from "../components/Icon.astro";
 
 import { listOpenAlerts } from "../lib/db.ts";
 
@@ -21,7 +22,7 @@ const formatRelative = (iso: string): string => {
 
 <AdminLayout title="Alerty">
   <header style="margin-bottom: 2rem;">
-    <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0;">🚨 Alerty</h1>
+    <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.6rem;"><Icon name="bell" size={28} /> Alerty</h1>
     <p style="color: var(--c-text-muted); margin: 0;">
       Otwarte alerty wymagające uwagi. {alerts.length} wpisów.
     </p>
@@ -29,7 +30,7 @@ const formatRelative = (iso: string): string => {
 
   {alerts.length === 0 ? (
     <div class="card" style="text-align: center; padding: 3rem;">
-      <p style="font-size: 3rem; margin: 0 0 1rem 0;">✓</p>
+      <p style="margin: 0 0 1rem 0; color: var(--c-success);"><Icon name="check-circle-2" size={48} /></p>
       <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 0.5rem 0; color: var(--c-success);">Wszystko OK</h2>
       <p style="color: var(--c-text-muted); margin: 0;">Brak otwartych alertów.</p>
     </div>
