@@ -1,0 +1,571 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { INDUSTRIES, POLISH_VOIVODESHIPS } from "../../lib/onboarding.ts";
+---
+
+<AdminLayout title="Nowy klient — onboarding">
+  <header style="margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0;">🚀 Nowy klient</h1>
+    <p style="color: var(--c-text-muted); margin: 0;">
+      Wypełnij wszystkie sekcje. Stan formularza zapisuje się automatycznie w przeglądarce
+      — możesz przerwać i wrócić. Po Submit klient trafia do kolejki provisioning.
+    </p>
+  </header>
+
+  <form id="onboarding-form" novalidate>
+    <!-- ============ SEKCJA 1: FIRMA ============ -->
+    <details open class="card" style="padding: 1.25rem; margin-bottom: 1rem;">
+      <summary style="font-weight: 700; font-size: 1.1rem; cursor: pointer;">
+        1. Dane firmy <span class="badge required">wymagane</span>
+      </summary>
+      <div class="grid-2" style="margin-top: 1rem;">
+        <label>Nazwa firmy *
+          <input type="text" name="business_name" required placeholder="Ślusarz Kowalski" />
+        </label>
+        <label>Nazwa prawna (jeśli inna)
+          <input type="text" name="legal_name" placeholder="Kowalski Jan — Usługi Ślusarskie" />
+        </label>
+        <label>NIP * (10 cyfr)
+          <input type="text" name="nip" required pattern="\d{10}" placeholder="8121234567" maxlength="10" />
+        </label>
+        <label>REGON (9 lub 14 cyfr)
+          <input type="text" name="regon" pattern="\d{9}(\d{5})?" placeholder="123456789" />
+        </label>
+        <label>KRS (jeśli spółka)
+          <input type="text" name="krs" pattern="\d{10}" />
+        </label>
+        <label>Branża *
+          <select name="industry" required data-industry>
+            <option value="">— wybierz —</option>
+            {INDUSTRIES.map((i) => (
+              <option value={i.slug} data-schema={i.schemaType}>{i.label}</option>
+            ))}
+          </select>
+        </label>
+        <input type="hidden" name="schema_type" required />
+        <label>Rok założenia
+          <input type="number" name="founded_year" min="1900" max={new Date().getFullYear()} />
+        </label>
+        <label>Liczba pracowników
+          <input type="number" name="employee_count" min="1" max="10000" />
+        </label>
+      </div>
+      <label style="display:block; margin-top: 0.75rem;">Krótki opis firmy * (do 500 znaków, używany w meta)
+        <textarea name="description" required maxlength="500" rows="2" placeholder="Profesjonalne usługi ślusarskie w Rzeszowie. Otwieranie zamków, dorabianie kluczy, naprawa drzwi — 24/7."></textarea>
+      </label>
+      <label style="display:block; margin-top: 0.75rem;">Tagline * (1 linia, używany w heroes)
+        <input type="text" name="tagline" required maxlength="140" placeholder="Otworzymy każdy zamek — 24/7 w Rzeszowie" />
+      </label>
+      <label style="display:block; margin-top: 0.75rem;">Długi opis * (do 5000 znaków, na stronę "O firmie")
+        <textarea name="long_description" required maxlength="5000" rows="5" placeholder="Działam jako ślusarz w Rzeszowie od ponad 20 lat. Specjalizuję się w..."></textarea>
+      </label>
+    </details>
+
+    <!-- ============ SEKCJA 2: KONTAKT ============ -->
+    <details open class="card" style="padding: 1.25rem; margin-bottom: 1rem;">
+      <summary style="font-weight: 700; font-size: 1.1rem; cursor: pointer;">2. Kontakt</summary>
+      <div class="grid-2" style="margin-top: 1rem;">
+        <label>Telefon główny * (+48...)
+          <input type="text" name="primary_phone" required pattern="\+\d{8,15}" placeholder="+48171234567" />
+        </label>
+        <label>Telefon dodatkowy
+          <input type="text" name="secondary_phone" pattern="\+\d{8,15}" />
+        </label>
+        <label>Email kontaktowy *
+          <input type="email" name="email" required placeholder="kontakt@kowalski-slusarz.pl" />
+        </label>
+        <label>Email do powiadomień leadów
+          <input type="email" name="notification_email" placeholder="(jeśli inny niż kontaktowy)" />
+        </label>
+        <label>Imię i nazwisko osoby kontaktowej
+          <input type="text" name="contact_person_name" maxlength="100" />
+        </label>
+      </div>
+    </details>
+
+    <!-- ============ SEKCJA 3: LOKALIZACJA ============ -->
+    <details open class="card" style="padding: 1.25rem; margin-bottom: 1rem;">
+      <summary style="font-weight: 700; font-size: 1.1rem; cursor: pointer;">3. Lokalizacja</summary>
+      <div class="grid-2" style="margin-top: 1rem;">
+        <label>Ulica i numer *
+          <input type="text" name="street_address" required placeholder="ul. Słowackiego 12" />
+        </label>
+        <label>Miasto (siedziba) *
+          <input type="text" name="city" required placeholder="Rzeszów" />
+        </label>
+        <label>Województwo *
+          <select name="voivodeship" required>
+            <option value="">— wybierz —</option>
+            {POLISH_VOIVODESHIPS.map((v) => <option value={v}>{v}</option>)}
+          </select>
+        </label>
+        <label>Kod pocztowy * (NN-NNN)
+          <input type="text" name="postal_code" required pattern="\d{2}-\d{3}" placeholder="35-060" />
+        </label>
+        <label>Latitude
+          <input type="number" name="latitude" step="any" placeholder="50.0413" />
+        </label>
+        <label>Longitude
+          <input type="number" name="longitude" step="any" placeholder="21.999" />
+        </label>
+        <label>GBP Place ID (jeśli znany)
+          <input type="text" name="gbp_place_id" placeholder="ChIJ..." />
+        </label>
+      </div>
+      <label style="display:block; margin-top: 0.75rem;">Obszar obsługi (oddzielone przecinkami) *
+        <input type="text" name="service_area" required placeholder="Rzeszów, Boguchwała, Tyczyn, Łańcut, Krasne, Świlcza" />
+      </label>
+    </details>
+
+    <!-- ============ SEKCJA 4: USŁUGI ============ -->
+    <details open class="card" style="padding: 1.25rem; margin-bottom: 1rem;">
+      <summary style="font-weight: 700; font-size: 1.1rem; cursor: pointer;">4. Usługi (1–8)</summary>
+      <div id="services-list" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+        <!-- rows injected by JS -->
+      </div>
+      <button type="button" id="add-service" class="btn" style="margin-top: 0.75rem;">+ Dodaj usługę</button>
+    </details>
+
+    <!-- ============ SEKCJA 5: GODZINY OTWARCIA ============ -->
+    <details class="card" style="padding: 1.25rem; margin-bottom: 1rem;">
+      <summary style="font-weight: 700; font-size: 1.1rem; cursor: pointer;">5. Godziny otwarcia</summary>
+      <p style="color: var(--c-text-muted); font-size: 0.85rem; margin: 0.5rem 0;">
+        Format: <code>HH:MM-HH:MM</code> (np. 08:00-18:00) lub <code>closed</code>. Puste = nie pokazujemy.
+      </p>
+      <div class="grid-2" style="margin-top: 1rem;">
+        {["monday","tuesday","wednesday","thursday","friday","saturday","sunday"].map((d) => (
+          <label>{d}
+            <input type="text" name={`hours_${d}`} placeholder="08:00-18:00 lub closed" />
+          </label>
+        ))}
+      </div>
+      <label style="display:block; margin-top: 0.75rem;">Notatka o godzinach
+        <input type="text" name="hours_note" maxlength="200" placeholder="Awaryjne wezwania 24/7 — telefon w każdej chwili" />
+      </label>
+    </details>
+
+    <!-- ============ SEKCJA 6: THEME + DOMENA + TIER ============ -->
+    <details open class="card" style="padding: 1.25rem; margin-bottom: 1rem;">
+      <summary style="font-weight: 700; font-size: 1.1rem; cursor: pointer;">6. Theme, domena, pakiet</summary>
+      <div class="grid-2" style="margin-top: 1rem;">
+        <label>Theme preset *
+          <select name="theme_preset" required>
+            <option value="craftsman" selected>craftsman (rzemieślnik/usługi)</option>
+            <option value="professional">professional (biuro/usługi prof)</option>
+            <option value="medical">medical (lekarz/dentysta)</option>
+            <option value="beauty">beauty (salon)</option>
+            <option value="local-services">local-services</option>
+            <option value="food">food (restauracja/kawiarnia)</option>
+            <option value="generic">generic</option>
+          </select>
+        </label>
+        <label>Theme variant (opcjonalne)
+          <input type="text" name="theme_variant" placeholder="red-bold" />
+        </label>
+        <label>Domena * (bez https://)
+          <input type="text" name="primary_domain" required placeholder="kowalski-slusarz.pl" />
+        </label>
+        <input type="hidden" name="canonical_scheme" value="https" />
+        <label>Pakiet *
+          <select name="tier" required>
+            <option value="">— wybierz —</option>
+            <option value="starter">Starter — 149 zł/mc</option>
+            <option value="standard">Standard — 199 zł/mc</option>
+            <option value="premium">Premium — 299 zł/mc</option>
+          </select>
+        </label>
+      </div>
+    </details>
+
+    <!-- ============ SEKCJA 7: INTEGRACJE ============ -->
+    <details class="card" style="padding: 1.25rem; margin-bottom: 1rem;">
+      <summary style="font-weight: 700; font-size: 1.1rem; cursor: pointer;">7. Integracje (opcjonalne)</summary>
+      <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+        <label style="display:flex; align-items:center; gap: 0.5rem;">
+          <input type="checkbox" name="plausible" checked /> Plausible (cookieless analytics)
+        </label>
+        <label style="display:flex; align-items:center; gap: 0.5rem;">
+          <input type="checkbox" name="zaraz" /> Cloudflare Zaraz (server-side GA/Meta/Ads)
+        </label>
+      </div>
+      <div class="grid-2" style="margin-top: 1rem;">
+        <label>GA4 Measurement ID
+          <input type="text" name="ga4_id" pattern="G-[A-Z0-9]+" placeholder="G-XXXXXXXXXX" />
+        </label>
+        <label>Meta Pixel ID
+          <input type="text" name="meta_pixel" pattern="\d+" />
+        </label>
+        <label>Google Ads Conversion ID
+          <input type="text" name="google_ads_conversion_id" pattern="AW-\d+" placeholder="AW-123456789" />
+        </label>
+        <label>Turnstile Site Key (form anti-spam)
+          <input type="text" name="turnstile_site_key" />
+        </label>
+      </div>
+    </details>
+
+    <!-- ============ SEKCJA 8: OPINIE ============ -->
+    <details class="card" style="padding: 1.25rem; margin-bottom: 1rem;">
+      <summary style="font-weight: 700; font-size: 1.1rem; cursor: pointer;">8. Opinie startowe (opcjonalne)</summary>
+      <p style="color: var(--c-text-muted); font-size: 0.85rem; margin: 0.5rem 0;">
+        Dodaj 1-3 opinie z GBP. Puste = strona startuje bez sekcji opinii (można dorzucić później przez CMS).
+      </p>
+      <div id="reviews-list" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
+      <button type="button" id="add-review" class="btn" style="margin-top: 0.5rem;">+ Dodaj opinię</button>
+    </details>
+
+    <!-- ============ SEKCJA 9: RODO ============ -->
+    <details open class="card" style="padding: 1.25rem; margin-bottom: 1rem;">
+      <summary style="font-weight: 700; font-size: 1.1rem; cursor: pointer;">9. RODO i DPA</summary>
+      <div class="grid-2" style="margin-top: 1rem;">
+        <label>Wersja zgody *
+          <input type="text" name="consent_version" required value="v1.0" />
+        </label>
+        <label>Privacy Policy URL
+          <input type="text" name="privacy_policy_url" placeholder="https://kowalski-slusarz.pl/polityka-prywatnosci" />
+        </label>
+        <label>Regulamin URL
+          <input type="text" name="terms_url" placeholder="https://kowalski-slusarz.pl/regulamin" />
+        </label>
+      </div>
+      <label style="display:flex; align-items:center; gap: 0.5rem; margin-top: 0.75rem;">
+        <input type="checkbox" name="dpa_signed" required /> Klient podpisał DPA (umowa powierzenia przetwarzania) *
+      </label>
+    </details>
+
+    <!-- ============ NOTATKI + SUBMIT ============ -->
+    <details class="card" style="padding: 1.25rem; margin-bottom: 1rem;">
+      <summary style="font-weight: 700; font-size: 1.1rem; cursor: pointer;">10. Notatki wewnętrzne</summary>
+      <label style="display:block; margin-top: 0.75rem;">
+        <textarea name="notes" rows="3" placeholder="Notatki widoczne tylko dla zespołu MixtureMarketing"></textarea>
+      </label>
+    </details>
+
+    <div id="form-errors" style="margin-bottom: 1rem; display: none;" class="card"></div>
+
+    <div style="display: flex; gap: 1rem; align-items: center;">
+      <button type="submit" class="btn btn-primary" id="submit-btn">Utwórz klienta</button>
+      <button type="button" class="btn" id="clear-draft">Wyczyść formularz</button>
+      <span id="draft-status" style="color: var(--c-text-muted); font-size: 0.85rem;"></span>
+    </div>
+  </form>
+</AdminLayout>
+
+<style>
+  form .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  @media (max-width: 720px) {
+    form .grid-2 { grid-template-columns: 1fr; }
+  }
+  form label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.9rem; }
+  form input[type="text"], form input[type="email"], form input[type="number"], form select, form textarea {
+    padding: 0.5rem 0.6rem; border: 1px solid var(--c-border); border-radius: 4px;
+    font-family: inherit; font-size: 0.95rem; background: white;
+  }
+  form input:invalid:not(:placeholder-shown) { border-color: var(--c-danger, #dc2626); }
+  form summary { user-select: none; }
+  .badge.required { background: #fef3c7; color: #92400e; font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px; margin-left: 0.5rem; }
+  .service-row, .review-row { background: rgba(0,0,0,0.02); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--c-border); }
+  #form-errors.show { display: block !important; background: #fee2e2; color: #991b1b; }
+</style>
+
+<script is:inline>
+  // ----------------------------------------------------------------------
+  // Dynamic service rows
+  // ----------------------------------------------------------------------
+  const servicesList = document.getElementById("services-list");
+  const addService = document.getElementById("add-service");
+  let serviceIdx = 0;
+
+  function addServiceRow(prefill) {
+    prefill = prefill || {};
+    const i = serviceIdx++;
+    const row = document.createElement("div");
+    row.className = "service-row";
+    row.dataset["idx"] = String(i);
+    row.innerHTML = `
+      <div class="grid-2">
+        <label>Slug * (małe litery + myślniki)
+          <input type="text" name="services_${i}_slug" required pattern="[a-z0-9-]+" value="${prefill["slug"] ?? ""}" placeholder="awaryjne-otwieranie-zamkow" />
+        </label>
+        <label>Nazwa *
+          <input type="text" name="services_${i}_name" required maxlength="120" value="${prefill["name"] ?? ""}" placeholder="Awaryjne otwieranie zamków" />
+        </label>
+        <label>Cena od (opcjonalnie)
+          <input type="text" name="services_${i}_price_from" maxlength="40" value="${prefill["price_from"] ?? ""}" placeholder="od 100 zł" />
+        </label>
+        <label>Ikona (key z themes)
+          <input type="text" name="services_${i}_icon_key" maxlength="40" value="${prefill["icon_key"] ?? ""}" placeholder="key" />
+        </label>
+      </div>
+      <label style="margin-top: 0.5rem;">Krótki opis * (do 500 znaków)
+        <textarea name="services_${i}_description" required maxlength="500" rows="2" placeholder="Otwieram każdy zamek bez uszkodzenia drzwi...">${prefill["description"] ?? ""}</textarea>
+      </label>
+      <button type="button" class="btn" data-remove style="margin-top: 0.5rem; font-size: 0.8rem;">Usuń usługę</button>
+    `;
+    row.querySelector("[data-remove]").addEventListener("click", () => row.remove());
+    servicesList.appendChild(row);
+  }
+  addService.addEventListener("click", () => addServiceRow());
+
+  // ----------------------------------------------------------------------
+  // Dynamic review rows
+  // ----------------------------------------------------------------------
+  const reviewsList = document.getElementById("reviews-list");
+  const addReview = document.getElementById("add-review");
+  let reviewIdx = 0;
+  function addReviewRow(prefill) {
+    prefill = prefill || {};
+    const i = reviewIdx++;
+    const row = document.createElement("div");
+    row.className = "review-row";
+    row.dataset["idx"] = String(i);
+    row.innerHTML = `
+      <div class="grid-2">
+        <label>Autor *
+          <input type="text" name="reviews_${i}_author" required maxlength="80" value="${prefill["author"] ?? ""}" />
+        </label>
+        <label>Ocena *
+          <select name="reviews_${i}_rating" required>
+            ${[5,4,3,2,1].map((r) => `<option value="${r}" ${prefill["rating"] == String(r) ? "selected" : ""}>${"★".repeat(r)}</option>`).join("")}
+          </select>
+        </label>
+        <label>Data * (YYYY-MM-DD)
+          <input type="text" name="reviews_${i}_date" required pattern="\\d{4}-\\d{2}-\\d{2}" value="${prefill["date"] ?? ""}" />
+        </label>
+        <label>Źródło
+          <select name="reviews_${i}_source">
+            <option value="gbp" ${prefill["source"] === "gbp" ? "selected" : ""}>GBP</option>
+            <option value="manual" ${prefill["source"] === "manual" ? "selected" : ""}>Manual</option>
+            <option value="facebook" ${prefill["source"] === "facebook" ? "selected" : ""}>Facebook</option>
+          </select>
+        </label>
+      </div>
+      <label style="margin-top: 0.5rem;">Treść *
+        <textarea name="reviews_${i}_text" required maxlength="800" rows="2">${prefill["text"] ?? ""}</textarea>
+      </label>
+      <button type="button" class="btn" data-remove style="margin-top: 0.5rem; font-size: 0.8rem;">Usuń opinię</button>
+    `;
+    row.querySelector("[data-remove]").addEventListener("click", () => row.remove());
+    reviewsList.appendChild(row);
+  }
+  addReview.addEventListener("click", () => addReviewRow());
+
+  // ----------------------------------------------------------------------
+  // Industry → auto-fill schema_type hidden field
+  // ----------------------------------------------------------------------
+  const industrySelect = document.querySelector("[data-industry]");
+  const schemaTypeInput = document.querySelector('input[name="schema_type"]');
+  industrySelect.addEventListener("change", () => {
+    const opt = industrySelect.selectedOptions[0];
+    schemaTypeInput.value = (opt && opt.dataset["schema"]) || "";
+  });
+
+  // ----------------------------------------------------------------------
+  // localStorage draft
+  // ----------------------------------------------------------------------
+  const form = document.getElementById("onboarding-form");
+  const DRAFT_KEY = "mm-admin-onboarding-draft-v1";
+  const draftStatus = document.getElementById("draft-status");
+
+  function snapshotForm() {
+    const data = new FormData(form);
+    const out = {};
+    for (const [k, v] of data.entries()) out[k] = v;
+    return out;
+  }
+  function saveDraft() {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(snapshotForm()));
+      draftStatus.textContent = `Szkic zapisany ${new Date().toLocaleTimeString("pl-PL")}`;
+    } catch {}
+  }
+  function loadDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) {
+        addServiceRow();
+        return;
+      }
+      const data = JSON.parse(raw);
+      // First reconstruct dynamic rows
+      const serviceCount = Object.keys(data).filter((k) => /^services_\d+_slug$/.test(k)).length;
+      const reviewCount = Object.keys(data).filter((k) => /^reviews_\d+_author$/.test(k)).length;
+      for (let i = 0; i < Math.max(serviceCount, 1); i++) addServiceRow();
+      for (let i = 0; i < reviewCount; i++) addReviewRow();
+      // Then fill all fields
+      for (const [k, v] of Object.entries(data)) {
+        const el = form.elements.namedItem(k);
+        if (!el) continue;
+        if (el instanceof HTMLInputElement && el.type === "checkbox") {
+          el.checked = v === "on" || v === "true";
+        } else if ("value" in el) {
+          el.value = v;
+        }
+      }
+      // Refresh schema_type from industry
+      industrySelect.dispatchEvent(new Event("change"));
+      draftStatus.textContent = "Szkic przywrócony";
+    } catch {
+      addServiceRow();
+    }
+  }
+  loadDraft();
+  form.addEventListener("input", () => {
+    clearTimeout(window.__draftTimer);
+    window.__draftTimer = setTimeout(saveDraft, 400);
+  });
+
+  document.getElementById("clear-draft").addEventListener("click", () => {
+    if (!confirm("Na pewno wyczyścić formularz i szkic?")) return;
+    localStorage.removeItem(DRAFT_KEY);
+    form.reset();
+    servicesList.innerHTML = "";
+    reviewsList.innerHTML = "";
+    serviceIdx = 0;
+    reviewIdx = 0;
+    addServiceRow();
+    draftStatus.textContent = "Szkic wyczyszczony";
+  });
+
+  // ----------------------------------------------------------------------
+  // Build payload from form + submit
+  // ----------------------------------------------------------------------
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const submitBtn = document.getElementById("submit-btn");
+    const errBox = document.getElementById("form-errors");
+    errBox.classList.remove("show");
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Wysyłam…";
+
+    const data = snapshotForm();
+    const get = (k) => String(data[k] || "").trim();
+    const num = (k) => {
+      const v = get(k);
+      return v ? Number(v) : undefined;
+    };
+
+    // Collect services
+    const services = [];
+    for (let i = 0; i < serviceIdx; i++) {
+      const slug = get(`services_${i}_slug`);
+      if (!slug) continue;
+      const s = {
+        slug,
+        name: get(`services_${i}_name`),
+        description: get(`services_${i}_description`),
+      };
+      const price = get(`services_${i}_price_from`);
+      const icon = get(`services_${i}_icon_key`);
+      if (price) s["price_from"] = price;
+      if (icon) s["icon_key"] = icon;
+      services.push(s);
+    }
+
+    // Collect reviews
+    const reviews = [];
+    for (let i = 0; i < reviewIdx; i++) {
+      const author = get(`reviews_${i}_author`);
+      if (!author) continue;
+      reviews.push({
+        author,
+        rating: Number(get(`reviews_${i}_rating`)) || 5,
+        date: get(`reviews_${i}_date`),
+        text: get(`reviews_${i}_text`),
+        source: get(`reviews_${i}_source`) || "gbp",
+      });
+    }
+
+    const payload = {
+      business_name: get("business_name"),
+      legal_name: get("legal_name") || undefined,
+      nip: get("nip"),
+      regon: get("regon") || undefined,
+      krs: get("krs") || undefined,
+      industry: get("industry"),
+      schema_type: get("schema_type"),
+      founded_year: num("founded_year"),
+      employee_count: num("employee_count"),
+      description: get("description"),
+      tagline: get("tagline"),
+      long_description: get("long_description"),
+
+      primary_phone: get("primary_phone"),
+      secondary_phone: get("secondary_phone") || undefined,
+      email: get("email"),
+      notification_email: get("notification_email") || undefined,
+      contact_person_name: get("contact_person_name") || undefined,
+
+      street_address: get("street_address"),
+      city: get("city"),
+      voivodeship: get("voivodeship"),
+      postal_code: get("postal_code"),
+      latitude: num("latitude"),
+      longitude: num("longitude"),
+      gbp_place_id: get("gbp_place_id") || undefined,
+      service_area: get("service_area").split(",").map((s) => s.trim()).filter(Boolean),
+
+      services,
+
+      hours: {
+        monday: get("hours_monday") || undefined,
+        tuesday: get("hours_tuesday") || undefined,
+        wednesday: get("hours_wednesday") || undefined,
+        thursday: get("hours_thursday") || undefined,
+        friday: get("hours_friday") || undefined,
+        saturday: get("hours_saturday") || undefined,
+        sunday: get("hours_sunday") || undefined,
+        note: get("hours_note") || undefined,
+      },
+
+      theme_preset: get("theme_preset"),
+      theme_variant: get("theme_variant") || undefined,
+      primary_domain: get("primary_domain"),
+      canonical_scheme: "https",
+      tier: get("tier"),
+
+      plausible: form.elements.namedItem("plausible").checked,
+      zaraz: form.elements.namedItem("zaraz").checked,
+      ga4_id: get("ga4_id") || undefined,
+      meta_pixel: get("meta_pixel") || undefined,
+      google_ads_conversion_id: get("google_ads_conversion_id") || undefined,
+      turnstile_site_key: get("turnstile_site_key") || undefined,
+
+      reviews,
+
+      consent_version: get("consent_version") || "v1.0",
+      privacy_policy_url: get("privacy_policy_url") || undefined,
+      terms_url: get("terms_url") || undefined,
+      dpa_signed: form.elements.namedItem("dpa_signed").checked,
+
+      notes: get("notes") || undefined,
+    };
+
+    try {
+      const res = await fetch("/api/onboarding/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (json.ok === true) {
+        localStorage.removeItem(DRAFT_KEY);
+        window.location.href = String(json.redirect);
+      } else {
+        const errors = json.errors || [];
+        errBox.innerHTML = errors.length
+          ? `<strong>Błędy walidacji:</strong><ul>${errors.map((e) => `<li><code>${e.field}</code>: ${e.message}</li>`).join("")}</ul>`
+          : `<strong>Błąd:</strong> ${String(json.error || "Nieznany błąd")}`;
+        errBox.classList.add("show");
+        errBox.scrollIntoView({ behavior: "smooth" });
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Utwórz klienta";
+      }
+    } catch (err) {
+      errBox.innerHTML = `<strong>Błąd sieci:</strong> ${err instanceof Error ? err.message : String(err)}`;
+      errBox.classList.add("show");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Utwórz klienta";
+    }
+  });
+</script>

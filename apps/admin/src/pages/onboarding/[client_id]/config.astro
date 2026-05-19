@@ -1,0 +1,88 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+
+const env = Astro.locals.runtime?.env;
+if (!env?.DB) return new Response("Runtime not ready", { status: 500 });
+
+const { client_id } = Astro.params;
+if (!client_id) return Astro.redirect("/onboarding");
+
+interface ConfigRow {
+  config_json: string;
+  generated_at: string;
+  provisioning_status: string;
+  business_name: string;
+  primary_domain: string | null;
+}
+
+const row = await env.DB
+  .prepare(
+    `SELECT p.config_json, p.generated_at, p.provisioning_status,
+            c.business_name, c.primary_domain
+       FROM client_provisioning_configs p
+       JOIN clients c ON c.id = p.client_id
+      WHERE p.client_id = ? LIMIT 1`,
+  )
+  .bind(client_id)
+  .first<ConfigRow>();
+
+if (!row) return Astro.redirect("/onboarding");
+
+// Pretty-print the JSON
+let pretty = row.config_json;
+try {
+  pretty = JSON.stringify(JSON.parse(row.config_json), null, 2);
+} catch {
+  // already a string — show as-is
+}
+
+// Build a sample client.config.ts content
+const tsContent = `import { validateClientConfig, type ClientConfig } from "./client.config.schema.js";
+
+const config: ClientConfig = ${pretty} as ClientConfig;
+
+export default validateClientConfig(config);
+`;
+---
+
+<AdminLayout title={`Config — ${row.business_name}`}>
+  <header style="margin-bottom: 1.5rem;">
+    <p style="margin: 0 0 0.5rem 0;"><a href="/onboarding" style="color: var(--c-brand);">← Kolejka onboarding</a></p>
+    <h1 style="font-size: 1.5rem; font-weight: 800; margin: 0 0 0.5rem 0;">⚙️ {row.business_name} — wygenerowany config</h1>
+    <p style="margin: 0; color: var(--c-text-muted); font-size: 0.9rem;">
+      Domena: <strong>{row.primary_domain ?? "—"}</strong> ·
+      Wygenerowano: {new Date(row.generated_at).toLocaleString("pl-PL")} ·
+      Status: <span class="badge">{row.provisioning_status}</span>
+    </p>
+  </header>
+
+  <div class="card" style="margin-bottom: 1rem;">
+    <h2 style="font-size: 1rem; margin: 0 0 0.5rem 0;">📋 Co z tym zrobić (manualnie, dopóki Track 4 nie działa)</h2>
+    <ol style="margin: 0; padding-left: 1.25rem; font-size: 0.9rem; line-height: 1.65; color: var(--c-text);">
+      <li>Skopiuj zawartość <code>client.config.ts</code> poniżej.</li>
+      <li>Sklonuj <code>mm-starter</code>, podmień <code>src/client.config.ts</code> na powyższą zawartość, commit + push do <code>MixtureMarketing/{client_id}-site</code>.</li>
+      <li>Skonfiguruj DNS klienta (CNAME → <code>mm-starter-{client_id}.workers.dev</code>).</li>
+      <li>Deploy: <code>cd apps/starter && pnpm exec wrangler deploy --name mm-starter-{client_id}</code>.</li>
+      <li>Wróć do admina i zmień status klienta z <code>pending</code> na <code>active</code>.</li>
+    </ol>
+  </div>
+
+  <h2 style="font-size: 1.1rem; margin: 1.5rem 0 0.5rem 0;">src/client.config.ts</h2>
+  <pre style="background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.8rem; line-height: 1.5; max-height: 70vh;"><code>{tsContent}</code></pre>
+
+  <button id="copy-btn" type="button" class="btn btn-primary" style="margin-top: 1rem;">📋 Skopiuj do schowka</button>
+
+  <script define:vars={{ tsContent }}>
+    document.getElementById("copy-btn").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(tsContent);
+        const btn = document.getElementById("copy-btn");
+        const orig = btn.textContent;
+        btn.textContent = "✅ Skopiowano!";
+        setTimeout(() => { btn.textContent = orig; }, 1500);
+      } catch (e) {
+        alert("Nie udało się skopiować: " + e.message);
+      }
+    });
+  </script>
+</AdminLayout>

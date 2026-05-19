@@ -1,0 +1,109 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+
+const env = Astro.locals.runtime?.env;
+if (!env?.DB) return new Response("Runtime not ready", { status: 500 });
+
+interface Row {
+  client_id: string;
+  business_name: string;
+  city: string;
+  tier: string;
+  client_status: string;
+  provisioning_status: string;
+  generated_at: string;
+  provisioning_started_at: string | null;
+  provisioning_error: string | null;
+}
+
+const result = await env.DB
+  .prepare(
+    `SELECT c.id AS client_id, c.business_name, c.city, c.tier, c.status AS client_status,
+            p.provisioning_status, p.generated_at, p.provisioning_started_at, p.provisioning_error
+       FROM client_provisioning_configs p
+       JOIN clients c ON c.id = p.client_id
+      ORDER BY p.generated_at DESC LIMIT 50`,
+  )
+  .all<Row>();
+
+const rows = result.results ?? [];
+
+const statusBadgeClass = (s: string): string => {
+  if (s === "done") return "badge-success";
+  if (s === "failed") return "badge-danger";
+  if (s === "running") return "badge-warning";
+  return ""; // pending
+};
+---
+
+<AdminLayout title="Onboarding">
+  <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap;">
+    <div>
+      <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0;">🚀 Onboarding</h1>
+      <p style="color: var(--c-text-muted); margin: 0;">
+        Kolejka klientów oczekujących na provisioning + historia.
+      </p>
+    </div>
+    <a href="/onboarding/new" class="btn btn-primary">+ Nowy klient</a>
+  </header>
+
+  <div class="card" style="padding: 0;">
+    {rows.length === 0 ? (
+      <div style="padding: 3rem 2rem; text-align: center;">
+        <p style="margin: 0 0 1rem 0; color: var(--c-text-muted);">Brak klientów w kolejce.</p>
+        <a href="/onboarding/new" class="btn btn-primary">Dodaj pierwszego klienta</a>
+      </div>
+    ) : (
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Firma</th>
+            <th>Miasto</th>
+            <th>Pakiet</th>
+            <th>Status klienta</th>
+            <th>Provisioning</th>
+            <th>Utworzono</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr>
+              <td><a href={`/clients/${r.client_id}`} style="font-weight: 600; color: var(--c-text);">{r.business_name}</a></td>
+              <td style="color: var(--c-text-muted);">{r.city}</td>
+              <td><span class="badge">{r.tier}</span></td>
+              <td><span class="badge">{r.client_status}</span></td>
+              <td>
+                <span class={`badge ${statusBadgeClass(r.provisioning_status)}`}>{r.provisioning_status}</span>
+                {r.provisioning_error && (
+                  <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: var(--c-danger, #dc2626);">{r.provisioning_error}</p>
+                )}
+              </td>
+              <td style="color: var(--c-text-muted); font-size: 0.85rem;">{new Date(r.generated_at).toLocaleString("pl-PL")}</td>
+              <td>
+                <a href={`/onboarding/${r.client_id}/config`} style="font-size: 0.85rem; color: var(--c-brand);">Config</a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+
+  <details style="margin-top: 2rem;" class="card">
+    <summary style="cursor: pointer; font-weight: 600;">ℹ️ Co dzieje się po Submit?</summary>
+    <div style="margin-top: 1rem; color: var(--c-text-muted); font-size: 0.9rem; line-height: 1.6;">
+      <ol style="margin: 0; padding-left: 1.25rem;">
+        <li>Wpis trafia do <code>client_provisioning_configs</code> ze statusem <code>pending</code>.</li>
+        <li>Cron <code>provision-client</code> (mm-control-plane) podejmuje wpis (Track 4 — TBD).</li>
+        <li>OVH API: rezerwacja domeny + DNS.</li>
+        <li>GitHub API: fork mm-starter → <code>MixtureMarketing/{`{slug}`}-site</code> + commit <code>client.config.ts</code>.</li>
+        <li>Wrangler: deploy Worker → custom domain → status klienta = <code>active</code>.</li>
+        <li>Email do klienta z linkiem do panelu klienta.</li>
+      </ol>
+      <p style="margin-top: 1rem; font-size: 0.85rem;">
+        Dopóki Track 4 (provisioning worker) nie jest gotowy, status pozostaje <code>pending</code> — <strong>config jest gotowy do ręcznego deploy</strong>: zobacz "Config" w wierszu klienta.
+      </p>
+    </div>
+  </details>
+</AdminLayout>
