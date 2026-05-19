@@ -85,6 +85,10 @@
     "./booksy": {
       "types": "./dist/booksy/index.d.ts",
       "import": "./dist/booksy/index.js"
+    },
+    "./newsletter": {
+      "types": "./dist/newsletter/index.d.ts",
+      "import": "./dist/newsletter/index.js"
     }
   },
   "files": ["dist", "README.md"],
