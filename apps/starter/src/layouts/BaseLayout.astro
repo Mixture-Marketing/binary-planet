@@ -19,6 +19,7 @@ import { buildChatWidgetHtml } from "@mixturemarketing/web-core/chatbot";
 import { buildLeadpopHtml } from "@mixturemarketing/web-core/leadpop";
 import { buildFomoHtml } from "@mixturemarketing/web-core/fomo";
 import { buildBooksyHtml } from "@mixturemarketing/web-core/booksy";
+import { buildNewsletterHtml } from "@mixturemarketing/web-core/newsletter";
 
 import clientConfig from "../client.config.ts";
 import { tokensCss } from "../themes/craftsman/tokens.ts";
@@ -88,6 +89,18 @@ const booksyHtml = booksyUrl
       ctaLabel: "Zarezerwuj wizytę",
       brandColor: "var(--c-brand, #047857)",
       mode: "sticky",
+    })
+  : "";
+
+// Newsletter widget (Track 24f-4) — bottom-right sticky card, after 6s
+const newsletterEnabled = isOn((runtimeEnv as { NEWSLETTER_SMS_ENABLED?: string } | undefined)?.NEWSLETTER_SMS_ENABLED);
+const newsletterHtml = newsletterEnabled
+  ? buildNewsletterHtml({
+      title: "Bądź na bieżąco",
+      body: `Otrzymuj nowości i promocje od ${clientConfig.business.name}. Bez spamu.`,
+      brandColor: "var(--c-brand, #047857)",
+      mode: "sticky",
+      collectPhone: false,
     })
   : "";
 
@@ -183,5 +196,8 @@ const globalCss = [
 
     {/* Faza A — Leadpop modal (LEADPOP_ENABLED) — last because it's modal */}
     {leadpopEnabled && <Fragment set:html={leadpopHtml} />}
+
+    {/* Track 24f-4 — Newsletter subscribe widget */}
+    {newsletterEnabled && <Fragment set:html={newsletterHtml} />}
   </body>
 </html>
