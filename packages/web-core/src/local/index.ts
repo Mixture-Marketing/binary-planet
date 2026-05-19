@@ -121,5 +121,12 @@ export { buildRobotsTxt, NOISY_SEO_BOTS } from "./robots.js";
 export type { RobotsOptions } from "./robots.js";
 
 // llms.txt
-export { buildLlmsTxt, buildLocalBusinessLlmsTxt } from "./llms-txt.js";
-export type { LlmsTxtInput, LlmsTxtSection, LocalBusinessLlmsTxtInput } from "./llms-txt.js";
+export { buildLlmsTxt, buildLlmsTxtPro, buildLocalBusinessLlmsTxt } from "./llms-txt.js";
+export type {
+  LlmsQaPair,
+  LlmsServiceQa,
+  LlmsTxtInput,
+  LlmsTxtProInput,
+  LlmsTxtSection,
+  LocalBusinessLlmsTxtInput,
+} from "./llms-txt.js";
