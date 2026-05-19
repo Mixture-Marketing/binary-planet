@@ -1,0 +1,52 @@
+# Local dev secrets for mm-control-plane. Copy to `.dev.vars` (gitignored).
+# Used by `wrangler dev` AND by Node scripts via `node --env-file=.dev.vars`.
+
+# --- Provisioning (Track 4) ---
+PROVISIONING_DRY_RUN="true"
+
+# OVH API — domain registration + DNS. Set up: docs/OVH-SETUP.md
+OVH_APP_KEY=""
+OVH_APP_SECRET=""
+OVH_CONSUMER_KEY=""
+OVH_ENDPOINT="ovh-eu"
+
+# GitHub — repo create + commit + workflow_dispatch for klient deploy
+GITHUB_PAT=""
+GITHUB_ORG="MixtureMarketing"
+GITHUB_SOURCE_REPO="MixtureMarketing/binary-planet"
+
+# Cloudflare — Worker custom domain (after wrangler deploy via GH Actions)
+CF_API_TOKEN=""
+CF_ACCOUNT_ID=""
+CF_ZONE_ID=""
+
+# --- Lead pipeline ---
+RESEND_API_KEY=""
+RESEND_FROM="leads@mixturemarketing.pl"
+
+SMSAPI_TOKEN=""
+SMSAPI_FROM="INFO"
+
+# --- AI ---
+ANTHROPIC_API_KEY=""
+
+# --- SEO / data ---
+DATAFORSEO_LOGIN=""
+DATAFORSEO_PASSWORD=""
+
+# --- Payments ---
+STRIPE_SECRET_KEY=""
+STRIPE_WEBHOOK_SECRET=""
+P24_MERCHANT_ID=""
+P24_CRC_KEY=""
+P24_API_KEY=""
+FAKTUROWNIA_API_TOKEN=""
+
+# --- Polish business data ---
+REGON_USER_KEY=""
+
+# --- Internal crypto ---
+JWT_SIGNING_KEY=""
+D1_ENCRYPTION_KEY=""
+BACKUP_ENCRYPTION_KEY=""
+TURNSTILE_SECRET_KEY=""
