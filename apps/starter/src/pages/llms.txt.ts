@@ -1,4 +1,10 @@
-import { buildLlmsTxt, type LlmsTxtSection } from "@mixturemarketing/web-core/local";
+import {
+  buildLlmsTxt,
+  buildLlmsTxtPro,
+  type LlmsQaPair,
+  type LlmsServiceQa,
+  type LlmsTxtSection,
+} from "@mixturemarketing/web-core/local";
 import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
 
@@ -7,7 +13,9 @@ import { getProgrammaticPages } from "../lib/programmatic.ts";
 
 export const prerender = false;
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async ({ locals }) => {
+  const env = (locals as { runtime?: { env?: { GEO_LLM_PRO_ENABLED?: string } } })?.runtime?.env;
+  const isPro = String(env?.GEO_LLM_PRO_ENABLED ?? "").toLowerCase() === "true";
   const base = `${clientConfig.domain.canonicalScheme}://${clientConfig.domain.primary}`;
 
   const sections: LlmsTxtSection[] = [
@@ -61,6 +69,54 @@ export const GET: APIRoute = async () => {
     });
   }
 
+  // PRO mode — enhanced format with Q&A blocks
+  if (isPro) {
+    const faqEntries = await getCollection("faq").catch(() => []);
+    const topQa: LlmsQaPair[] = faqEntries
+      .filter((f) => f.data.published)
+      .sort((a, b) => (a.data.order ?? 99) - (b.data.order ?? 99))
+      .slice(0, 8)
+      .map((f) => ({
+        question: f.data.question,
+        answer: typeof f.body === "string" ? f.body.replace(/\s+/g, " ").trim().slice(0, 350) : "",
+      }));
+
+    const servicesQa: LlmsServiceQa[] = clientConfig.services.map((s) => ({
+      name: s.name,
+      description: s.description,
+      ...(s.priceFrom && { priceFrom: s.priceFrom }),
+      qa: [
+        { question: `Ile kosztuje ${s.name.toLowerCase()}?`, answer: s.priceFrom ? `Cena zaczyna się od ${s.priceFrom}. Skontaktuj się aby uzyskać dokładną wycenę.` : `Skontaktuj się aby uzyskać wycenę.` },
+        { question: `Czy ${s.name.toLowerCase()} jest dostępna w ${clientConfig.address?.city ?? "okolicy"}?`, answer: `Tak, świadczymy usługę ${s.name.toLowerCase()} w ${clientConfig.address?.city ?? "naszej okolicy"} i okolicach.` },
+      ],
+    }));
+
+    const hoursStr = clientConfig.hours
+      ? Object.entries(clientConfig.hours)
+          .filter(([k, v]) => k !== "note" && v)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(", ")
+      : undefined;
+
+    const txt = buildLlmsTxtPro({
+      name: clientConfig.business.name,
+      summary: clientConfig.business.description,
+      sections,
+      business: {
+        industry: clientConfig.business.industry,
+        city: clientConfig.address?.city ?? "",
+        ...(clientConfig.address?.street && { address: `${clientConfig.address.street}, ${clientConfig.address.city}` }),
+        ...(clientConfig.contact?.phone && { phone: clientConfig.contact.phone }),
+        ...(clientConfig.contact?.email && { email: clientConfig.contact.email }),
+        ...(hoursStr && { hours: hoursStr }),
+      },
+      topQa,
+      services: servicesQa,
+    });
+    return new Response(txt, { status: 200, headers: { "Content-Type": "text/markdown; charset=utf-8" } });
+  }
+
+  // Free baseline
   const txt = buildLlmsTxt({
     name: clientConfig.business.name,
     summary: clientConfig.business.description,
