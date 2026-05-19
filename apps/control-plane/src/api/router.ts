@@ -8,6 +8,7 @@ import type { HonoEnv } from "../env.js";
 import { notFoundHandler, onError } from "./middleware/error.js";
 import { requestLogger } from "./middleware/logger.js";
 import { authClientKey } from "./middleware/auth.js";
+import { corsMiddleware } from "./middleware/cors.js";
 import { eventsRouter } from "./routes/events.js";
 import { featureFlagsRouter } from "./routes/feature-flags.js";
 import { healthRouter } from "./routes/health.js";
@@ -21,8 +22,9 @@ import { stripeWebhookRouter } from "./routes/webhooks/stripe.js";
 export function createApp(): Hono<HonoEnv> {
   const app = new Hono<HonoEnv>();
 
-  // Global middleware (order matters: logger first → catches everything)
-  app.use("*", requestLogger);
+  // Global middleware (order matters)
+  app.use("*", corsMiddleware);  // 1st: handles OPTIONS preflight, adds headers to responses
+  app.use("*", requestLogger);   // 2nd: logs every request (incl. preflights that don't pass through)
 
   // Public — no auth
   app.route("/api/health", healthRouter);
