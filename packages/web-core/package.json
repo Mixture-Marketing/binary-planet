@@ -73,6 +73,18 @@
     "./chatbot": {
       "types": "./dist/chatbot/index.d.ts",
       "import": "./dist/chatbot/index.js"
+    },
+    "./leadpop": {
+      "types": "./dist/leadpop/index.d.ts",
+      "import": "./dist/leadpop/index.js"
+    },
+    "./fomo": {
+      "types": "./dist/fomo/index.d.ts",
+      "import": "./dist/fomo/index.js"
+    },
+    "./booksy": {
+      "types": "./dist/booksy/index.d.ts",
+      "import": "./dist/booksy/index.js"
     }
   },
   "files": ["dist", "README.md"],
