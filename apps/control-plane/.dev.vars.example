@@ -23,6 +23,11 @@ GITHUB_OAUTH_CLIENT_SECRET=""
 # Generate: openssl rand -base64 32   (or PowerShell — see docs/FREE-PLAN-NOTES.md)
 ADMIN_API_KEY=""
 
+# Public-ish key for /api/admin/preonboard — wstrzykiwany w build marketing landing
+# (mixturemarketing.pl/abonament). Klucz idzie do przeglądarki klienta. Rate-limit
+# per IP w hubie. Rotujemy raz w miesiącu. Generate: openssl rand -base64 32
+PREONBOARD_PUBLIC_KEY=""
+
 # Cloudflare — Worker custom domain (after wrangler deploy via GH Actions)
 CF_API_TOKEN=""
 CF_ACCOUNT_ID=""

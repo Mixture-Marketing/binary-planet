@@ -59,6 +59,14 @@ export interface Env {
   GITHUB_OAUTH_CLIENT_SECRET?: string;
   /** Admin API key for /api/admin/* manual endpoints (cron run-now). v0.1 single shared secret. */
   ADMIN_API_KEY?: string;
+  /**
+   * Public-ish key for /api/admin/preonboard — wstrzykiwany w build marketingowego landing
+   * (mixturemarketing.pl). Klucz idzie do przeglądarki klienta, więc:
+   *   - rate-limited per IP (5 prób/h)
+   *   - scope: TYLKO POST /api/admin/preonboard + POST /api/admin/stripe/checkout
+   *   - rotujemy raz w miesiącu
+   */
+  PREONBOARD_PUBLIC_KEY?: string;
   /** GitHub org/owner under which klient repos are created. Default "MixtureMarketing". */
   GITHUB_ORG?: string;
   /** GitHub source repo path. Default "MixtureMarketing/binary-planet". */

@@ -14,6 +14,7 @@ import { healthRouter } from "./routes/health.js";
 import { leadsRouter } from "./routes/leads.js";
 import { adminCheckoutRouter } from "./routes/admin/checkout.js";
 import { adminCronRouter } from "./routes/admin/cron.js";
+import { preonboardRouter } from "./routes/admin/preonboard.js";
 import { sveltiaOauthRouter } from "./routes/sveltia-oauth.js";
 import { stripeWebhookRouter } from "./routes/webhooks/stripe.js";
 
@@ -35,6 +36,8 @@ export function createApp(): Hono<HonoEnv> {
   // authClientKey middleware intercepts these routes first.
   app.route("/api/admin/stripe/checkout", adminCheckoutRouter);
   app.route("/api/admin/cron/run-now", adminCronRouter);
+  // Preonboard — public-ish, X-BP-Preonboard-Key auth, rate-limited per IP
+  app.route("/api/admin/preonboard", preonboardRouter);
 
   // Protected — require X-BP-Client-Key
   const protectedApi = new Hono<HonoEnv>();
