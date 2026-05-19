@@ -56,6 +56,7 @@ preview_bucket_name = "mm-uploads-preview"
 [triggers]
 crons = [
   "*/5 * * * *",  # health-check  (every 5 min)
+  "*/2 * * * *",  # provision-pending (Track 4 — picks up pending client configs)
   "0 2 * * *",    # gsc-daily-pull
   "0 3 * * *",    # ga4-daily-pull
   "0 4 * * *",    # gbp-daily-pull

@@ -37,7 +37,27 @@ export interface Env {
   OVH_APP_KEY?: string;
   OVH_APP_SECRET?: string;
   OVH_CONSUMER_KEY?: string;
+  /** OVH endpoint, e.g. "ovh-eu". Default "ovh-eu". */
+  OVH_ENDPOINT?: string;
   GH_APP_PRIVATE_KEY?: string;
+  /** GitHub Personal Access Token (scope: repo). For Track 4 provisioning (fork + commit). */
+  GITHUB_PAT?: string;
+  /** GitHub org/owner under which klient repos are created. Default "MixtureMarketing". */
+  GITHUB_ORG?: string;
+  /** GitHub source repo path. Default "MixtureMarketing/binary-planet". */
+  GITHUB_SOURCE_REPO?: string;
+  /** Cloudflare API token (scope: Workers Scripts:Edit, DNS:Edit). For Track 4. */
+  CF_API_TOKEN?: string;
+  /** Cloudflare account ID. */
+  CF_ACCOUNT_ID?: string;
+  /** Cloudflare zone ID for the agency root domain (used when assigning custom domains). */
+  CF_ZONE_ID?: string;
+  /**
+   * Track 4 dry-run mode. When "true", provisioning logs each step but does not call
+   * external APIs (OVH/GitHub/CF). Useful for local dev + integration tests.
+   * Default: "true" while we don't have real secrets configured.
+   */
+  PROVISIONING_DRY_RUN?: string;
   GOOGLE_SERVICE_ACCOUNT_B64?: string;
   TURNSTILE_SECRET_KEY?: string;
   JWT_SIGNING_KEY?: string;

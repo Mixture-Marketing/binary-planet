@@ -11,6 +11,10 @@ interface ConfigRow {
   config_json: string;
   generated_at: string;
   provisioning_status: string;
+  provisioning_started_at: string | null;
+  provisioning_finished_at: string | null;
+  provisioning_error: string | null;
+  steps_json: string;
   business_name: string;
   primary_domain: string | null;
 }
@@ -18,6 +22,8 @@ interface ConfigRow {
 const row = await env.DB
   .prepare(
     `SELECT p.config_json, p.generated_at, p.provisioning_status,
+            p.provisioning_started_at, p.provisioning_finished_at,
+            p.provisioning_error, p.steps_json,
             c.business_name, c.primary_domain
        FROM client_provisioning_configs p
        JOIN clients c ON c.id = p.client_id
@@ -43,36 +49,89 @@ const config: ClientConfig = ${pretty} as ClientConfig;
 
 export default validateClientConfig(config);
 `;
+
+interface Step { step: string; ok: boolean; ts: string; message: string; dry_run?: boolean; extra?: Record<string, unknown> }
+let steps: Step[] = [];
+try {
+  steps = JSON.parse(row.steps_json) as Step[];
+} catch {
+  steps = [];
+}
+
+const statusBadgeClass = (s: string): string => {
+  if (s === "done") return "badge-success";
+  if (s === "failed") return "badge-danger";
+  if (s === "running") return "badge-warning";
+  return "";
+};
 ---
 
 <AdminLayout title={`Config — ${row.business_name}`}>
   <header style="margin-bottom: 1.5rem;">
     <p style="margin: 0 0 0.5rem 0;"><a href="/onboarding" style="color: var(--c-brand);">← Kolejka onboarding</a></p>
-    <h1 style="font-size: 1.5rem; font-weight: 800; margin: 0 0 0.5rem 0;">⚙️ {row.business_name} — wygenerowany config</h1>
+    <h1 style="font-size: 1.5rem; font-weight: 800; margin: 0 0 0.5rem 0;">⚙️ {row.business_name} — provisioning</h1>
     <p style="margin: 0; color: var(--c-text-muted); font-size: 0.9rem;">
       Domena: <strong>{row.primary_domain ?? "—"}</strong> ·
       Wygenerowano: {new Date(row.generated_at).toLocaleString("pl-PL")} ·
-      Status: <span class="badge">{row.provisioning_status}</span>
+      Status: <span class={`badge ${statusBadgeClass(row.provisioning_status)}`}>{row.provisioning_status}</span>
+      {row.provisioning_error && <span style="color: var(--c-danger, #dc2626); margin-left: 0.5rem;">— {row.provisioning_error}</span>}
     </p>
   </header>
 
-  <div class="card" style="margin-bottom: 1rem;">
-    <h2 style="font-size: 1rem; margin: 0 0 0.5rem 0;">📋 Co z tym zrobić (manualnie, dopóki Track 4 nie działa)</h2>
-    <ol style="margin: 0; padding-left: 1.25rem; font-size: 0.9rem; line-height: 1.65; color: var(--c-text);">
+  <!-- Trigger dry-run -->
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1rem; margin: 0 0 0.5rem 0;">🧪 Dry-run provisioning</h2>
+    <p style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: var(--c-text-muted);">
+      Symulacja Track 4 — bez prawdziwych wywołań OVH/GitHub/CF. Walidacja pełnego cyklu i widoczność co by się stało.
+    </p>
+    <button id="dry-run-btn" type="button" class="btn btn-primary" data-client-id={client_id}>
+      ▶️ Uruchom dry-run
+    </button>
+    <span id="dry-run-status" style="margin-left: 0.75rem; color: var(--c-text-muted); font-size: 0.85rem;"></span>
+  </div>
+
+  <!-- Steps timeline -->
+  {steps.length > 0 && (
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1rem; margin: 0 0 1rem 0;">📋 Kroki provisioning</h2>
+      <ol style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
+        {steps.map((s) => (
+          <li style="display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.75rem; background: rgba(0,0,0,0.02); border-radius: 6px; border-left: 3px solid var(--c-brand);">
+            <span style="font-size: 1.25rem;" aria-hidden="true">{s.ok ? "✅" : "❌"}</span>
+            <div style="flex: 1;">
+              <div style="display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap;">
+                <strong style="font-family: ui-monospace, monospace; font-size: 0.85rem;">{s.step}</strong>
+                {s.dry_run && <span class="badge" style="font-size: 0.7rem;">DRY-RUN</span>}
+                <span style="font-size: 0.75rem; color: var(--c-text-muted);">{new Date(s.ts).toLocaleString("pl-PL")}</span>
+              </div>
+              <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem;">{s.message}</p>
+              {s.extra && Object.keys(s.extra).length > 0 && (
+                <pre style="margin: 0.5rem 0 0 0; font-size: 0.75rem; color: var(--c-text-muted); background: rgba(0,0,0,0.04); padding: 0.5rem; border-radius: 4px; overflow-x: auto;">{JSON.stringify(s.extra, null, 2)}</pre>
+              )}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  )}
+
+  <details class="card" style="margin-bottom: 1rem;">
+    <summary style="cursor: pointer; font-weight: 600;">📋 Manualny fallback (production bez Track 4-prod)</summary>
+    <ol style="margin: 1rem 0 0 0; padding-left: 1.25rem; font-size: 0.9rem; line-height: 1.65; color: var(--c-text);">
       <li>Skopiuj zawartość <code>client.config.ts</code> poniżej.</li>
       <li>Sklonuj <code>mm-starter</code>, podmień <code>src/client.config.ts</code> na powyższą zawartość, commit + push do <code>MixtureMarketing/{client_id}-site</code>.</li>
       <li>Skonfiguruj DNS klienta (CNAME → <code>mm-starter-{client_id}.workers.dev</code>).</li>
       <li>Deploy: <code>cd apps/starter && pnpm exec wrangler deploy --name mm-starter-{client_id}</code>.</li>
       <li>Wróć do admina i zmień status klienta z <code>pending</code> na <code>active</code>.</li>
     </ol>
-  </div>
+  </details>
 
   <h2 style="font-size: 1.1rem; margin: 1.5rem 0 0.5rem 0;">src/client.config.ts</h2>
   <pre style="background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.8rem; line-height: 1.5; max-height: 70vh;"><code>{tsContent}</code></pre>
 
   <button id="copy-btn" type="button" class="btn btn-primary" style="margin-top: 1rem;">📋 Skopiuj do schowka</button>
 
-  <script define:vars={{ tsContent }}>
+  <script is:inline define:vars={{ tsContent, client_id }}>
     document.getElementById("copy-btn").addEventListener("click", async () => {
       try {
         await navigator.clipboard.writeText(tsContent);
@@ -82,6 +141,34 @@ export default validateClientConfig(config);
         setTimeout(() => { btn.textContent = orig; }, 1500);
       } catch (e) {
         alert("Nie udało się skopiować: " + e.message);
+      }
+    });
+
+    document.getElementById("dry-run-btn").addEventListener("click", async () => {
+      const btn = document.getElementById("dry-run-btn");
+      const statusEl = document.getElementById("dry-run-status");
+      btn.disabled = true;
+      btn.textContent = "Uruchamiam…";
+      statusEl.textContent = "";
+      try {
+        const res = await fetch("/api/onboarding/dry-run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ client_id }),
+        });
+        const json = await res.json();
+        if (json.ok) {
+          statusEl.textContent = `✓ ${json.steps.length} kroków OK — odświeżam stronę…`;
+          setTimeout(() => window.location.reload(), 700);
+        } else {
+          statusEl.textContent = "✗ " + (json.error || "Nieznany błąd");
+          btn.disabled = false;
+          btn.textContent = "▶️ Uruchom dry-run";
+        }
+      } catch (e) {
+        statusEl.textContent = "✗ " + e.message;
+        btn.disabled = false;
+        btn.textContent = "▶️ Uruchom dry-run";
       }
     });
   </script>

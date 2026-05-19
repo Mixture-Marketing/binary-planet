@@ -14,9 +14,11 @@ import { Logger } from "@mixturemarketing/logger";
 import type { Env } from "../env.js";
 import { backupDaily } from "./backup.js";
 import { healthCheck } from "./health-check.js";
+import { provisionPending } from "./provision-client.js";
 
 export type ScheduledJobName =
   | "health_check_5min"
+  | "provision_pending_2min"
   | "gsc_daily_pull"
   | "ga4_daily_pull"
   | "gbp_daily_pull"
@@ -28,6 +30,7 @@ export type ScheduledJobName =
 /** Map cron expression (as fired by wrangler) to job name + handler. */
 const CRON_ROUTES: Record<string, ScheduledJobName> = {
   "*/5 * * * *": "health_check_5min",
+  "*/2 * * * *": "provision_pending_2min",
   "0 2 * * *": "gsc_daily_pull",
   "0 3 * * *": "ga4_daily_pull",
   "0 4 * * *": "gbp_daily_pull",
@@ -80,6 +83,13 @@ export async function runScheduled(event: ScheduledEventLike, env: Env): Promise
       case "backup_daily": {
         await backupDaily(env, log);
         processed = 1;
+        break;
+      }
+      case "provision_pending_2min": {
+        const result = await provisionPending(env, log);
+        processed = result.processed;
+        failed = result.failed;
+        if (failed > 0 && failed < processed) status = "partial_success";
         break;
       }
       // v0.1 stubs — implementations in Faza 5
