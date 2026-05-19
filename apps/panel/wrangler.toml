@@ -14,16 +14,16 @@ assets = { directory = "./dist", binding = "ASSETS" }
 [[d1_databases]]
 binding = "DB"
 database_name = "mm-control-plane"
-database_id = "00000000-0000-0000-0000-000000000001"
+database_id = "5edb7097-1e5c-4fbe-b186-fbd1956b9f3c"
 migrations_dir = "../control-plane/migrations"
 
 [[kv_namespaces]]
 binding = "CONFIG"
-id = "00000000000000000000000000000001"
+id = "48f9c8ee78244474883b0ad0d8878f02"
 
 [[kv_namespaces]]
 binding = "PANEL_SESSIONS"
-id = "00000000000000000000000000000003"
+id = "24b4f4b3ad4f440f9992d03ed687859e"
 
 [[r2_buckets]]
 binding = "INVOICES"

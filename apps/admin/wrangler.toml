@@ -19,9 +19,7 @@ assets = { directory = "./dist", binding = "ASSETS" }
 [[d1_databases]]
 binding = "DB"
 database_name = "mm-control-plane"
-# Production: replace this UUID with real CF D1 database_id.
-# Local dev: any non-empty value works — wrangler creates local SQLite anyway.
-database_id = "00000000-0000-0000-0000-000000000001"
+database_id = "5edb7097-1e5c-4fbe-b186-fbd1956b9f3c"
 # In local dev: applies the same SQL schema as control-plane (sibling app).
 migrations_dir = "../control-plane/migrations"
 
@@ -30,12 +28,11 @@ migrations_dir = "../control-plane/migrations"
 # ---------------------------------------------------------------------------
 [[kv_namespaces]]
 binding = "CONFIG"
-# Production: replace with real KV namespace_id. Local: any value works.
-id = "00000000000000000000000000000001"
+id = "48f9c8ee78244474883b0ad0d8878f02"
 
 [[kv_namespaces]]
 binding = "ADMIN_SESSIONS"
-id = "00000000000000000000000000000002"
+id = "f0ab460ad7fe4c7ea71450e1d81d779c"
 
 # ---------------------------------------------------------------------------
 # R2 — shared with mm-control-plane
