@@ -60,6 +60,12 @@ jobs:
           # GitHub Packages auth — repo PAT bot. Optional, only if any private deps.
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || secrets.GITHUB_TOKEN }}
 
+      - name: Build workspace packages
+        # web-core + logger must be built first (mm-starter imports their compiled dist/)
+        run: pnpm -r --filter "./packages/*" build
+        env:
+          NODE_ENV: production
+
       - name: Build mm-starter
         run: pnpm --filter mm-starter build
         env:
@@ -101,6 +107,12 @@ jobs:
           SMSAPI_TOKEN: ${{ secrets.SMSAPI_TOKEN }}
           TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
         continue-on-error: true   # If secrets aren't set, deploy still goes but with dev-mode behavior
+
+      - name: Create .assetsignore (Astro CF adapter outputs _worker.js/ as directory)
+        run: |
+          cd apps/starter/dist
+          printf "_worker.js\n_routes.json\n" > .assetsignore
+          cat .assetsignore
 
       - name: Deploy Worker
         run: |
