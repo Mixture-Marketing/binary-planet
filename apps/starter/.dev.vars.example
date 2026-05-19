@@ -1,0 +1,23 @@
+# Local dev secrets for mm-starter. Copy to `.dev.vars` (gitignored) and fill in.
+# wrangler picks these up automatically when running `wrangler dev` or `astro dev`
+# with platformProxy enabled.
+#
+# In production: use `wrangler secret put <NAME>` instead.
+
+# Resend — email fan-out for leads
+RESEND_API_KEY=""
+RESEND_FROM="leads@yourdomain.pl"
+
+# SMSAPI.pl — SMS lead notification to klient (Track 3)
+# Get OAuth token: https://www.smsapi.pl → Panel → API → OAuth → Tokeny
+SMSAPI_TOKEN=""
+SMSAPI_FROM="INFO"
+
+# Cloudflare Turnstile — anti-bot on contact form
+TURNSTILE_SECRET=""
+
+# Hub API client key (per-klient — issued by control-plane)
+BP_CLIENT_API_KEY=""
+
+# PII encryption — 32 bytes base64 (per-tenant). Optional in v0.1.
+PII_ENCRYPTION_KEY_B64=""
