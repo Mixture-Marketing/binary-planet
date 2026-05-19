@@ -15,6 +15,7 @@ import {
   VISUALLY_HIDDEN_CSS,
 } from "@mixturemarketing/web-core/a11y";
 import { buildMetaTags, type MetaInput } from "@mixturemarketing/web-core/seo";
+import { buildChatWidgetHtml } from "@mixturemarketing/web-core/chatbot";
 
 import clientConfig from "../client.config.ts";
 import { tokensCss } from "../themes/craftsman/tokens.ts";
@@ -28,6 +29,17 @@ const { meta, jsonLd = [] } = Astro.props;
 const nonce = Astro.locals.nonce ?? "";
 const tokens = tokensCss(clientConfig.theme.variant);
 const plausibleEnabled = clientConfig.integrations.plausible;
+
+// Track 24f — Chatbot widget (rendered server-side, runs only when CHATBOT_ENABLED=true env)
+const chatbotEnabled = String((Astro.locals.runtime?.env as { CHATBOT_ENABLED?: string } | undefined)?.CHATBOT_ENABLED ?? "").toLowerCase() === "true";
+const chatWidgetHtml = chatbotEnabled
+  ? buildChatWidgetHtml({
+      apiPath: "/api/chat",
+      brandColor: "var(--c-brand, #047857)",
+      introMessage: `Cześć! Jestem asystentem ${clientConfig.business.name}. W czym mogę pomóc?`,
+      businessName: clientConfig.business.name,
+    })
+  : "";
 
 // SEO: build meta tags from input. dev: log warnings.
 const { tags, warnings } = buildMetaTags(meta);
@@ -109,5 +121,8 @@ const globalCss = [
       import { initStarter } from "../scripts/init.client.ts";
       initStarter();
     </script>
+
+    {/* Track 24f — Chatbot widget (only when CHATBOT_ENABLED=true) */}
+    {chatbotEnabled && <Fragment set:html={chatWidgetHtml} />}
   </body>
 </html>
