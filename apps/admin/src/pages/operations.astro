@@ -53,6 +53,62 @@ const formatDuration = (started: string, finished: string | null): string => {
     </p>
   </header>
 
+  <details class="card" style="margin-bottom: 1.5rem;">
+    <summary style="cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;">
+      <Icon name="play" size={16} /> Manualne uruchomienie cron jobs (dla free Workers plan)
+    </summary>
+    <p style="margin: 1rem 0 0.75rem 0; font-size: 0.9rem; color: var(--c-text-muted);">
+      Na free plan CF Workers cron triggers nie działają. Tu możesz odpalić każdy job ręcznie.
+      W produkcji ustawiony przez wrangler.toml automatycznie.
+    </p>
+    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+      {["health_check_5min", "provision_pending_2min", "ai_blog_weekly", "backup_daily"].map((job) => (
+        <button type="button" class="btn cron-run-btn" data-job={job} style="font-size: 0.85rem; padding: 0.4rem 0.85rem; min-height: 32px; gap: 0.4rem;">
+          <Icon name="play" size={12} /> {job}
+        </button>
+      ))}
+    </div>
+    <p id="cron-status" style="margin: 0.75rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted); font-family: ui-monospace, monospace;"></p>
+    <p style="margin-top: 1rem; font-size: 0.8rem; color: var(--c-text-muted);">
+      Wymaga: <code>ADMIN_API_KEY</code> w wrangler secrets + <code>HUB_BASE_URL</code> wskazującym na działający hub.
+    </p>
+  </details>
+
+  <script is:inline>
+    const ADMIN_API_KEY = ""; // empty in dev — set via wrangler secret in prod + paste here for testing
+    document.querySelectorAll(".cron-run-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const job = btn.dataset.job;
+        const statusEl = document.getElementById("cron-status");
+        if (!ADMIN_API_KEY) {
+          statusEl.textContent = "Brak ADMIN_API_KEY w admin/src/pages/operations.astro — wpisz secret żeby odpalić.";
+          return;
+        }
+        btn.disabled = true;
+        statusEl.textContent = `Odpalam ${job}…`;
+        try {
+          const hubUrl = window.location.origin.replace(":4322", ":8787"); // dev fallback
+          const res = await fetch(`${hubUrl}/api/admin/cron/run-now`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-BP-Admin-Key": ADMIN_API_KEY },
+            body: JSON.stringify({ job }),
+          });
+          const json = await res.json();
+          if (json.ok) {
+            statusEl.textContent = `${job}: processed=${json.data.processed} failed=${json.data.failed} duration=${json.data.duration_ms}ms`;
+            setTimeout(() => window.location.reload(), 1500);
+          } else {
+            statusEl.textContent = `BŁĄD: ${json.error?.message || JSON.stringify(json)}`;
+          }
+        } catch (e) {
+          statusEl.textContent = `Network error: ${e.message}`;
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
+  </script>
+
   <section style="display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 2.5rem;">
     <div class="card">
       <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase;">AI calls / 24h</p>

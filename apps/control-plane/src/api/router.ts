@@ -13,6 +13,7 @@ import { featureFlagsRouter } from "./routes/feature-flags.js";
 import { healthRouter } from "./routes/health.js";
 import { leadsRouter } from "./routes/leads.js";
 import { adminCheckoutRouter } from "./routes/admin/checkout.js";
+import { adminCronRouter } from "./routes/admin/cron.js";
 import { sveltiaOauthRouter } from "./routes/sveltia-oauth.js";
 import { stripeWebhookRouter } from "./routes/webhooks/stripe.js";
 
@@ -29,6 +30,12 @@ export function createApp(): Hono<HonoEnv> {
   app.route("/api/sveltia", sveltiaOauthRouter);
   // TODO Faza 3: P24 webhook, Fakturownia webhook, Resend webhook
 
+  // Admin API — separate auth (X-BP-Admin-Key from env.ADMIN_API_KEY).
+  // MUST be registered BEFORE protected /api catch-all below — otherwise
+  // authClientKey middleware intercepts these routes first.
+  app.route("/api/admin/stripe/checkout", adminCheckoutRouter);
+  app.route("/api/admin/cron/run-now", adminCronRouter);
+
   // Protected — require X-BP-Client-Key
   const protectedApi = new Hono<HonoEnv>();
   protectedApi.use("*", authClientKey);
@@ -36,10 +43,6 @@ export function createApp(): Hono<HonoEnv> {
   protectedApi.route("/events", eventsRouter);
   protectedApi.route("/feature-flags", featureFlagsRouter);
   app.route("/api", protectedApi);
-
-  // Admin API — separate auth (X-BP-Admin-Key, TODO Track 6-prod).
-  // v0.1: open within same CF account, callers gated by network not by header.
-  app.route("/api/admin/stripe/checkout", adminCheckoutRouter);
 
   // Admin UI placeholder — Astro Server Islands w przyszłości
   // TODO Faza 3-4: Astro dashboard pages

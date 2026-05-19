@@ -19,6 +19,10 @@ GITHUB_SOURCE_REPO="MixtureMarketing/binary-planet"
 GITHUB_OAUTH_CLIENT_ID=""
 GITHUB_OAUTH_CLIENT_SECRET=""
 
+# Manual cron trigger endpoint auth (free Workers plan workaround).
+# Generate: openssl rand -base64 32   (or PowerShell — see docs/FREE-PLAN-NOTES.md)
+ADMIN_API_KEY=""
+
 # Cloudflare — Worker custom domain (after wrangler deploy via GH Actions)
 CF_API_TOKEN=""
 CF_ACCOUNT_ID=""
