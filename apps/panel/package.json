@@ -17,7 +17,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^12.2.0",
+    "@astrojs/cloudflare": "^13.1.10",
     "@mixturemarketing/logger": "workspace:*",
     "@mixturemarketing/web-core": "workspace:*",
     "@tailwindcss/vite": "^4.0.0",
