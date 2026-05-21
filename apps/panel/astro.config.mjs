@@ -6,8 +6,8 @@ import { defineConfig } from "astro/config";
 export default defineConfig({
   output: "server",
   adapter: cloudflare({
-    platformProxy: { enabled: true },
-    
+    // platformProxy enabled by default in @astrojs/cloudflare v13 — adapter reads
+    // wrangler.jsonc for D1/KV/R2 bindings during dev. Type defs lag the runtime.
     imageService: "compile",
   }),
   vite: {

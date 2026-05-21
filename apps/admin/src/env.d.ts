@@ -1,20 +1,21 @@
 /// <reference path="../.astro/types.d.ts" />
-/// <reference types="@cloudflare/workers-types" />
+/// <reference path="../worker-configuration.d.ts" />
 
-type RuntimeEnv = {
-  DB: D1Database;
-  CONFIG: KVNamespace;
-  ADMIN_SESSIONS: KVNamespace;
-  UPLOADS: R2Bucket;
-  HUB_BASE_URL?: string;
-  LOG_LEVEL?: "debug" | "info" | "warn" | "error";
-  RESEND_API_KEY?: string;
-  RESEND_FROM?: string;
-  SESSION_SIGNING_KEY?: string;
-  D1_ENCRYPTION_KEY?: string;
-  /** Hub admin API key (mirror of hub's ADMIN_API_KEY). Used to trigger cron remotely. */
-  ADMIN_API_KEY?: string;
-};
+// Bindings (DB/KV/R2) + vars come from wrangler-generated worker-configuration.d.ts
+// via `pnpm cf-types`. This file adds runtime secrets (not declared in wrangler.jsonc).
+declare namespace Cloudflare {
+  interface Env {
+    RESEND_API_KEY?: string;
+    RESEND_FROM?: string;
+    SESSION_SIGNING_KEY?: string;
+    D1_ENCRYPTION_KEY?: string;
+    /** Hub admin API key (mirror of hub's ADMIN_API_KEY). Used to trigger cron remotely. */
+    ADMIN_API_KEY?: string;
+  }
+}
+
+// Legacy alias — some code still references `RuntimeEnv` directly.
+type RuntimeEnv = Cloudflare.Env;
 
 declare namespace App {
   interface Locals extends Runtime {
@@ -31,7 +32,3 @@ declare namespace App {
 }
 
 type Runtime = import("@astrojs/cloudflare").Runtime<RuntimeEnv>;
-
-declare module "cloudflare:workers" {
-  export const env: RuntimeEnv;
-}

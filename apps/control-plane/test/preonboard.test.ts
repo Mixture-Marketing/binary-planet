@@ -135,39 +135,40 @@ describe("POST /api/admin/preonboard", () => {
     expect(meta.ip_hash).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it("rate limit: 6th request from same IP returns 429", async () => {
+  it("rate limit: 16th request from same IP returns 429", async () => {
     const app = createApp();
     const ip = "9.9.9.9";
 
-    // 5 successful requests with different emails + different NIPs (NIP is UNIQUE)
-    for (let i = 0; i < 5; i++) {
+    // 15 successful requests with different emails + different NIPs (NIP is UNIQUE).
+    // RATE_LIMIT_MAX is 15/hour per IP — see preonboard.ts.
+    for (let i = 0; i < 15; i++) {
       const res = await app.fetch(
-        postPreonboard({ ...validBody, email: `user${i}@example.com`, nip: `123456789${i}` }, PUBLIC_KEY, ip),
+        postPreonboard({ ...validBody, email: `user${i}@example.com`, nip: `12345678${String(i).padStart(2, "0")}` }, PUBLIC_KEY, ip),
         env,
       );
-      expect(res.status).toBe(200);
+      expect(res.status, `request ${i + 1}/15 should succeed`).toBe(200);
     }
 
-    // 6th hits rate limit
-    const res6 = await app.fetch(
-      postPreonboard({ ...validBody, email: "user6@example.com", nip: "1234567896" }, PUBLIC_KEY, ip),
+    // 16th hits rate limit
+    const res16 = await app.fetch(
+      postPreonboard({ ...validBody, email: "user16@example.com", nip: "1234567816" }, PUBLIC_KEY, ip),
       env,
     );
-    expect(res6.status).toBe(429);
+    expect(res16.status).toBe(429);
   });
 
   it("rate limit isolated per IP", async () => {
     const app = createApp();
 
-    // Exhaust IP A
-    for (let i = 0; i < 5; i++) {
+    // Exhaust IP A — 15 successful + 1 over-limit (RATE_LIMIT_MAX = 15/hour)
+    for (let i = 0; i < 15; i++) {
       await app.fetch(
-        postPreonboard({ ...validBody, email: `a${i}@example.com`, nip: `222222220${i}` }, PUBLIC_KEY, "10.0.0.1"),
+        postPreonboard({ ...validBody, email: `a${i}@example.com`, nip: `22222222${String(i).padStart(2, "0")}` }, PUBLIC_KEY, "10.0.0.1"),
         env,
       );
     }
     const overflowA = await app.fetch(
-      postPreonboard({ ...validBody, email: "blocked@example.com", nip: "2222222205" }, PUBLIC_KEY, "10.0.0.1"),
+      postPreonboard({ ...validBody, email: "blocked@example.com", nip: "2222222216" }, PUBLIC_KEY, "10.0.0.1"),
       env,
     );
     expect(overflowA.status).toBe(429);

@@ -134,10 +134,18 @@ describe("generateSingleDraft (dry-run)", () => {
   beforeEach(async () => {
     setup = await setupTestEnv();
     setup.env.BLOG_AI_DRY_RUN = "true";
-    // Add modules + github_repo_url so client is eligible
+    // Add modules + github_repo_url + blog_ai addon row so client is eligible.
+    // (Eligibility query checks client_addons, not modules_json — Track 24 addon system.)
     await setup.env.DB
       .prepare(`UPDATE clients SET modules_json = ?, github_repo_url = ? WHERE id = ?`)
       .bind('["care","blog_ai"]', "https://github.com/MixtureMarketing/clk_test-site", setup.clientId)
+      .run();
+    await setup.env.DB
+      .prepare(
+        `INSERT INTO client_addons (client_id, addon_slug, status, price_grosze_at_activation)
+         VALUES (?, 'blog_ai', 'active', 4000)`,
+      )
+      .bind(setup.clientId)
       .run();
   });
 
@@ -180,7 +188,9 @@ describe("generateSingleDraft (dry-run)", () => {
     expect(result.skipped).toBeGreaterThan(0);
   });
 
-  it("generateAiBlogDrafts ignores clients without blog_ai module", async () => {
+  it("generateAiBlogDrafts ignores clients without blog_ai addon", async () => {
+    // Eligibility now checks client_addons (Track 24) — remove addon to mark ineligible
+    await setup.env.DB.prepare(`DELETE FROM client_addons WHERE client_id = ? AND addon_slug = 'blog_ai'`).bind(setup.clientId).run();
     await setup.env.DB.prepare(`UPDATE clients SET modules_json = '["care"]' WHERE id = ?`).bind(setup.clientId).run();
     const result = await generateAiBlogDrafts(setup.env);
     // Our test klient no longer eligible → not in details

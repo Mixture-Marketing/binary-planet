@@ -16,7 +16,7 @@ const currentPath = Astro.url.pathname;
 const hasAddon = (slug: string): boolean => activeAddons.includes(slug);
 
 type NavItem = { href: string; label: string; icon: IconName; show?: boolean };
-const navItems: NavItem[] = [
+const navItems: NavItem[] = ([
   { href: "/", label: "Dashboard", icon: "layout-dashboard" },
   { href: "/leady", label: "Leady", icon: "inbox" },
   { href: "/faktury", label: "Faktury", icon: "file-text" },
@@ -27,7 +27,7 @@ const navItems: NavItem[] = [
   { href: "/addons", label: "Dodatki", icon: "plus" },
   { href: "/ustawienia", label: "Ustawienia", icon: "settings" },
   { href: "/rodo", label: "RODO", icon: "shield-check" },
-].filter((it) => it.show !== false);
+] satisfies NavItem[]).filter((it) => it.show !== false);
 
 const isActive = (href: string): boolean => {
   if (href === "/") return currentPath === "/";

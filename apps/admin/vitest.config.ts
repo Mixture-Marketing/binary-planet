@@ -8,6 +8,8 @@ export default defineConfig({
       "cloudflare:workers": resolve(__dirname, "test/mocks/cloudflare-workers.ts"),
     },
   },
+  // Vitest 4 type defs lag — `poolOptions.forks` is a valid runtime config
+  // for passing `--experimental-sqlite` to forked workers (D1 mock uses node:sqlite).
   test: {
     environment: "node",
     pool: "forks",
@@ -22,5 +24,5 @@ export default defineConfig({
         external: [/^node:/],
       },
     },
-  },
+  } as never,
 });

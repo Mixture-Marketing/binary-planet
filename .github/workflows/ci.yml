@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.18"
+          cache: "pnpm"
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Build internal packages
+        run: |
+          pnpm --filter @mixturemarketing/logger build
+          pnpm --filter @mixturemarketing/web-core build
+
+      # Generate wrangler bindings types so astro check sees correct Cloudflare.Env.
+      - name: Generate wrangler types
+        run: |
+          pnpm --filter mm-panel exec wrangler types --env-interface CloudflareBindings worker-configuration.d.ts
+          pnpm --filter mm-admin exec wrangler types --env-interface CloudflareBindings worker-configuration.d.ts
+          pnpm --filter mm-starter exec wrangler types --env-interface CloudflareBindings worker-configuration.d.ts
+
+      - name: Tests
+        run: pnpm -r test
+        env:
+          NODE_OPTIONS: "--experimental-sqlite"
+
+      - name: Typecheck
+        run: |
+          pnpm --filter mm-panel typecheck
+          pnpm --filter mm-admin typecheck
+          pnpm --filter mm-starter typecheck
+
+      - name: Lint
+        run: pnpm lint
+        continue-on-error: true
