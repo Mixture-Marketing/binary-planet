@@ -9,8 +9,10 @@ import { applySecurityHeaders, generateNonce } from "@mixturemarketing/web-core/
 import { defineMiddleware } from "astro:middleware";
 
 import { readSessionCookie, validateSession } from "./lib/auth.ts";
+import { env } from "cloudflare:workers";
 
-const PUBLIC_PATHS = ["/login", "/api/auth/send-link", "/api/auth/verify"];
+const PUBLIC_PATHS = ["/login", "/api/auth/send-link", "/api/auth/verify", "/api/logo"];
+const ONBOARDING_PATHS = ["/onboarding", "/api/onboarding", "/api/auth/logout"];
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
@@ -23,7 +25,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const nonce = generateNonce();
   context.locals.nonce = nonce;
 
-  const env = context.locals.runtime?.env;
   const sessionId = readSessionCookie(context.request.headers.get("Cookie"));
   if (env?.DB && sessionId) {
     const client = await validateSession(env.DB, sessionId).catch(() => null);
@@ -42,6 +43,41 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
   if (path === "/login" && context.locals.client) {
     return context.redirect("/", 302);
+  }
+
+  // Track 13: redirect klient to /onboarding if wizard not yet completed.
+  // Wizard required when status='provisioning' AND no client_provisioning_configs row exists.
+  if (
+    context.locals.client &&
+    !ONBOARDING_PATHS.some((p) => path === p || path.startsWith(`${p}/`)) &&
+    !isPublic
+  ) {
+    const status = context.locals.client.status;
+    if (status === "provisioning" || status === "pending") {
+      if (env?.DB) {
+        const cfg = await env.DB
+          .prepare(`SELECT provisioning_status FROM client_provisioning_configs WHERE client_id = ? LIMIT 1`)
+          .bind(context.locals.client.id)
+          .first<{ provisioning_status: string }>();
+        if (!cfg) {
+          // No config = klient hasn't done wizard yet
+          return context.redirect("/onboarding", 302);
+        }
+      }
+    }
+  }
+  // If wizard already done AND klient hits /onboarding, send to dashboard.
+  if (path === "/onboarding" && context.locals.client) {
+    if (env?.DB) {
+      const cfg = await env.DB
+        .prepare(`SELECT provisioning_status FROM client_provisioning_configs WHERE client_id = ? LIMIT 1`)
+        .bind(context.locals.client.id)
+        .first<{ provisioning_status: string }>();
+      if (cfg) {
+        // Already submitted — go to /onboarding/complete (waiting screen) or dashboard
+        return context.redirect("/onboarding/complete", 302);
+      }
+    }
   }
 
   const response = await next();

@@ -126,7 +126,7 @@ export const localBusinessInputSchema = z.object({
   // subtype-specific
   servesCuisine: z.array(z.string().min(1).max(50)).max(10).optional(),
   menu: z.string().url().optional(),
-  acceptsReservations: z.boolean().optional(),
+  acceptsReservations: z.union([z.boolean(), z.string()]).optional(),
   medicalSpecialty: z.array(z.string().min(1).max(100)).optional(),
   brand: z.array(z.string().min(1).max(100)).optional(),
   hasCredential: z.array(z.string().min(1).max(200)).optional(),

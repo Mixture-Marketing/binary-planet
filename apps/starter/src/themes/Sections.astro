@@ -1,0 +1,46 @@
+---
+/**
+ * Sections dispatcher — renderuje opcjonalne sekcje w kolejności z config.sections[].
+ *
+ * Plus baked-in per-theme sections (np. Stats dla Minimalist) zawsze włączone.
+ */
+import clientConfig from "../client.config.ts";
+import Pricing from "./sections/Pricing.astro";
+import Team from "./sections/Team.astro";
+import HistoryShared from "./sections/History.astro";
+import HistoryEditorial from "./editorial/sections/History.astro";
+import Video from "./sections/Video.astro";
+import Gallery from "./sections/Gallery.astro";
+import MenuShared from "./sections/Menu.astro";
+import MenuEditorial from "./editorial/sections/Menu.astro";
+import Publications from "./sections/Publications.astro";
+import TrustBadges from "./sections/TrustBadges.astro";
+import Consultation from "./sections/Consultation.astro";
+import MinimalistStats from "./minimalist/sections/Stats.astro";
+
+const sections = (clientConfig.sections ?? []).filter((s) => s.enabled);
+const preset = clientConfig.theme.preset;
+const History = preset === "editorial" ? HistoryEditorial : HistoryShared;
+const Menu = preset === "editorial" ? MenuEditorial : MenuShared;
+
+// Loose-typed config — each section validates its own shape internally.
+type AnyConfig = Record<string, unknown> | undefined;
+const cfg = (s: { config?: unknown }): AnyConfig => (s.config as AnyConfig);
+---
+
+{/* Theme-baked sections (always-on per preset) */}
+{preset === "minimalist" && <MinimalistStats />}
+
+{/* Config-driven sections */}
+{sections.map((s) => {
+  if (s.kind === "pricing") return <Pricing config={cfg(s) as never} />;
+  if (s.kind === "team") return <Team config={cfg(s) as never} />;
+  if (s.kind === "history") return <History config={cfg(s) as never} />;
+  if (s.kind === "video") return <Video config={cfg(s) as never} />;
+  if (s.kind === "gallery") return <Gallery config={cfg(s) as never} />;
+  if (s.kind === "menu") return <Menu config={cfg(s) as never} />;
+  if (s.kind === "publications") return <Publications config={cfg(s) as never} />;
+  if (s.kind === "trust-badges") return <TrustBadges config={cfg(s) as never} />;
+  if (s.kind === "consultation") return <Consultation config={cfg(s) as never} />;
+  return null;
+})}

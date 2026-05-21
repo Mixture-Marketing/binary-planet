@@ -5,13 +5,13 @@ import {
   findClientByEmail,
   sendMagicLinkEmail,
 } from "../../../lib/auth.ts";
+import { env } from "cloudflare:workers";
 
 export const prerender = false;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const POST: APIRoute = async ({ request, locals, url }) => {
-  const env = locals.runtime?.env;
   if (!env?.DB) {
     return new Response("Runtime not ready", { status: 500 });
   }

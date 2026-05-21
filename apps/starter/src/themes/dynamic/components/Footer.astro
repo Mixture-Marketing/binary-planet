@@ -1,0 +1,131 @@
+---
+/**
+ * Dynamic Footer — dark, 4-col, brand-color phone link, mono NIP/REGON.
+ */
+import { formatPolishPhone } from "@mixturemarketing/web-core/local";
+import clientConfig from "../../../client.config.ts";
+
+const { business, contact, location } = clientConfig;
+const phoneDisplay = formatPolishPhone(contact.primaryPhone);
+const year = new Date().getFullYear();
+const areaList = location.serviceArea.slice(0, 4);
+const areaOverflow = location.serviceArea.length - areaList.length;
+---
+
+<footer class="d-ft" role="contentinfo">
+  <div class="container-px d-ft__inner">
+    <div>
+      <p class="d-ft__brand">{business.name} · {location.address.city}</p>
+      <p class="d-ft__addr">
+        {location.address.streetAddress}<br />
+        {location.address.postalCode} {location.address.city}<br />
+        <a href={`tel:${contact.primaryPhone}`} class="d-ft__phone">{phoneDisplay}</a><br />
+        <a href={`mailto:${contact.email}`}>{contact.email}</a>
+      </p>
+    </div>
+
+    <nav class="d-ft__col" aria-label="Usługi">
+      <h4 class="d-ft__col-h">Usługi</h4>
+      <ul>
+        {clientConfig.services.slice(0, 5).map((s) => (
+          <li><a href={`/uslugi/${s.slug}`}>{s.name}</a></li>
+        ))}
+      </ul>
+    </nav>
+
+    <nav class="d-ft__col" aria-label="Obszar działania">
+      <h4 class="d-ft__col-h">Obszar działania</h4>
+      <ul>
+        {areaList.map((a) => <li><a href="#">{a}</a></li>)}
+        {areaOverflow > 0 && <li><a href="/uslugi">+ {areaOverflow} okolic</a></li>}
+      </ul>
+    </nav>
+
+    <nav class="d-ft__col" aria-label="Firma">
+      <h4 class="d-ft__col-h">Firma</h4>
+      <ul>
+        <li><a href="/o-firmie">O mnie</a></li>
+        <li><a href="/faq">FAQ</a></li>
+        <li><a href="/polityka-prywatnosci">Polityka prywatności</a></li>
+        {clientConfig.rodo.termsUrl && <li><a href="/regulamin">Regulamin</a></li>}
+      </ul>
+    </nav>
+  </div>
+
+  <div class="container-px d-ft__bottom">
+    <span>© {year} {business.legalName ?? business.name}</span>
+    <span>NIP {business.nip}{business.regon && <> · REGON {business.regon}</>}</span>
+  </div>
+</footer>
+
+<style>
+  .d-ft {
+    background: var(--color-text);
+    color: color-mix(in srgb, var(--color-surface) 70%, transparent);
+    padding: 3rem 0 2rem;
+  }
+  .d-ft__inner {
+    max-width: 80rem;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  @media (min-width: 768px) {
+    .d-ft__inner { grid-template-columns: 2fr 1fr 1fr 1fr; }
+  }
+  .d-ft__brand {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--color-surface);
+    font-size: 1.05rem;
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.01em;
+  }
+  .d-ft__addr { font-size: 0.92rem; line-height: 1.7; margin: 0; }
+  .d-ft__addr a { color: inherit; text-decoration: none; }
+  .d-ft__addr a:hover { color: var(--color-surface); }
+  .d-ft__phone {
+    color: var(--color-brand) !important;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .d-ft__col-h {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--color-surface);
+    margin: 0 0 0.5rem;
+    font-size: 0.95rem;
+  }
+  .d-ft__col ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .d-ft__col a {
+    color: color-mix(in srgb, var(--color-surface) 70%, transparent);
+    text-decoration: none;
+    font-size: 0.92rem;
+  }
+  .d-ft__col a:hover { color: var(--color-surface); }
+
+  .d-ft__bottom {
+    max-width: 80rem;
+    margin: 2rem auto 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-surface) 15%, transparent);
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.78rem;
+    color: color-mix(in srgb, var(--color-surface) 45%, transparent);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1rem;
+    font-variant-numeric: tabular-nums;
+  }
+</style>

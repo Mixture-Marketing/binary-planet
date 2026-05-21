@@ -1,0 +1,133 @@
+---
+/**
+ * Team section — grid wizytówek zespołu.
+ * Source priority: 1) config.members (inline), 2) Sveltia CMS collection "team".
+ *
+ * Config: { heading?, members: Array<{ name, role, bio?, photoUrl? }> }
+ */
+import { getCollection } from "astro:content";
+
+interface Props {
+  config?: {
+    heading?: string;
+    members?: Array<{ name: string; role: string; bio?: string; photoUrl?: string }>;
+  };
+}
+const { config = {} } = Astro.props;
+const heading = config.heading ?? "Zespół";
+
+let members = config.members ?? [];
+
+// Fallback to CMS collection if no inline config members
+if (members.length === 0) {
+  try {
+    const entries = await getCollection("team" as any, (e: any) => e.data.published !== false);
+    members = (entries as any[])
+      .sort((a, b) => (a.data.order ?? 99) - (b.data.order ?? 99))
+      .map((e: any) => ({
+        name: e.data.name,
+        role: e.data.role,
+        ...(e.data.bio && { bio: e.data.bio }),
+        ...(e.data.photo && { photoUrl: e.data.photo }),
+      }));
+  } catch { /* collection may not exist in klient repo */ }
+}
+---
+
+{members.length > 0 && (
+  <section aria-labelledby="team-heading" class="sec-team">
+    <div class="container-px">
+      <header class="sec-team__head">
+        <h2 id="team-heading">{heading}</h2>
+        <p>Osoby za tym, co robimy.</p>
+      </header>
+
+      <ul class="sec-team__grid">
+        {members.map((m) => (
+          <li class="sec-team__card">
+            {m.photoUrl ? (
+              <img src={m.photoUrl} alt={`${m.name} — ${m.role}`} class="sec-team__photo" loading="lazy" />
+            ) : (
+              <div class="sec-team__photo sec-team__photo--placeholder" aria-hidden="true">
+                {m.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
+              </div>
+            )}
+            <h3 class="sec-team__name">{m.name}</h3>
+            <p class="sec-team__role">{m.role}</p>
+            {m.bio && <p class="sec-team__bio">{m.bio}</p>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+)}
+
+<style>
+  .sec-team { padding-block: 4rem; background: var(--color-surface-muted); }
+  .sec-team__head { margin-bottom: 2.5rem; }
+  .sec-team__head h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    color: var(--color-text);
+    letter-spacing: -0.02em;
+  }
+  .sec-team__head p { color: var(--color-text-muted); margin: 0; }
+  .sec-team__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  @media (min-width: 640px) { .sec-team__grid { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 1024px) { .sec-team__grid { grid-template-columns: repeat(3, 1fr); } }
+  .sec-team__card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+  }
+  .sec-team__photo {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    margin: 0 auto 1rem auto;
+    border: 2px solid var(--color-border);
+  }
+  .sec-team__photo--placeholder {
+    background: var(--color-brand);
+    color: var(--color-brand-fg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.75rem;
+    border: 0;
+  }
+  .sec-team__name {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+    color: var(--color-text);
+  }
+  .sec-team__role {
+    color: var(--color-brand);
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin: 0 0 0.75rem 0;
+  }
+  .sec-team__bio {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0;
+  }
+</style>

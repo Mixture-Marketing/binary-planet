@@ -1,8 +1,9 @@
 ---
+import { env } from "cloudflare:workers";
 import AdminLayout from "../layouts/AdminLayout.astro";
 import Icon from "../components/Icon.astro";
+import { CRON_JOBS } from "../lib/cron-jobs.ts";
 
-const env = Astro.locals.runtime?.env;
 if (!env?.DB) return new Response("Runtime not available", { status: 500 });
 
 // Recent cron runs (status visibility for Faza 5 scheduled tasks)
@@ -38,6 +39,33 @@ const healthLast = await env.DB
   )
   .first<{ checked: number; up: number }>();
 
+// Track 23 — last probe per infra service (api/app/panel/marketing)
+const infraServices = ["system_api", "system_app", "system_panel", "system_marketing"];
+const infraRows = await Promise.all(
+  infraServices.map(async (id) => {
+    const r = await env.DB
+      .prepare(
+        `SELECT action, occurred_at, metadata_json FROM audit_log
+          WHERE resource_type = 'service' AND resource_id = ?
+            AND action IN ('infra.probe.ok','infra.probe.failed')
+          ORDER BY id DESC LIMIT 1`,
+      )
+      .bind(id)
+      .first<{ action: string; occurred_at: string; metadata_json: string }>();
+    let meta: { url?: string; status?: number; duration_ms?: number; error?: string } = {};
+    try { meta = r?.metadata_json ? JSON.parse(r.metadata_json) : {}; } catch {}
+    return {
+      id,
+      url: meta.url ?? "—",
+      ok: r?.action === "infra.probe.ok",
+      status: meta.status,
+      duration_ms: meta.duration_ms,
+      error: meta.error,
+      checked_at: r?.occurred_at ?? null,
+    };
+  }),
+);
+
 const formatDuration = (started: string, finished: string | null): string => {
   if (!finished) return "—";
   const ms = new Date(finished).getTime() - new Date(started).getTime();
@@ -62,35 +90,36 @@ const formatDuration = (started: string, finished: string | null): string => {
       W produkcji ustawiony przez wrangler.toml automatycznie.
     </p>
     <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-      {["health_check_5min", "provision_pending_2min", "ai_blog_weekly", "backup_daily"].map((job) => (
-        <button type="button" class="btn cron-run-btn" data-job={job} style="font-size: 0.85rem; padding: 0.4rem 0.85rem; min-height: 32px; gap: 0.4rem;">
-          <Icon name="play" size={12} /> {job}
+      {CRON_JOBS.map((j) => (
+        <button
+          type="button"
+          class="btn cron-run-btn"
+          data-job={j.slug}
+          title={`${j.description} (${j.schedule})`}
+          style="font-size: 0.85rem; padding: 0.4rem 0.85rem; min-height: 32px; gap: 0.4rem;"
+        >
+          <Icon name="play" size={12} /> {j.label}
+          <small style="color: var(--c-text-muted); font-weight: 400;">· {j.schedule}</small>
         </button>
       ))}
     </div>
     <p id="cron-status" style="margin: 0.75rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted); font-family: ui-monospace, monospace;"></p>
     <p style="margin-top: 1rem; font-size: 0.8rem; color: var(--c-text-muted);">
-      Wymaga: <code>ADMIN_API_KEY</code> w wrangler secrets + <code>HUB_BASE_URL</code> wskazującym na działający hub.
+      Klucz server-side w wrangler secrets — działa bez ręcznej konfiguracji.
     </p>
   </details>
 
   <script is:inline>
-    const ADMIN_API_KEY = ""; // empty in dev — set via wrangler secret in prod + paste here for testing
     document.querySelectorAll(".cron-run-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const job = btn.dataset.job;
         const statusEl = document.getElementById("cron-status");
-        if (!ADMIN_API_KEY) {
-          statusEl.textContent = "Brak ADMIN_API_KEY w admin/src/pages/operations.astro — wpisz secret żeby odpalić.";
-          return;
-        }
         btn.disabled = true;
         statusEl.textContent = `Odpalam ${job}…`;
         try {
-          const hubUrl = window.location.origin.replace(":4322", ":8787"); // dev fallback
-          const res = await fetch(`${hubUrl}/api/admin/cron/run-now`, {
+          const res = await fetch(`/api/cron/run`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-BP-Admin-Key": ADMIN_API_KEY },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ job }),
           });
           const json = await res.json();
@@ -98,7 +127,7 @@ const formatDuration = (started: string, finished: string | null): string => {
             statusEl.textContent = `${job}: processed=${json.data.processed} failed=${json.data.failed} duration=${json.data.duration_ms}ms`;
             setTimeout(() => window.location.reload(), 1500);
           } else {
-            statusEl.textContent = `BŁĄD: ${json.error?.message || JSON.stringify(json)}`;
+            statusEl.textContent = `BŁĄD: ${json.error?.message || json.error || JSON.stringify(json)}`;
           }
         } catch (e) {
           statusEl.textContent = `Network error: ${e.message}`;
@@ -130,6 +159,39 @@ const formatDuration = (started: string, finished: string | null): string => {
       <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted);">w bazie</p>
     </div>
   </section>
+
+  <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.4rem;">
+    <Icon name="bell" size={20} /> Infra health (own services)
+  </h2>
+  <div class="card" style="padding: 0; margin-bottom: 2rem;">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Status</th>
+          <th>HTTP</th>
+          <th>Latency</th>
+          <th>URL</th>
+          <th>Last probe</th>
+        </tr>
+      </thead>
+      <tbody>
+        {infraRows.map((s) => (
+          <tr>
+            <td style="font-family: ui-monospace, monospace; font-size: 0.85rem;">{s.id}</td>
+            <td>
+              {s.checked_at == null ? <span class="badge">no data</span> :
+                s.ok ? <span class="badge badge-success">UP</span> : <span class="badge badge-danger">DOWN</span>}
+            </td>
+            <td style="font-size: 0.85rem;">{s.status ?? "—"}</td>
+            <td style="font-size: 0.85rem; color: var(--c-text-muted);">{s.duration_ms != null ? `${s.duration_ms} ms` : "—"}</td>
+            <td style="font-size: 0.78rem; color: var(--c-text-muted); word-break: break-all;">{s.url}</td>
+            <td style="font-size: 0.78rem; color: var(--c-text-muted);">{s.checked_at ?? "—"}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
 
   <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 1rem 0;">Scheduled jobs (ostatnie 30)</h2>
   <div class="card" style="padding: 0;">

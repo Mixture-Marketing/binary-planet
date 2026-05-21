@@ -1,0 +1,77 @@
+---
+/**
+ * Global confirm dialog — replaces native window.confirm().
+ *
+ * Use from any script via:
+ *   const ok = await window.mmConfirm("Usunąć tę usługę?", { confirmLabel: "Usuń", danger: true });
+ *
+ * Why: native confirm() blocks event loop, can't be styled, fires page-modal browser chrome.
+ * <dialog> with showModal() is focus-trapped natively + Esc-closeable + WCAG 2.2 friendly.
+ */
+---
+
+<dialog id="mm-confirm-dialog" aria-labelledby="mm-confirm-title" class="mm-confirm">
+  <form method="dialog" class="mm-confirm__form">
+    <h2 id="mm-confirm-title" class="mm-confirm__title"></h2>
+    <p class="mm-confirm__msg"></p>
+    <div class="mm-confirm__actions">
+      <button type="submit" value="cancel" class="btn" data-mm-confirm-cancel>Anuluj</button>
+      <button type="submit" value="confirm" class="btn btn-brand" data-mm-confirm-ok autofocus>OK</button>
+    </div>
+  </form>
+</dialog>
+
+<style>
+  .mm-confirm {
+    border: 1px solid var(--c-border);
+    border-radius: 0.75rem;
+    padding: 0;
+    max-width: 28rem;
+    width: calc(100vw - 2rem);
+    background: var(--c-surface);
+    color: var(--c-text);
+    box-shadow: 0 24px 48px -12px rgba(0,0,0,0.25);
+  }
+  .mm-confirm::backdrop { background: rgba(0,0,0,0.45); backdrop-filter: blur(2px); }
+  @media (prefers-reduced-transparency: reduce) {
+    .mm-confirm::backdrop { backdrop-filter: none; background: rgba(0,0,0,0.65); }
+  }
+  .mm-confirm__form { padding: 1.5rem; margin: 0; }
+  .mm-confirm__title {
+    font-size: 1.1rem; font-weight: 700; margin: 0 0 0.5rem 0;
+  }
+  .mm-confirm__msg { margin: 0 0 1.5rem 0; color: var(--c-text-muted); font-size: 0.95rem; line-height: 1.5; }
+  .mm-confirm__actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+  .mm-confirm__form button[data-danger="true"] {
+    background: #dc2626; color: #fff; border-color: #dc2626;
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    const dlg = document.getElementById("mm-confirm-dialog");
+    if (!dlg) return;
+    const titleEl = dlg.querySelector(".mm-confirm__title");
+    const msgEl = dlg.querySelector(".mm-confirm__msg");
+    const okBtn = dlg.querySelector("[data-mm-confirm-ok]");
+    const cancelBtn = dlg.querySelector("[data-mm-confirm-cancel]");
+
+    window.mmConfirm = function (message, opts) {
+      opts = opts || {};
+      titleEl.textContent = opts.title || "Potwierdź";
+      msgEl.textContent = message;
+      okBtn.textContent = opts.confirmLabel || "OK";
+      cancelBtn.textContent = opts.cancelLabel || "Anuluj";
+      okBtn.dataset.danger = opts.danger ? "true" : "false";
+
+      return new Promise((resolve) => {
+        const onClose = () => {
+          dlg.removeEventListener("close", onClose);
+          resolve(dlg.returnValue === "confirm");
+        };
+        dlg.addEventListener("close", onClose);
+        dlg.showModal();
+      });
+    };
+  })();
+</script>

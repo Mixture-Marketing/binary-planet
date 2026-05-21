@@ -1,14 +1,42 @@
 ---
+import { env } from "cloudflare:workers";
 import PanelLayout from "../layouts/PanelLayout.astro";
 import Icon from "../components/Icon.astro";
 
-const env = Astro.locals.runtime?.env;
 const client = Astro.locals.client;
 if (!env?.DB || !client) return new Response("Runtime not ready", { status: 500 });
 
-// v0.2 — list from `invoices` table joined with Fakturownia PDFs in R2.
-// For v0.1 there are no invoices yet (Track 6 = Stripe + Fakturownia).
-const invoices: Array<{ id: string; number: string; issued_at: string; gross_pln: number; status: string; pdf_url: string }> = [];
+// Read real payments from D1 (Stripe webhook records each invoice.paid here).
+interface PaymentRow {
+  id: string;
+  external_id: string | null;
+  amount_grosze: number;
+  currency: string;
+  status: string;
+  paid_at: string | null;
+  created_at: string;
+}
+const paymentsResult = await env.DB
+  .prepare(
+    `SELECT id, external_id, amount_grosze, currency, status, paid_at, created_at
+       FROM payments
+      WHERE client_id = ?
+      ORDER BY paid_at DESC, created_at DESC
+      LIMIT 100`,
+  )
+  .bind(client.id)
+  .all<PaymentRow>();
+
+const invoices = (paymentsResult.results ?? []).map((p) => ({
+  id: p.id,
+  // Track 27 (Fakturownia) zastąpi external_id numerem faktury VAT.
+  number: p.external_id ?? p.id,
+  issued_at: p.paid_at ?? p.created_at,
+  gross_pln: p.amount_grosze / 100,
+  status: p.status === "succeeded" ? "paid" : p.status,
+  // Track 27 (Fakturownia) wypełni hosted_invoice_url. Do tego czasu placeholder.
+  pdf_url: null as string | null,
+}));
 ---
 
 <PanelLayout title="Faktury">
@@ -50,9 +78,13 @@ const invoices: Array<{ id: string; number: string; issued_at: string; gross_pln
                 <span class={`badge ${inv.status === "paid" ? "badge-success" : "badge-warning"}`}>{inv.status}</span>
               </td>
               <td>
-                <a href={inv.pdf_url} style="color: var(--c-brand); display: inline-flex; align-items: center; gap: 0.3rem;">
-                  <Icon name="file-text" size={14} /> Pobierz
-                </a>
+                {inv.pdf_url ? (
+                  <a href={inv.pdf_url} target="_blank" rel="noopener" style="color: var(--c-brand); display: inline-flex; align-items: center; gap: 0.3rem;">
+                    <Icon name="file-text" size={14} /> PDF
+                  </a>
+                ) : (
+                  <span style="color: var(--c-text-muted); font-size: 0.8rem;" title="Faktura VAT będzie dostępna po integracji Fakturownia (Track 27)">VAT PDF wkrótce</span>
+                )}
               </td>
             </tr>
           ))}

@@ -46,14 +46,14 @@ const preonboardSchema = z.object({
   email: z.string().email(),
   phone: z.string().regex(PHONE_E164, "Phone must be E.164 format (+48...)"),
   nip: z.string().regex(NIP_REGEX, "NIP must be exactly 10 digits"),
-  tier: z.enum(["starter", "standard", "premium"]),
+  tier: z.enum(["starter", "standard", "premium", "professional"]),
   consent_marketing: z.boolean().optional().default(false),
   consent_processing: z.literal(true, { errorMap: () => ({ message: "consent_processing must be true (RODO)" }) }),
   consent_text_version: z.string().min(1).max(20),
 });
 
 const RATE_LIMIT_PREFIX = "preonboard_rl:";
-const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_MAX = 15;
 const RATE_LIMIT_WINDOW_SEC = 3600;
 
 async function sha256Hex(input: string): Promise<string> {
@@ -129,6 +129,28 @@ preonboardRouter.post("/", async (c) => {
     .first<{ id: string; status: string }>();
   if (existing) {
     return c.json(ok({ client_id: existing.id, already_exists: true }), 200);
+  }
+
+  // Track 22 — Reactivation: churned client returning with same email or NIP
+  const churned = await env.DB
+    .prepare(
+      `SELECT c.id FROM clients c
+         LEFT JOIN client_contacts cc ON cc.client_id = c.id
+        WHERE c.status = 'churned'
+          AND (cc.contact_email_hash = ? OR c.nip = ?)
+        ORDER BY c.churned_at DESC LIMIT 1`,
+    )
+    .bind(emailHash, payload.nip)
+    .first<{ id: string }>();
+  if (churned) {
+    try {
+      const { executeReactivatePipeline } = await import("../../../scheduled/lifecycle.js");
+      await executeReactivatePipeline(env, churned.id);
+    } catch (e) {
+      const log = c.get("logger");
+      if (log) log.error("reactivate_pipeline_failed", e instanceof Error ? e : new Error(String(e)), { client_id: churned.id });
+    }
+    return c.json(ok({ client_id: churned.id, already_exists: true, reactivated: true }), 200);
   }
 
   // Generate client_id + insert

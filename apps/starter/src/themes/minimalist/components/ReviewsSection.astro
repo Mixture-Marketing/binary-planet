@@ -1,0 +1,104 @@
+---
+/**
+ * Minimalist ReviewsSection — list of blockquotes, mono metadata column.
+ * No card boxes — type-only, hairline borders.
+ */
+import clientConfig from "../../../client.config.ts";
+
+interface Props { heading?: string; }
+const { heading = "Co mówią klienci" } = Astro.props;
+const reviews = clientConfig.reviews ?? [];
+const avg = reviews.length > 0
+  ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+  : null;
+---
+
+{reviews.length > 0 && (
+  <section aria-labelledby="reviews-heading" class="m-reviews">
+    <div class="container-px m-reviews__inner">
+      <header class="m-reviews__head">
+        <h2 id="reviews-heading" class="m-reviews__h2">{heading}</h2>
+        {avg && (
+          <p class="m-reviews__rating" aria-label={`Ocena ${avg} na 5 z ${reviews.length} opinii`}>
+            <strong>{avg} / 5</strong> · {reviews.length} {reviews.length === 1 ? "opinia" : reviews.length < 5 ? "opinie" : "opinii"} · Google Business Profile
+          </p>
+        )}
+      </header>
+
+      {reviews.map((r) => (
+        <article class="m-review">
+          <div class="m-review__meta">
+            <strong>{r.author}</strong>
+            <span>{r.source === "gbp" ? "Google" : r.source} · {r.date}</span>
+            <span class="m-review__stars" aria-hidden="true">{"★".repeat(r.rating)}</span>
+          </div>
+          <blockquote class="m-review__text">{r.text}</blockquote>
+        </article>
+      ))}
+    </div>
+  </section>
+)}
+
+<style>
+  .m-reviews {
+    padding-block: clamp(4rem, 7vw, 6rem);
+    background: var(--color-surface-muted);
+    border-block: 1px solid var(--color-border);
+  }
+  .m-reviews__inner { max-width: 64rem; margin: 0 auto; }
+  .m-reviews__head { margin-bottom: 2.5rem; }
+  .m-reviews__h2 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin: 0;
+    line-height: 1.05;
+    color: var(--color-text);
+  }
+  .m-reviews__rating {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.92rem;
+    color: var(--color-text-muted);
+    margin: 0.5rem 0 0;
+  }
+  .m-reviews__rating strong { color: var(--color-text); font-weight: 700; font-family: var(--font-display); }
+
+  .m-review {
+    padding: 2.5rem 0;
+    border-top: 1px solid var(--color-border);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  @media (min-width: 768px) {
+    .m-review { grid-template-columns: 12rem 1fr; gap: 3rem; }
+  }
+  .m-review__meta {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .m-review__meta strong {
+    color: var(--color-text);
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+  .m-review__stars {
+    color: var(--color-accent);
+    letter-spacing: 0.1em;
+    margin-top: 0.25rem;
+  }
+  .m-review__text {
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: var(--color-text);
+    margin: 0;
+    quotes: '"„" "”"';
+  }
+</style>

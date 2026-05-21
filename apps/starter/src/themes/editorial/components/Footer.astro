@@ -1,0 +1,130 @@
+---
+/**
+ * Editorial Footer — masthead-style 4-col dark with amber accent headings.
+ */
+import { formatPolishPhone } from "@mixturemarketing/web-core/local";
+import clientConfig from "../../../client.config.ts";
+
+const { business, contact, location } = clientConfig;
+const phoneDisplay = formatPolishPhone(contact.primaryPhone);
+const year = new Date().getFullYear();
+const isRestaurant = business.schemaType === "Restaurant";
+---
+
+<footer class="ed-ft" role="contentinfo">
+  <div class="container-px ed-ft__inner">
+    <div>
+      <p class="ed-ft__brand">{business.name}</p>
+      <p class="ed-ft__addr">
+        {location.address.streetAddress}<br />
+        {location.address.postalCode} {location.address.city}<br />
+        <a href={`tel:${contact.primaryPhone}`}>{phoneDisplay}</a><br />
+        <a href={`mailto:${contact.email}`}>{contact.email}</a>
+      </p>
+    </div>
+
+    <nav class="ed-ft__col" aria-label="Karta">
+      <h4 class="ed-ft__col-h">{isRestaurant ? "Karta" : "Oferta"}</h4>
+      <ul>
+        <li><a href="/oferta">{isRestaurant ? "Pasta" : "Wszystkie usługi"}</a></li>
+        {isRestaurant && <li><a href="/oferta#pizza">Pizza</a></li>}
+        {isRestaurant && <li><a href="/oferta#wina">Karta win</a></li>}
+        {isRestaurant && <li><a href="/oferta#antipasti">Antipasti</a></li>}
+      </ul>
+    </nav>
+
+    <nav class="ed-ft__col" aria-label="O nas">
+      <h4 class="ed-ft__col-h">{isRestaurant ? "Trattoria" : "O firmie"}</h4>
+      <ul>
+        <li><a href="/o-firmie">{isRestaurant ? "Historia" : "Zespół"}</a></li>
+        <li><a href="/aktualnosci">{isRestaurant ? "Magazyn" : "Aktualności"}</a></li>
+        <li><a href="/faq">FAQ</a></li>
+      </ul>
+    </nav>
+
+    <nav class="ed-ft__col" aria-label="Kontakt">
+      <h4 class="ed-ft__col-h">Kontakt</h4>
+      <ul>
+        <li><a href="/kontakt">{isRestaurant ? "Rezerwacja" : "Formularz kontaktowy"}</a></li>
+        {isRestaurant && <li><a href="/kontakt#grupy">Eventy grupowe</a></li>}
+        <li><a href="/polityka-prywatnosci">Polityka prywatności</a></li>
+        {clientConfig.rodo.termsUrl && <li><a href="/regulamin">Regulamin</a></li>}
+      </ul>
+    </nav>
+  </div>
+
+  <div class="container-px ed-ft__bottom">
+    <span>© {year} {business.legalName ?? business.name}</span>
+    <span>NIP {business.nip}{business.foundedYear && <> · est. {business.foundedYear}</>} · {location.address.city}</span>
+  </div>
+</footer>
+
+<style>
+  .ed-ft {
+    background: var(--color-text);
+    color: color-mix(in srgb, var(--color-surface) 80%, transparent);
+    padding: 4rem 0 2rem;
+  }
+  .ed-ft__inner {
+    max-width: 76rem;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+  @media (min-width: 768px) {
+    .ed-ft__inner { grid-template-columns: 2fr 1fr 1fr 1fr; }
+  }
+  .ed-ft__brand {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.75rem;
+    margin: 0 0 0.75rem;
+    color: var(--color-surface);
+  }
+  .ed-ft__addr {
+    font-family: var(--font-body);
+    font-style: italic;
+    color: color-mix(in srgb, var(--color-surface) 65%, transparent);
+    font-size: 0.95rem;
+    margin: 0;
+    line-height: 1.7;
+  }
+  .ed-ft__addr a { color: inherit; text-decoration: none; }
+  .ed-ft__addr a:hover { color: var(--color-surface); text-decoration: underline; }
+
+  .ed-ft__col-h {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--color-accent);
+    font-size: 0.92rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin: 0 0 0.75rem;
+  }
+  .ed-ft__col ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+  .ed-ft__col a {
+    color: color-mix(in srgb, var(--color-surface) 75%, transparent);
+    text-decoration: none;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+  }
+  .ed-ft__col a:hover { color: var(--color-surface); }
+
+  .ed-ft__bottom {
+    max-width: 76rem;
+    margin: 2.5rem auto 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-surface) 12%, transparent);
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 0.85rem;
+    color: color-mix(in srgb, var(--color-surface) 45%, transparent);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+</style>

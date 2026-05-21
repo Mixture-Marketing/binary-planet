@@ -1,0 +1,111 @@
+---
+/**
+ * Video section — YouTube/Vimeo embed.
+ * Config: { heading?, url, caption?, autoplay?, aspectRatio? }
+ *
+ * Wymaga url w formacie YouTube watch/embed lub Vimeo standard.
+ * Auto-konwersja na embed URL.
+ */
+interface Props {
+  config?: {
+    heading?: string;
+    url?: string;
+    caption?: string;
+    aspectRatio?: "16:9" | "4:3" | "1:1" | "9:16";
+  };
+}
+const { config = {} } = Astro.props;
+const url = config.url ?? "";
+
+// Convert YouTube watch URLs to embed format
+function toEmbedUrl(raw: string): string | null {
+  if (!raw) return null;
+  // YouTube
+  const ytMatch = raw.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`;
+  // YouTube already embed
+  if (raw.includes("youtube.com/embed/")) return raw;
+  // Vimeo
+  const vimeoMatch = raw.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  // Generic embed iframe URL — trust as-is
+  if (raw.startsWith("https://")) return raw;
+  return null;
+}
+
+const embedUrl = toEmbedUrl(url);
+const aspect = config.aspectRatio ?? "16:9";
+const aspectStyle: Record<string, string> = {
+  "16:9": "56.25%",
+  "4:3": "75%",
+  "1:1": "100%",
+  "9:16": "177.78%",
+};
+const paddingBottom = aspectStyle[aspect] ?? "56.25%";
+---
+
+{embedUrl && (
+  <section aria-labelledby="video-heading" class="sec-video">
+    <div class="container-px">
+      {config.heading && (
+        <header class="sec-video__head">
+          <h2 id="video-heading">{config.heading}</h2>
+        </header>
+      )}
+
+      <div class="sec-video__wrapper" style={`padding-bottom: ${paddingBottom};`}>
+        <iframe
+          src={embedUrl}
+          title={config.heading ?? "Wideo"}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+          loading="lazy"
+          referrerpolicy="strict-origin-when-cross-origin"
+        ></iframe>
+      </div>
+
+      {config.caption && (
+        <p class="sec-video__caption">{config.caption}</p>
+      )}
+    </div>
+  </section>
+)}
+
+<style>
+  .sec-video { padding-block: 4rem; background: var(--color-surface); }
+  .sec-video__head { text-align: center; margin-bottom: 2rem; }
+  .sec-video__head h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+    font-weight: 700;
+    margin: 0;
+    color: var(--color-text);
+    letter-spacing: -0.02em;
+  }
+  .sec-video__wrapper {
+    position: relative;
+    width: 100%;
+    height: 0;
+    max-width: 64rem;
+    margin: 0 auto;
+    background: var(--color-surface-muted);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .sec-video__wrapper iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+  .sec-video__caption {
+    text-align: center;
+    color: var(--color-text-muted);
+    font-style: italic;
+    margin: 1rem auto 0 auto;
+    max-width: 48rem;
+    font-size: 0.9rem;
+  }
+</style>

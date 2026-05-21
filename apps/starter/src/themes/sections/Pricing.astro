@@ -1,0 +1,99 @@
+---
+/**
+ * Pricing section — tabelaryczny cennik usług.
+ * Config schema: { heading?: string, items: Array<{ name: string, price: string, note?: string }> }
+ * Fallback: jeśli brak items, używa clientConfig.services z priceFrom.
+ */
+import clientConfig from "../../client.config.ts";
+
+interface Props {
+  config?: {
+    heading?: string;
+    items?: Array<{ name: string; price: string; note?: string }>;
+  };
+}
+const { config = {} } = Astro.props;
+const heading = config.heading ?? "Cennik";
+
+// Fallback to services with prices
+const items = config.items ?? clientConfig.services
+  .filter((s) => s.priceFrom)
+  .map((s) => ({ name: s.name, price: s.priceFrom!, note: s.description }));
+---
+
+{items.length > 0 && (
+  <section aria-labelledby="pricing-heading" class="sec-pricing">
+    <div class="container-px">
+      <header class="sec-pricing__head">
+        <h2 id="pricing-heading">{heading}</h2>
+        <p>Transparentne ceny. Bez ukrytych opłat.</p>
+      </header>
+
+      <table class="sec-pricing__table">
+        <tbody>
+          {items.map((item) => (
+            <tr>
+              <td class="sec-pricing__name">
+                <strong>{item.name}</strong>
+                {item.note && <span class="sec-pricing__note">{item.note}</span>}
+              </td>
+              <td class="sec-pricing__price">{item.price}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+)}
+
+<style>
+  .sec-pricing { padding-block: 4rem; background: var(--color-surface); }
+  .sec-pricing__head { margin-bottom: 2rem; }
+  .sec-pricing__head h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    color: var(--color-text);
+    letter-spacing: -0.02em;
+  }
+  .sec-pricing__head p {
+    color: var(--color-text-muted);
+    margin: 0;
+    font-size: 1rem;
+  }
+  .sec-pricing__table {
+    width: 100%;
+    border-collapse: collapse;
+    border-top: 2px solid var(--color-border);
+  }
+  .sec-pricing__table td {
+    padding: 1rem 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+  }
+  .sec-pricing__name {
+    width: 70%;
+  }
+  .sec-pricing__name strong {
+    display: block;
+    font-weight: 600;
+    color: var(--color-text);
+    font-size: 1.05rem;
+    margin-bottom: 0.2rem;
+  }
+  .sec-pricing__note {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  .sec-pricing__price {
+    text-align: right;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-weight: 600;
+    color: var(--color-brand);
+    font-size: 1rem;
+    white-space: nowrap;
+    padding-left: 1rem;
+  }
+</style>

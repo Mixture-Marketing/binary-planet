@@ -38,13 +38,14 @@ export async function setupTestEnv(): Promise<TestSetup> {
 
   await env.DB.prepare(
     `INSERT INTO clients (
-       id, business_name, industry, subtype_schema, theme_preset, city, tier, status,
+       id, business_name, nip, industry, subtype_schema, theme_preset, city, tier, status,
        primary_domain, api_key_hash, feature_flags_json, modules_json
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
       clientId,
       "Ślusarz Test",
+      "9999999999",
       "locksmith",
       "Locksmith",
       "craftsman",

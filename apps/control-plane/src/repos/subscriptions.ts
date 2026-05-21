@@ -10,7 +10,7 @@ export interface SubscriptionRow {
   external_customer_id: string | null;
   monthly_amount_grosze: number;
   currency: string;
-  tier: "starter" | "standard" | "premium";
+  tier: "starter" | "standard" | "premium" | "professional";
   status: string;
   current_period_start: string | null;
   current_period_end: string | null;
@@ -32,7 +32,7 @@ export async function upsertSubscriptionFromStripe(
     stripe_subscription_id: string;
     stripe_customer_id: string;
     status: string;
-    tier: "starter" | "standard" | "premium";
+    tier: "starter" | "standard" | "premium" | "professional";
     monthly_amount_grosze: number;
     currency: string;
     current_period_start_unix?: number;

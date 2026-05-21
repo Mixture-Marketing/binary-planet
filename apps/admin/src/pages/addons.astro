@@ -1,0 +1,170 @@
+---
+import { env } from "cloudflare:workers";
+import AdminLayout from "../layouts/AdminLayout.astro";
+import Icon from "../components/Icon.astro";
+
+if (!env?.DB) return new Response("Runtime not available", { status: 500 });
+
+interface AddonStats {
+  slug: string;
+  name: string;
+  category: string;
+  price_grosze: number;
+  billing_period: string;
+  active_count: number;
+  trial_count: number;
+  monthly_revenue_grosze: number;
+}
+
+interface CategoryStats {
+  category: string;
+  total_addons: number;
+  total_active: number;
+  total_revenue_grosze: number;
+}
+
+// Fetch addon catalog with active counts + revenue
+const addonRows = await env.DB
+  .prepare(
+    `SELECT am.slug, am.name, am.category, am.price_grosze, am.billing_period,
+            COUNT(CASE WHEN ca.status = 'active' THEN 1 END) AS active_count,
+            COUNT(CASE WHEN ca.status = 'trial' THEN 1 END) AS trial_count
+       FROM addon_modules am
+       LEFT JOIN client_addons ca ON ca.addon_slug = am.slug AND ca.status IN ('active', 'trial')
+      WHERE am.is_active = 1
+      GROUP BY am.slug
+      ORDER BY am.display_order, am.slug`,
+  )
+  .all<AddonStats>();
+
+const addons: AddonStats[] = (addonRows.results ?? []).map((r) => ({
+  ...r,
+  monthly_revenue_grosze: r.billing_period === "monthly" ? r.active_count * r.price_grosze : 0,
+}));
+
+// Aggregate by category
+const categoryMap = new Map<string, CategoryStats>();
+for (const a of addons) {
+  const c = categoryMap.get(a.category) ?? { category: a.category, total_addons: 0, total_active: 0, total_revenue_grosze: 0 };
+  c.total_addons += 1;
+  c.total_active += a.active_count + a.trial_count;
+  c.total_revenue_grosze += a.monthly_revenue_grosze;
+  categoryMap.set(a.category, c);
+}
+const categoryStats = Array.from(categoryMap.values()).sort((a, b) => b.total_revenue_grosze - a.total_revenue_grosze);
+
+const totalRecurringRevenue = addons.reduce((s, a) => s + a.monthly_revenue_grosze, 0);
+const totalActiveAddons = addons.reduce((s, a) => s + a.active_count + a.trial_count, 0);
+
+const categoryLabel: Record<string, string> = {
+  marketing_seo: "Marketing i SEO",
+  design_ux: "Design i UX",
+  ai_automation: "AI i automatyzacja",
+  sales_conversion: "Sprzedaż i konwersja",
+  security_analytics: "Bezpieczeństwo i analityka",
+  one_time: "Wdrożenia jednorazowe",
+};
+
+const fmtPln = (g: number): string => `${(g / 100).toLocaleString("pl-PL", { maximumFractionDigits: 0 })} zł`;
+---
+
+<AdminLayout title="Dodatki">
+  <header style="margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.6rem;">
+      <Icon name="package" size={28} /> Dodatki
+    </h1>
+    <p style="color: var(--c-text-muted); margin: 0;">Katalog dodatków + revenue analytics (aktywne subskrypcje + trial).</p>
+  </header>
+
+  {/* Top stats */}
+  <section style="display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 2rem;">
+    <div class="card">
+      <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase;">Recurring revenue</p>
+      <p style="margin: 0.5rem 0 0 0; font-size: 1.75rem; font-weight: 800;">{fmtPln(totalRecurringRevenue)}/mc</p>
+    </div>
+    <div class="card">
+      <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase;">Aktywnych subskrypcji</p>
+      <p style="margin: 0.5rem 0 0 0; font-size: 1.75rem; font-weight: 800;">{totalActiveAddons}</p>
+    </div>
+    <div class="card">
+      <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase;">Dodatków w katalogu</p>
+      <p style="margin: 0.5rem 0 0 0; font-size: 1.75rem; font-weight: 800;">{addons.length}</p>
+    </div>
+    <div class="card">
+      <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase;">ARR (szacunkowy)</p>
+      <p style="margin: 0.5rem 0 0 0; font-size: 1.75rem; font-weight: 800;">{fmtPln(totalRecurringRevenue * 12)}</p>
+    </div>
+  </section>
+
+  {/* Category breakdown */}
+  <section style="margin-bottom: 2rem;">
+    <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 1rem 0;">Revenue per kategoria</h2>
+    <div class="card" style="padding: 0;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Kategoria</th>
+            <th>Liczba dodatków</th>
+            <th>Aktywnych</th>
+            <th>Revenue/mc</th>
+          </tr>
+        </thead>
+        <tbody>
+          {categoryStats.map((c) => (
+            <tr>
+              <td style="font-weight: 600;">{categoryLabel[c.category] ?? c.category}</td>
+              <td style="text-align: center;">{c.total_addons}</td>
+              <td style="text-align: center;">{c.total_active}</td>
+              <td style="text-align: right; font-weight: 700;">{fmtPln(c.total_revenue_grosze)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {/* Full catalog */}
+  <section style="margin-bottom: 2rem;">
+    <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 1rem 0;">Pełny katalog</h2>
+    <div class="card" style="padding: 0; overflow-x: auto;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Slug</th>
+            <th>Nazwa</th>
+            <th>Kategoria</th>
+            <th>Cena</th>
+            <th>Active</th>
+            <th>Trial</th>
+            <th>Revenue/mc</th>
+          </tr>
+        </thead>
+        <tbody>
+          {addons.map((a) => (
+            <tr>
+              <td style="font-family: ui-monospace, monospace; font-size: 0.78rem;">{a.slug}</td>
+              <td style="font-weight: 600;">{a.name}</td>
+              <td style="font-size: 0.78rem; color: var(--c-text-muted);">{categoryLabel[a.category] ?? a.category}</td>
+              <td style="font-size: 0.85rem;">
+                {fmtPln(a.price_grosze)}{a.billing_period === "monthly" ? "/mc" : " 1×"}
+              </td>
+              <td style="text-align: center;">
+                {a.active_count > 0 ? <strong>{a.active_count}</strong> : <span style="color: var(--c-text-muted);">—</span>}
+              </td>
+              <td style="text-align: center;">
+                {a.trial_count > 0 ? <span class="badge" style="background:#fef3c7;color:#78350f;">{a.trial_count}</span> : <span style="color: var(--c-text-muted);">—</span>}
+              </td>
+              <td style="text-align: right; font-weight: 600;">
+                {a.monthly_revenue_grosze > 0 ? fmtPln(a.monthly_revenue_grosze) : "—"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <p style="color: var(--c-text-muted); font-size: 0.82rem; text-align: center;">
+    Dodatki one-time nie wliczają się do Recurring Revenue. Trial subscriptions wliczane jako potencjalny przychód.
+  </p>
+</AdminLayout>

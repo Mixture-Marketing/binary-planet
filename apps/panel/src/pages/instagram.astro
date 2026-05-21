@@ -1,0 +1,138 @@
+---
+import { env } from "cloudflare:workers";
+import "../styles/panel.css";
+
+const client = Astro.locals.client;
+if (!client) return Astro.redirect("/login?next=%2Finstagram");
+
+if (!env?.DB) return new Response("Runtime not available", { status: 500 });
+
+const addonRow = await env.DB
+  .prepare(`SELECT status FROM client_addons WHERE client_id = ? AND addon_slug = 'instagram_sync' AND status IN ('trial','active') LIMIT 1`)
+  .bind(client.id)
+  .first<{ status: string }>();
+
+const cfg = await env.DB
+  .prepare(`SELECT embed_type, embed_url, embed_html, display_count, section_title, updated_at FROM instagram_embed_config WHERE client_id = ? LIMIT 1`)
+  .bind(client.id)
+  .first<{ embed_type: string; embed_url: string | null; embed_html: string | null; display_count: number; section_title: string; updated_at: string }>();
+---
+
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Instagram auto-sync — {client.businessName}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body style="padding: 2rem; background: var(--c-bg); min-height: 100vh;">
+    <main style="max-width: 800px; margin: 0 auto;">
+      <header style="margin-bottom: 1.5rem;">
+        <a href="/addons" style="color: var(--c-brand); text-decoration: none; font-size: 0.85rem;">← Dodatki</a>
+        <h1 style="font-size: 1.75rem; font-weight: 800; margin: 0.5rem 0;">📸 Instagram auto-sync</h1>
+        <p style="color: var(--c-text-muted); margin: 0;">Wyświetl swoje IG-rolki / zdjęcia na stronie. Działa z dowolnym dostawcą embed (SnapWidget, Lightwidget, EmbedSocial, Elfsight).</p>
+      </header>
+
+      {!addonRow && (
+        <div class="card" style="background: #fef3c7; border-left: 3px solid #f59e0b;">
+          <p style="margin: 0; font-weight: 600;">⚠️ Dodatek nieaktywny</p>
+          <p style="margin: 0.4rem 0 0 0; font-size: 0.9rem;">Aktywuj <strong>Instagram auto-sync 25 zł/mc</strong> w <a href="/addons" style="color: var(--c-brand);">Dodatki</a>. Po aktywacji wróć tutaj.</p>
+        </div>
+      )}
+
+      {addonRow && (
+        <>
+          <div class="card" style="margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 0.5rem 0;">Jak to działa</h2>
+            <ol style="font-size: 0.92rem; line-height: 1.7; padding-left: 1.2rem;">
+              <li>Zarejestruj się w <a href="https://snapwidget.com" target="_blank" rel="noopener" style="color: var(--c-brand);">SnapWidget</a> (lub <a href="https://lightwidget.com" target="_blank" rel="noopener" style="color: var(--c-brand);">Lightwidget</a> / <a href="https://embedsocial.com" target="_blank" rel="noopener" style="color: var(--c-brand);">EmbedSocial</a>) — wszystkie mają free tier</li>
+              <li>Połącz swoje konto Instagram</li>
+              <li>Stwórz widget (grid 3x3 lub carousel) i skopiuj **embed URL** (z atrybutu <code>src</code> iframe)</li>
+              <li>Wklej poniżej + zapisz</li>
+              <li>Twoja strona auto-buduje się i widget pojawia się na stronie głównej</li>
+            </ol>
+          </div>
+
+          <section class="card" style="margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem 0;">Konfiguracja</h2>
+            <form id="ig-form" style="display: flex; flex-direction: column; gap: 1rem;">
+              <div>
+                <label style="font-size: 0.9rem; font-weight: 600;">Embed URL (z atrybutu src iframe)</label>
+                <p style="margin: 0.2rem 0 0.4rem 0; font-size: 0.78rem; color: var(--c-text-muted);">
+                  Np. https://snapwidget.com/embed/1234567 lub https://lightwidget.com/widgets/abc123
+                </p>
+                <input type="url" name="embed_url" placeholder="https://snapwidget.com/embed/..." value={cfg?.embed_url ?? ""} style="width: 100%; padding: 0.5rem; border: 1px solid var(--c-border); border-radius: 6px;">
+              </div>
+
+              <div>
+                <label style="font-size: 0.9rem; font-weight: 600;">Liczba zdjęć (3-12)</label>
+                <input type="number" name="display_count" min="3" max="12" value={cfg?.display_count ?? 9} style="width: 100px; padding: 0.5rem; border: 1px solid var(--c-border); border-radius: 6px;">
+              </div>
+
+              <div>
+                <label style="font-size: 0.9rem; font-weight: 600;">Tytuł sekcji na stronie</label>
+                <input type="text" name="section_title" placeholder="np. Z naszego Instagrama" value={cfg?.section_title ?? "Instagram"} maxlength="80" style="width: 100%; padding: 0.5rem; border: 1px solid var(--c-border); border-radius: 6px;">
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="align-self: flex-start;">Zapisz + odśwież stronę</button>
+            </form>
+
+            {cfg?.updated_at && (
+              <p style="margin: 1rem 0 0 0; font-size: 0.78rem; color: var(--c-text-muted);">Ostatnia zmiana: {cfg.updated_at}</p>
+            )}
+          </section>
+
+          {cfg?.embed_url && (
+            <section style="margin-bottom: 1.5rem;">
+              <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 0.75rem 0;">Podgląd</h2>
+              <div class="card">
+                <iframe src={cfg.embed_url} width="100%" height="400" style="border: 0; border-radius: 8px;" loading="lazy"></iframe>
+              </div>
+            </section>
+          )}
+        </>
+      )}
+
+      <p style="text-align: center; color: var(--c-text-muted); font-size: 0.82rem; margin-top: 2rem;">
+        Pytania? <a href="mailto:info@mixturemarketing.pl" style="color: var(--c-brand);">info@mixturemarketing.pl</a>
+      </p>
+    </main>
+
+    <script is:inline>
+      const form = document.getElementById('ig-form');
+      if (form) form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector('button[type=submit]');
+        btn.disabled = true;
+        btn.textContent = 'Zapisuję…';
+        const data = new FormData(form);
+        try {
+          const res = await fetch('/api/instagram/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              embed_url: data.get('embed_url'),
+              display_count: Number(data.get('display_count')),
+              section_title: data.get('section_title'),
+            }),
+          });
+          const json = await res.json();
+          if (json.ok) {
+            btn.textContent = 'Zapisane ✓ — strona przebuduje się w ~2 min';
+            setTimeout(() => location.reload(), 2000);
+          } else {
+            alert('Błąd: ' + (json.error || 'unknown'));
+            btn.disabled = false;
+            btn.textContent = 'Zapisz + odśwież stronę';
+          }
+        } catch (e) {
+          alert('Network: ' + e);
+          btn.disabled = false;
+          btn.textContent = 'Zapisz + odśwież stronę';
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 
 import { createClientFromWizard, type OnboardingPayload } from "../../../lib/onboarding.ts";
+import { env } from "cloudflare:workers";
 
 export const prerender = false;
 
@@ -10,7 +11,6 @@ export const prerender = false;
  * Returns: { ok: true, clientId, redirect } | { ok: false, errors }
  */
 export const POST: APIRoute = async ({ request, locals }) => {
-  const env = locals.runtime?.env;
   if (!env?.DB) {
     return new Response(JSON.stringify({ ok: false, error: "Runtime not ready" }), {
       status: 500,

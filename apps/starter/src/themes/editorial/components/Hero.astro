@@ -1,0 +1,220 @@
+---
+/**
+ * Editorial Hero — magazine asymmetric. Italic byline credit, giant Fraunces H1,
+ * drop-cap body lead, signature photo right (4:5 portrait orientation).
+ */
+import clientConfig from "../../../client.config.ts";
+import Icon from "../../dynamic/components/Icon.astro";
+
+const { business, contact, location } = clientConfig;
+const cityName = location.address.city;
+const isRestaurant = business.schemaType === "Restaurant";
+const heroImageUrl = isRestaurant
+  ? "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=900&h=1125&fit=crop&fm=webp&q=85"
+  : "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=900&h=1125&fit=crop&fm=webp&q=80";
+const heroImageAlt = isRestaurant
+  ? `Klasyczna carbonara — ${business.name}`
+  : `Wnętrze ${business.name}`;
+
+let runtimeEnv: { DELIVERY_URL?: string; BOOKSY_URL?: string } | undefined;
+try {
+  const mod = await import("cloudflare:workers");
+  runtimeEnv = mod.env as typeof runtimeEnv;
+} catch {
+  runtimeEnv = undefined;
+}
+const hasBooksy = Boolean(runtimeEnv?.BOOKSY_URL);
+---
+
+<section aria-labelledby="hero-heading" class="ed-hero">
+  <div class="container-px ed-hero__inner">
+    {/* NYT op-ed byline metadata strip — credits + dateline */}
+    <p class="ed-hero__byline" data-reveal>
+      <span>{isRestaurant ? "Marco & Magda Bocca" : business.name}</span>
+      <span class="ed-hero__byline-sep" aria-hidden="true">·</span>
+      <strong>{location.address.streetAddress}, {cityName}</strong>
+      <span class="ed-hero__byline-sep" aria-hidden="true">·</span>
+      <span>{isRestaurant ? "Kuchnia toskańska" : business.industry}</span>
+      {business.foundedYear && (
+        <>
+          <span class="ed-hero__byline-sep" aria-hidden="true">·</span>
+          <span>Wydanie {business.foundedYear}–{new Date().getFullYear()}</span>
+        </>
+      )}
+    </p>
+
+    {/* NYT 8/4 grid: TEXT dominates 67%, image column 33% with small portrait */}
+    <div class="ed-hero__grid">
+      <div class="ed-hero__main" data-reveal>
+        <h2 id="hero-heading" class="ed-hero__h1">
+          {isRestaurant ? (
+            <>Smak <em>Toskanii</em><br />w sercu {cityName}.</>
+          ) : (
+            <>{business.name}<br /><em>w {cityName}.</em></>
+          )}
+        </h2>
+        <p class="ed-hero__lead">{business.tagline}</p>
+        <div class="ed-hero__actions">
+          {hasBooksy ? (
+            <a href={runtimeEnv?.BOOKSY_URL} target="_blank" rel="noopener" class="ed-hero__cta-primary" data-track-event="reservation_click" data-track-position="hero">
+              Zarezerwuj stolik <Icon name="arrow-right" size={14} />
+            </a>
+          ) : (
+            <a href="/kontakt" class="ed-hero__cta-primary" data-track-event="reservation_click" data-track-position="hero">
+              {isRestaurant ? "Zarezerwuj stolik" : "Skontaktuj się"} <Icon name="arrow-right" size={14} />
+            </a>
+          )}
+          <a href="/oferta" class="ed-hero__cta-link">{isRestaurant ? "Zobacz pełną kartę" : "Zobacz ofertę"}</a>
+        </div>
+      </div>
+
+      {/* Smaller column-2 lockup — portrait crop, NYT-style caption credit */}
+      <figure class="ed-hero__figure" data-reveal>
+        <img src={heroImageUrl} alt={heroImageAlt} width="900" height="1125" loading="eager" fetchpriority="high" decoding="async" />
+        <figcaption class="ed-hero__caption">
+          {isRestaurant ? <><em>Spaghetti carbonara</em> — klasyk rzymski. Bez śmietany.</> : <>{business.name} · {cityName}</>}
+        </figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<style>
+  .ed-hero {
+    padding-block: clamp(3rem, 6vw, 5rem);
+    background: var(--color-surface);
+  }
+  .ed-hero__inner { max-width: 76rem; margin: 0 auto; }
+
+  /* NYT op-ed dateline strip — uppercase metadata row */
+  .ed-hero__byline {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin: 0 0 2.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: baseline;
+  }
+  .ed-hero__byline strong { color: var(--color-text); font-weight: 700; }
+  .ed-hero__byline-sep { color: var(--color-accent); }
+
+  /* 8/4 = 67/33 — text dominant, image small column */
+  .ed-hero__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+  @media (min-width: 960px) {
+    .ed-hero__grid { grid-template-columns: 2fr 1fr; gap: 4rem; align-items: start; }
+  }
+
+  .ed-hero__h1 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(3rem, 8.5vw, 6.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.025em;
+    margin: 0 0 1.5rem;
+    color: var(--color-text);
+    text-wrap: balance;
+  }
+  .ed-hero__h1 em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--color-brand);
+  }
+
+  .ed-hero__lead {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(1.2rem, 2vw, 1.5rem);
+    line-height: 1.4;
+    color: var(--color-text-muted);
+    margin: 0 0 1.5rem;
+    max-width: 40ch;
+  }
+
+  .ed-hero__body {
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--color-text);
+    margin: 0 0 2rem;
+    max-width: 38rem;
+  }
+  .ed-hero__body::first-letter {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 5em;
+    float: left;
+    line-height: 0.85;
+    padding: 0.1em 0.12em 0 0;
+    color: var(--color-brand);
+  }
+
+  .ed-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+  }
+  .ed-hero__cta-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.95rem 1.75rem;
+    background: var(--color-brand);
+    color: var(--color-brand-fg);
+    text-decoration: none;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.05rem;
+    border-radius: 999px;
+    min-height: 48px;
+    transition: transform 200ms ease, box-shadow 200ms ease;
+  }
+  .ed-hero__cta-primary:hover {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 12px 30px -10px color-mix(in srgb, var(--color-brand) 50%, transparent);
+  }
+  .ed-hero__cta-link {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--color-text);
+    font-size: 1rem;
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent);
+    text-underline-offset: 6px;
+    text-decoration-thickness: 2px;
+  }
+  .ed-hero__cta-link:hover { text-decoration-thickness: 3px; }
+
+  .ed-hero__figure { margin: 0; }
+  .ed-hero__figure img {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    display: block;
+    border-radius: 2px;
+    box-shadow: 0 24px 48px -12px color-mix(in srgb, var(--color-text) 18%, transparent);
+  }
+  .ed-hero__caption {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-top: 0.75rem;
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+  .ed-hero__caption em { font-weight: 500; color: var(--color-brand); }
+</style>

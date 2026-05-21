@@ -1,17 +1,26 @@
 ---
+import { env } from "cloudflare:workers";
 import AdminLayout from "../../layouts/AdminLayout.astro";
 
 import { listClients } from "../../lib/db.ts";
 
-const env = Astro.locals.runtime?.env;
 if (!env?.DB) return new Response("Runtime not available", { status: 500 });
 
 const url = new URL(Astro.request.url);
 const statusFilter = url.searchParams.get("status") ?? undefined;
+const searchQuery = (url.searchParams.get("q") ?? "").trim().toLowerCase();
 
-const clients = await listClients(env.DB, {
+const allClients = await listClients(env.DB, {
   ...(statusFilter && { status: statusFilter }),
 });
+
+// Client-side filter — for now just substring on business_name/industry/city
+const clients = searchQuery
+  ? allClients.filter((c) =>
+      [c.business_name, c.industry, c.city, c.primary_domain ?? ""]
+        .some((f) => f.toLowerCase().includes(searchQuery))
+    )
+  : allClients;
 
 const statusOptions = ["all", "active", "pending", "provisioning", "paused", "suspended", "churned"];
 
@@ -24,29 +33,52 @@ const tierLabel: Record<string, string> = {
   starter: "Starter",
   standard: "Standard",
   premium: "Premium",
+  professional: "Professional",
 };
 ---
 
 <AdminLayout title="Klienci">
-  <header style="display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;">
+  <header style="display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
     <div>
       <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0;">Klienci</h1>
       <p style="color: var(--c-text-muted); margin: 0;">
-        {clients.length} {statusFilter ? `(filtr: ${statusFilter})` : "łącznie"}
+        {clients.length}{searchQuery && ` z ${allClients.length}`} {statusFilter ? `(filtr: ${statusFilter})` : "łącznie"}{searchQuery && ` · "${searchQuery}"`}
       </p>
     </div>
-    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+    <a href="/onboarding/new" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+      <span aria-hidden="true">+</span> Nowy klient
+    </a>
+  </header>
+
+  <!-- Search + status filter chips row -->
+  <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; align-items: center;">
+    <form role="search" method="get" action="/clients" style="display: flex; gap: 0.4rem; align-items: center; flex: 1; min-width: 240px;">
+      {statusFilter && <input type="hidden" name="status" value={statusFilter} />}
+      <label for="clients-search" class="visually-hidden">Szukaj klienta</label>
+      <input
+        id="clients-search"
+        type="search"
+        name="q"
+        value={searchQuery}
+        placeholder="Szukaj po nazwie, branży, mieście, domenie…"
+        autocomplete="off"
+        style="flex: 1; padding: 0.55rem 0.85rem; border: 1px solid var(--c-border); border-radius: 6px; font: inherit; min-height: 38px;"
+      />
+      <button type="submit" class="btn" style="font-size: 0.85rem; padding: 0.4rem 0.9rem;">Szukaj</button>
+      {searchQuery && <a href={statusFilter ? `/clients?status=${statusFilter}` : "/clients"} class="btn" style="font-size: 0.85rem; padding: 0.4rem 0.9rem;">Wyczyść</a>}
+    </form>
+    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
       {statusOptions.map((s) => (
         <a
-          href={s === "all" ? "/clients" : `/clients?status=${s}`}
+          href={s === "all" ? (searchQuery ? `/clients?q=${encodeURIComponent(searchQuery)}` : "/clients") : `/clients?status=${s}${searchQuery ? `&q=${encodeURIComponent(searchQuery)}` : ""}`}
           class={`btn ${(s === "all" && !statusFilter) || s === statusFilter ? "btn-primary" : ""}`}
-          style="font-size: 0.85rem; padding: 0.4rem 0.875rem; min-height: 32px;"
+          style="font-size: 0.8rem; padding: 0.35rem 0.75rem; min-height: 30px;"
         >
           {s}
         </a>
       ))}
     </div>
-  </header>
+  </div>
 
   <div class="card" style="padding: 0;">
     {clients.length === 0 ? (

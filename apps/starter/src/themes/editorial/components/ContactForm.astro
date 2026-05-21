@@ -1,0 +1,178 @@
+---
+/**
+ * Editorial ContactForm — magazine "Reservation" — italic labels, ghost button.
+ */
+import clientConfig from "../../../client.config.ts";
+
+interface Props { heading?: string; }
+const isRestaurant = clientConfig.business.schemaType === "Restaurant";
+const { heading = isRestaurant ? "Zarezerwuj stolik" : "Rezerwacja" } = Astro.props;
+const consentVersion = clientConfig.rodo.consentVersion;
+---
+
+<section aria-labelledby="contact-heading" class="ed-contact">
+  <div class="container-px ed-contact__inner">
+    <header class="ed-contact__head" data-reveal>
+      <p class="ed-contact__overline">Napisz do nas</p>
+      <h2 id="contact-heading" class="ed-contact__title">{heading}</h2>
+      <p class="ed-contact__lead">Zostaw wiadomość — odpowiemy w ciągu doby. Bezpośredni kontakt:<br />
+        <a href={`tel:${clientConfig.contact.primaryPhone}`} class="ed-contact__tel">{clientConfig.contact.primaryPhone}</a>
+      </p>
+    </header>
+
+    <form id="contact-form" method="POST" action="/api/contact" class="ed-contact__form" novalidate>
+      <input type="hidden" name="consent_text_version" value={consentVersion} />
+      <input type="hidden" name="source_page" value={Astro.url.pathname} />
+      {/* Honeypot — visually + AT hidden via position:absolute off-screen + aria-hidden. sr-only leaks to screen readers. */}
+      <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">
+        <label><input type="text" name="honeypot" tabindex="-1" autocomplete="off" /></label>
+      </div>
+
+      <p id="contact-form__status" role="status" aria-live="polite" class="ed-contact__status"></p>
+
+      <div class="ed-contact__grid">
+        <label class="ed-contact__field">
+          <span>Imię i nazwisko<span aria-hidden="true"> *</span></span>
+          <input type="text" name="name" required minlength="2" maxlength="100" autocomplete="name" aria-required="true" />
+        </label>
+
+        <label class="ed-contact__field">
+          <span>Telefon<span aria-hidden="true"> *</span></span>
+          <input type="tel" name="phone" required minlength="6" maxlength="20" autocomplete="tel" inputmode="tel" pattern="[+0-9 \-]+" aria-required="true" />
+        </label>
+
+        <label class="ed-contact__field">
+          <span>Email</span>
+          <input type="email" name="email" maxlength="120" autocomplete="email" inputmode="email" />
+        </label>
+
+        {isRestaurant && (
+          <label class="ed-contact__field">
+            <span>Data wizyty<span aria-hidden="true"> *</span></span>
+            <input type="date" name="reservation_date" required aria-required="true" />
+          </label>
+        )}
+
+        {isRestaurant && (
+          <label class="ed-contact__field">
+            <span>Godzina<span aria-hidden="true"> *</span></span>
+            <input type="time" name="reservation_time" required aria-required="true" step="900" />
+          </label>
+        )}
+
+        {isRestaurant && (
+          <label class="ed-contact__field">
+            <span>Liczba osób<span aria-hidden="true"> *</span></span>
+            <input type="number" name="party_size" required min="1" max="40" inputmode="numeric" aria-required="true" />
+          </label>
+        )}
+
+        <label class="ed-contact__field ed-contact__field--full">
+          <span>{isRestaurant ? "Uwagi (alergie, okazja, preferencje)" : "Twoja sprawa"}</span>
+          <textarea name="message" minlength={isRestaurant ? 0 : 10} maxlength="2000" rows={isRestaurant ? 3 : 5} required={!isRestaurant} aria-required={!isRestaurant}></textarea>
+        </label>
+      </div>
+
+      <div class="ed-contact__foot">
+        <label class="ed-contact__consent">
+          <input type="checkbox" name="consent" required aria-required="true" />
+          <span>Zgadzam się na kontakt. <a href={clientConfig.rodo.privacyPolicyUrl ?? "/polityka-prywatnosci"}>Polityka prywatności</a></span>
+        </label>
+        <button type="submit" class="ed-contact__btn">{isRestaurant ? "Zarezerwuj stolik" : "Wyślij wiadomość"} →</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<style>
+  .ed-contact { padding-block: 5rem; background: var(--color-surface-muted); border-top: 1px solid var(--color-border); }
+  .ed-contact__inner { max-width: 56rem; margin: 0 auto; }
+  .ed-contact__head { text-align: center; margin-bottom: 3rem; }
+  .ed-contact__overline {
+    font-family: var(--font-body);
+    font-size: 0.75rem; font-weight: 600; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--color-accent); margin: 0 0 0.75rem 0;
+  }
+  .ed-contact__title {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 600; margin: 0 0 1.25rem 0; color: var(--color-text); line-height: 1;
+  }
+  .ed-contact__lead {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--color-text-muted);
+    margin: 0;
+    font-size: 1.1rem;
+    line-height: 1.5;
+  }
+  .ed-contact__tel { color: var(--color-brand); text-decoration: none; font-weight: 600; }
+  .ed-contact__tel:hover { text-decoration: underline; }
+  .ed-contact__form { background: var(--color-surface); border: 1px solid var(--color-border); padding: 2.5rem; }
+  .ed-contact__grid {
+    display: grid; grid-template-columns: 1fr; gap: 1.75rem;
+    margin-bottom: 2rem;
+  }
+  @media (min-width: 640px) { .ed-contact__grid { grid-template-columns: 1fr 1fr; } }
+  .ed-contact__field--full { grid-column: 1 / -1; }
+  .ed-contact__field span {
+    display: block;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 0.95rem;
+    margin-bottom: 0.4rem;
+    color: var(--color-text);
+  }
+  .ed-contact__field input,
+  .ed-contact__field textarea {
+    width: 100%;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font: inherit; font-size: 1rem;
+    font-family: var(--font-body);
+    border-radius: 2px;
+  }
+  .ed-contact__field input:focus,
+  .ed-contact__field textarea:focus {
+    outline: none;
+    border-color: var(--color-brand);
+  }
+  .ed-contact__foot {
+    display: flex; flex-direction: column; gap: 1.25rem;
+    border-top: 1px solid var(--color-border);
+    padding-top: 1.5rem;
+  }
+  @media (min-width: 640px) {
+    .ed-contact__foot { flex-direction: row; justify-content: space-between; align-items: center; }
+  }
+  .ed-contact__consent {
+    display: flex; gap: 0.5rem; align-items: flex-start;
+    font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.4;
+    flex: 1;
+  }
+  .ed-contact__consent a {
+    color: var(--color-brand);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-weight: 600;
+  }
+  .ed-contact__btn {
+    background: transparent;
+    color: var(--color-text);
+    border: 2px solid var(--color-text);
+    padding: 0.85rem 1.75rem;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 200ms, color 200ms;
+    white-space: nowrap;
+  }
+  .ed-contact__btn:hover {
+    background: var(--color-text);
+    color: var(--color-surface);
+  }
+</style>

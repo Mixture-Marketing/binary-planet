@@ -7,11 +7,11 @@
 import type { APIRoute } from "astro";
 
 import { createMagicLink, findAdminByEmail, sendMagicLinkEmail } from "../../../lib/auth.ts";
+import { env } from "cloudflare:workers";
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request, locals, redirect }) => {
-  const env = locals.runtime?.env;
   if (!env?.DB) {
     return new Response("Runtime not available", { status: 500 });
   }

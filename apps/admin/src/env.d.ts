@@ -12,6 +12,8 @@ type RuntimeEnv = {
   RESEND_FROM?: string;
   SESSION_SIGNING_KEY?: string;
   D1_ENCRYPTION_KEY?: string;
+  /** Hub admin API key (mirror of hub's ADMIN_API_KEY). Used to trigger cron remotely. */
+  ADMIN_API_KEY?: string;
 };
 
 declare namespace App {
@@ -29,3 +31,7 @@ declare namespace App {
 }
 
 type Runtime = import("@astrojs/cloudflare").Runtime<RuntimeEnv>;
+
+declare module "cloudflare:workers" {
+  export const env: RuntimeEnv;
+}

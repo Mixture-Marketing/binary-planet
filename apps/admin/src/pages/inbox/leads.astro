@@ -1,13 +1,31 @@
 ---
+import { env } from "cloudflare:workers";
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import Icon from "../../components/Icon.astro";
 
 import { listRecentLeads } from "../../lib/db.ts";
 
-const env = Astro.locals.runtime?.env;
 if (!env?.DB) return new Response("Runtime not available", { status: 500 });
 
-const leads = await listRecentLeads(env.DB, 100);
+const url = new URL(Astro.request.url);
+const statusFilter = url.searchParams.get("status") ?? undefined;
+const searchQuery = (url.searchParams.get("q") ?? "").trim().toLowerCase();
+const hotOnly = url.searchParams.get("hot") === "1";
+
+const allLeads = await listRecentLeads(env.DB, 200);
+
+let leads = allLeads;
+if (statusFilter) leads = leads.filter((l) => l.status === statusFilter);
+if (hotOnly) leads = leads.filter((l) => l.is_hot === 1);
+if (searchQuery) {
+  leads = leads.filter((l) =>
+    [l.business_name, l.source, l.service_interest ?? ""]
+      .some((f) => f.toLowerCase().includes(searchQuery)),
+  );
+}
+leads = leads.slice(0, 100);
+
+const statusOptions = ["all", "new", "contacted", "qualified", "won", "lost", "unqualified", "spam"];
 
 const formatRelative = (iso: string): string => {
   const date = new Date(iso);
@@ -19,20 +37,69 @@ const formatRelative = (iso: string): string => {
   if (hr < 24) return `${hr} h`;
   return `${Math.floor(hr / 24)} d`;
 };
+
+const buildHref = (overrides: Record<string, string | undefined>): string => {
+  const params = new URLSearchParams();
+  const current: Record<string, string | undefined> = {
+    status: statusFilter,
+    q: searchQuery || undefined,
+    hot: hotOnly ? "1" : undefined,
+    ...overrides,
+  };
+  for (const [k, v] of Object.entries(current)) if (v) params.set(k, v);
+  const q = params.toString();
+  return q ? `/inbox/leads?${q}` : "/inbox/leads";
+};
 ---
 
 <AdminLayout title="Inbox: Leady">
-  <header style="margin-bottom: 2rem;">
+  <header style="margin-bottom: 1rem;">
     <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.6rem;"><Icon name="inbox" size={28} /> Inbox: Leady</h1>
     <p style="color: var(--c-text-muted); margin: 0;">
-      Ostatnie {leads.length} leadów ze wszystkich klientów. Sortowane od najnowszego.
+      {leads.length}{(searchQuery || statusFilter || hotOnly) && ` z ${allLeads.length}`}
+      {statusFilter && ` · status: ${statusFilter}`}
+      {hotOnly && ` · 🔥 hot only`}
+      {searchQuery && ` · "${searchQuery}"`}
     </p>
   </header>
+
+  <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; align-items: center;">
+    <form role="search" method="get" action="/inbox/leads" style="display: flex; gap: 0.4rem; align-items: center; flex: 1; min-width: 240px;">
+      {statusFilter && <input type="hidden" name="status" value={statusFilter} />}
+      {hotOnly && <input type="hidden" name="hot" value="1" />}
+      <label for="leads-search" class="visually-hidden">Szukaj leada</label>
+      <input
+        id="leads-search"
+        type="search"
+        name="q"
+        value={searchQuery}
+        placeholder="Szukaj po kliencie, źródle, usłudze…"
+        autocomplete="off"
+        style="flex: 1; padding: 0.55rem 0.85rem; border: 1px solid var(--c-border); border-radius: 6px; font: inherit; min-height: 38px;"
+      />
+      <button type="submit" class="btn" style="font-size: 0.85rem; padding: 0.4rem 0.9rem;">Szukaj</button>
+      {searchQuery && <a href={buildHref({ q: undefined })} class="btn" style="font-size: 0.85rem; padding: 0.4rem 0.9rem;">Wyczyść</a>}
+    </form>
+    <a href={buildHref({ hot: hotOnly ? undefined : "1" })} class={`btn ${hotOnly ? "btn-primary" : ""}`} style="font-size: 0.8rem; padding: 0.35rem 0.75rem; min-height: 30px;">
+      🔥 Tylko hot
+    </a>
+    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+      {statusOptions.map((s) => (
+        <a
+          href={buildHref({ status: s === "all" ? undefined : s })}
+          class={`btn ${(s === "all" && !statusFilter) || s === statusFilter ? "btn-primary" : ""}`}
+          style="font-size: 0.78rem; padding: 0.3rem 0.65rem; min-height: 28px;"
+        >
+          {s}
+        </a>
+      ))}
+    </div>
+  </div>
 
   <div class="card" style="padding: 0;">
     {leads.length === 0 ? (
       <p style="padding: 3rem 1.5rem; text-align: center; color: var(--c-text-muted); margin: 0;">
-        Brak leadów w bazie. Gdy klienci zaczną wypełniać formularze, pojawią się tu.
+        {(searchQuery || statusFilter || hotOnly) ? "Brak leadów pasujących do filtrów." : "Brak leadów w bazie. Gdy klienci zaczną wypełniać formularze, pojawią się tu."}
       </p>
     ) : (
       <table class="table">

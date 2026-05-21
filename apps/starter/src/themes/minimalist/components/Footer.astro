@@ -1,0 +1,117 @@
+---
+/**
+ * Minimalist Footer — dark, 3-col, mono details, trust-signal NIP/KRS line.
+ */
+import { formatPolishPhone } from "@mixturemarketing/web-core/local";
+import clientConfig from "../../../client.config.ts";
+
+const { business, contact, location } = clientConfig;
+const year = new Date().getFullYear();
+const phoneDisplay = formatPolishPhone(contact.primaryPhone);
+---
+
+<footer class="m-ft" role="contentinfo">
+  <div class="container-px m-ft__inner">
+    <div class="m-ft__brand">
+      <p class="m-ft__brand-name">{business.name}</p>
+      <p class="m-ft__addr">
+        {location.address.streetAddress}<br />
+        {location.address.postalCode} {location.address.city}<br />
+        <a href={`tel:${contact.primaryPhone}`}>{phoneDisplay}</a><br />
+        <a href={`mailto:${contact.email}`}>{contact.email}</a>
+      </p>
+      <p class="m-ft__id">
+        NIP {business.nip}
+        {business.regon && <> · REGON {business.regon}</>}
+        {business.krs && <> · KRS {business.krs}</>}
+      </p>
+    </div>
+
+    <nav class="m-ft__nav" aria-label="Stopka nawigacja">
+      <h4 class="m-ft__nav-h">Firma</h4>
+      <ul>
+        <li><a href="/oferta">Oferta</a></li>
+        <li><a href="/o-firmie">Zespół</a></li>
+        <li><a href="/aktualnosci">Publikacje</a></li>
+        <li><a href="/faq">FAQ</a></li>
+        <li><a href="/kontakt">Kontakt</a></li>
+      </ul>
+    </nav>
+
+    <nav class="m-ft__nav" aria-label="Stopka prawna">
+      <h4 class="m-ft__nav-h">Informacje prawne</h4>
+      <ul>
+        <li><a href="/polityka-prywatnosci">Polityka prywatności</a></li>
+        {clientConfig.rodo.termsUrl && <li><a href="/regulamin">Regulamin</a></li>}
+        <li><a href="/sitemap.xml">Mapa strony</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="container-px m-ft__bottom">
+    <span>© {year} {business.legalName ?? business.name}</span>
+    <span>Strona wykonana w MixtureMarketing</span>
+  </div>
+</footer>
+
+<style>
+  .m-ft {
+    background: var(--color-text);
+    color: color-mix(in srgb, var(--color-surface) 70%, transparent);
+    padding: 3.5rem 0 1.5rem;
+  }
+  .m-ft__inner {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+  @media (min-width: 768px) {
+    .m-ft__inner { grid-template-columns: 2fr 1fr 1fr; gap: 3rem; }
+  }
+  .m-ft__brand-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--color-surface);
+    font-size: 1.05rem;
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.01em;
+  }
+  .m-ft__addr { margin: 0 0 0.75rem; line-height: 1.7; font-size: 0.92rem; }
+  .m-ft__addr a { color: inherit; text-decoration: none; }
+  .m-ft__addr a:hover { color: var(--color-surface); text-decoration: underline; }
+  .m-ft__id {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.78rem;
+    color: color-mix(in srgb, var(--color-surface) 45%, transparent);
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .m-ft__nav-h {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--color-surface);
+    font-size: 0.95rem;
+    margin: 0 0 0.75rem;
+  }
+  .m-ft__nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+  .m-ft__nav a {
+    color: color-mix(in srgb, var(--color-surface) 75%, transparent);
+    text-decoration: none;
+    font-size: 0.92rem;
+    transition: color 200ms ease;
+  }
+  .m-ft__nav a:hover { color: var(--color-surface); }
+
+  .m-ft__bottom {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-surface) 15%, transparent);
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.78rem;
+    color: color-mix(in srgb, var(--color-surface) 45%, transparent);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+</style>

@@ -20,7 +20,7 @@ export const adminCheckoutRouter = new Hono<HonoEnv>();
 
 interface CreateCheckoutBody {
   client_id?: string;
-  tier?: "starter" | "standard" | "premium";
+  tier?: "starter" | "standard" | "premium" | "professional";
   success_path?: string;
   cancel_path?: string;
   customer_email?: string;
@@ -40,8 +40,8 @@ adminCheckoutRouter.post("/", async (c) => {
   }
 
   if (!body.client_id) return c.json(err("VALIDATION_ERROR", "client_id required"), 400);
-  if (!body.tier || !["starter", "standard", "premium"].includes(body.tier)) {
-    return c.json(err("VALIDATION_ERROR", "tier must be starter|standard|premium"), 400);
+  if (!body.tier || !["starter", "standard", "premium", "professional"].includes(body.tier)) {
+    return c.json(err("VALIDATION_ERROR", "tier must be starter|standard|premium|professional"), 400);
   }
 
   // Verify klient exists + status allows checkout
@@ -57,7 +57,8 @@ adminCheckoutRouter.post("/", async (c) => {
   const priceId =
     body.tier === "starter" ? env.STRIPE_PRICE_STARTER :
     body.tier === "standard" ? env.STRIPE_PRICE_STANDARD :
-    env.STRIPE_PRICE_PREMIUM;
+    body.tier === "premium" ? env.STRIPE_PRICE_PREMIUM :
+    env.STRIPE_PRICE_PROFESSIONAL;
   if (!priceId) {
     return c.json(err("INTERNAL_ERROR", `Stripe price ID for tier '${body.tier}' not configured`), 500);
   }

@@ -1,31 +1,53 @@
 ---
-import CraftsmanLayout from "../themes/craftsman/layouts/CraftsmanLayout.astro";
-import BreadcrumbNav from "../themes/craftsman/components/BreadcrumbNav.astro";
-import OpeningHours from "../themes/craftsman/components/OpeningHours.astro";
-import ContactForm from "../themes/craftsman/components/ContactForm.astro";
+import CraftsmanLayout from "../themes/dynamic/layouts/CraftsmanLayout.astro";
+import BreadcrumbNav from "../themes/dynamic/components/BreadcrumbNav.astro";
+import OpeningHours from "../themes/OpeningHours.astro";
+import ContactForm from "../themes/ContactForm.astro";
+import clientConfig from "../client.config.ts";
 import { breadcrumbItems, kontaktSeo } from "../lib/seo.ts";
 
+const city = clientConfig.location.address.city;
+const isRestaurant = clientConfig.business.schemaType === "Restaurant";
+
 // Page-specific FAQ — pairs with FAQPage JSON-LD
-const faqs = [
-  {
-    question: "Jak szybko mogę liczyć na odpowiedź?",
-    answer: "Telefonicznie odbieramy zwykle od razu, najpóźniej w 15 minut. Na formularze odpisujemy w godzinach pracy w ciągu godziny.",
-  },
-  {
-    question: "Czy dojeżdżacie do mnie?",
-    answer:
-      "Tak, dojeżdżamy do klientów na terenie Rzeszowa oraz okolicznych miejscowości. Dla awaryjnych wezwań — 24/7.",
-  },
-  {
-    question: "Czy wystawiacie fakturę VAT?",
-    answer: "Tak, każda usługa kończy się fakturą VAT. Dostarczamy elektronicznie na podany email.",
-  },
-  {
-    question: "Czy mogę zarezerwować termin online?",
-    answer:
-      "Najszybciej telefonicznie — termin ustalamy w trakcie krótkiej rozmowy. Można też wypełnić formularz, oddzwaniamy z propozycjami.",
-  },
-];
+const faqs = isRestaurant
+  ? [
+      {
+        question: "Jak szybko otrzymam potwierdzenie rezerwacji?",
+        answer: `Telefoniczną rezerwację potwierdzamy od razu. Rezerwacje przez formularz potwierdzamy w ciągu 2 godzin w godzinach pracy ${clientConfig.business.name}.`,
+      },
+      {
+        question: "Czy obsługujecie eventy i grupy 8+ osób?",
+        answer: `Tak. Mamy salę główną do 40 osób i kameralną do 16. Dla grup 8+ proszę o kontakt z dwudniowym wyprzedzeniem — przygotujemy menu degustacyjne lub indywidualną kartę pod event.`,
+      },
+      {
+        question: "Czy wystawiacie fakturę VAT?",
+        answer: "Tak, fakturę VAT wystawiamy na życzenie — wystarczy podać NIP przy zamówieniu. Dostarczamy elektronicznie na wskazany email.",
+      },
+      {
+        question: "Czy są opcje wegetariańskie i bezglutenowe?",
+        answer: "Mamy oznaczone dania wegetariańskie (V), wegańskie (Ve) i bezglutenowe (GF). Pizzę na cieście bezglutenowym przygotowujemy +8 zł.",
+      },
+    ]
+  : [
+      {
+        question: "Jak szybko mogę liczyć na odpowiedź?",
+        answer: "Telefonicznie odbieramy zwykle od razu, najpóźniej w 15 minut. Na formularze odpisujemy w godzinach pracy w ciągu godziny.",
+      },
+      {
+        question: "Czy dojeżdżacie do mnie?",
+        answer: `Tak, dojeżdżamy do klientów na terenie ${city} oraz okolicznych miejscowości. Dla awaryjnych wezwań — 24/7.`,
+      },
+      {
+        question: "Czy wystawiacie fakturę VAT?",
+        answer: "Tak, każda usługa kończy się fakturą VAT. Dostarczamy elektronicznie na podany email.",
+      },
+      {
+        question: "Czy mogę zarezerwować termin online?",
+        answer:
+          "Najszybciej telefonicznie — termin ustalamy w trakcie krótkiej rozmowy. Można też wypełnić formularz, oddzwaniamy z propozycjami.",
+      },
+    ];
 
 const { meta, jsonLd } = kontaktSeo(faqs);
 ---

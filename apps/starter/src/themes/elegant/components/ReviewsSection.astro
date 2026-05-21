@@ -1,0 +1,82 @@
+---
+/**
+ * Elegant ReviewsSection — single big italic testimonial on cream-paper bg,
+ * three-fleuron ornament header. Picks the highest-rated newest review.
+ */
+import clientConfig from "../../../client.config.ts";
+
+interface Props { heading?: string; }
+const { heading } = Astro.props;
+const reviews = clientConfig.reviews ?? [];
+// Pick newest 5-star review (or just first one)
+const featured = [...reviews].sort((a, b) => {
+  if (b.rating !== a.rating) return b.rating - a.rating;
+  return b.date.localeCompare(a.date);
+})[0] ?? null;
+---
+
+{featured && (
+  <section aria-labelledby="testimonial-heading" class="e-testimonial">
+    <div class="container-px e-testimonial__inner">
+      <p class="e-testimonial__orn" aria-hidden="true">❦ ❦ ❦</p>
+      {heading && <h2 id="testimonial-heading" class="visually-hidden">{heading}</h2>}
+      <blockquote class="e-testimonial__quote">
+        {featured.text}
+      </blockquote>
+      <p class="e-testimonial__author">{featured.author} · klientka stała</p>
+      <p class="e-testimonial__stars" aria-label={`Ocena ${featured.rating} na 5`}>{"★".repeat(featured.rating)}</p>
+    </div>
+  </section>
+)}
+
+<style>
+  .e-testimonial {
+    background: var(--color-surface-muted);
+    padding-block: clamp(4rem, 8vw, 7rem);
+    border-block: 1px solid var(--color-border);
+  }
+  .e-testimonial__inner {
+    max-width: 48rem;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .e-testimonial__orn {
+    color: var(--color-accent);
+    margin: 0 0 1.5rem;
+    font-size: 1.5rem;
+    letter-spacing: 0.5em;
+    line-height: 1;
+  }
+  .e-testimonial__quote {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-style: italic;
+    font-size: clamp(1.4rem, 3.2vw, 2.1rem);
+    line-height: 1.35;
+    color: var(--color-text);
+    margin: 0 0 1.5rem;
+    text-wrap: balance;
+  }
+  .e-testimonial__quote::before {
+    content: '"';
+    color: var(--color-accent);
+    font-size: 1.5em;
+    line-height: 0;
+    vertical-align: -0.3em;
+    margin-right: 0.05em;
+  }
+  .e-testimonial__author {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin: 0;
+  }
+  .e-testimonial__stars {
+    color: var(--color-accent);
+    margin: 1rem 0 0;
+    letter-spacing: 0.15em;
+    font-size: 0.95rem;
+  }
+</style>

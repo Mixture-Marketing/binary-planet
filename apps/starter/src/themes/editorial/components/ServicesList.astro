@@ -1,0 +1,179 @@
+---
+/**
+ * Editorial ServicesList — asymmetric bento (12-col), magazine-style "menu" / "karta".
+ * 1 duża karta + 4 średnie + 1 wąska — różne rozmiary, jak w gazecie.
+ */
+import clientConfig from "../../../client.config.ts";
+import Icon from "../../dynamic/components/Icon.astro";
+import { ORNAMENT_PATHS } from "@mixturemarketing/web-core/ornaments";
+
+interface Props {
+  heading?: string;
+  linkToDetails?: boolean;
+}
+
+const { heading = "Karta", linkToDetails = false } = Astro.props;
+const { services } = clientConfig;
+
+// Asymmetric grid sizing — different per index
+const cardClass = (i: number, total: number): string => {
+  if (i === 0) return "ed-services__card ed-services__card--featured";
+  if (i === total - 1 && total > 3) return "ed-services__card ed-services__card--wide";
+  return "ed-services__card ed-services__card--medium";
+};
+---
+
+<section aria-labelledby="services-heading" class="ed-services">
+  <div class="container-px">
+    <header class="ed-services__head" data-reveal>
+      <p class="ed-services__overline">Co oferujemy</p>
+      <h2 id="services-heading" class="ed-services__title">{heading}</h2>
+      <div class="ed-services__divider" aria-hidden="true">
+        <svg viewBox="0 0 100 24" width="140" height="20" set:html={ORNAMENT_PATHS["divider-3-dots"]}></svg>
+      </div>
+    </header>
+
+    <ul class="ed-services__grid" data-reveal-stagger>
+      {services.map((service, i) => (
+        <li class={cardClass(i, services.length)}>
+          {i === 0 && <span class="ed-services__badge">Polecane</span>}
+          <h3 class="ed-services__name">{service.name}</h3>
+          <p class="ed-services__desc">{service.description}</p>
+          <div class="ed-services__foot">
+            {service.priceFrom && <span class="ed-services__price">{service.priceFrom}</span>}
+            {linkToDetails && (
+              <a href={`/uslugi/${service.slug}`} class="ed-services__link">
+                Czytaj dalej <Icon name="arrow-right" size={14} />
+              </a>
+            )}
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .ed-services {
+    padding-block: 5rem;
+    background: var(--color-surface);
+  }
+  .ed-services__head {
+    max-width: 48rem;
+    margin: 0 auto 3rem auto;
+    text-align: center;
+  }
+  .ed-services__overline {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin: 0 0 0.75rem 0;
+  }
+  .ed-services__title {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 600;
+    margin: 0;
+    color: var(--color-text);
+    line-height: 1;
+  }
+  .ed-services__divider {
+    margin-top: 1.25rem;
+    color: var(--color-accent);
+  }
+  .ed-services__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  @media (min-width: 768px) {
+    .ed-services__grid {
+      grid-template-columns: repeat(12, 1fr);
+    }
+    .ed-services__card--featured { grid-column: span 8; }
+    .ed-services__card--medium { grid-column: span 4; }
+    .ed-services__card--wide { grid-column: span 12; }
+  }
+  .ed-services__card {
+    background: var(--color-surface-muted);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    border: 1px solid var(--color-border);
+    position: relative;
+    transition: transform 250ms ease-out;
+  }
+  .ed-services__card:hover { transform: translateY(-2px); }
+  .ed-services__card--featured {
+    background: var(--color-brand);
+    color: var(--color-brand-fg);
+    border-color: var(--color-brand);
+  }
+  .ed-services__card--featured .ed-services__name,
+  .ed-services__card--featured .ed-services__desc,
+  .ed-services__card--featured .ed-services__price,
+  .ed-services__card--featured .ed-services__link {
+    color: var(--color-brand-fg);
+  }
+  .ed-services__badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: var(--color-accent);
+    color: var(--color-text);
+    padding: 0.2rem 0.5rem;
+  }
+  .ed-services__name {
+    font-family: var(--font-display);
+    font-size: clamp(1.25rem, 2vw, 1.75rem);
+    font-weight: 600;
+    margin: 0;
+    color: var(--color-text);
+    line-height: 1.2;
+  }
+  .ed-services__desc {
+    font-family: var(--font-body);
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0;
+    flex: 1;
+  }
+  .ed-services__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+  }
+  .ed-services__price {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 600;
+    color: var(--color-accent);
+    font-size: 1.1rem;
+  }
+  .ed-services__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--color-brand);
+    font-family: var(--font-body);
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+  }
+  .ed-services__link:hover { text-decoration: underline; }
+</style>

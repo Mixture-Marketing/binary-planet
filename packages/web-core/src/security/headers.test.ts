@@ -37,10 +37,9 @@ describe("buildSecurityHeaders", () => {
     expect(h["Strict-Transport-Security"]).toBeUndefined();
   });
 
-  it("includes nonce in CSP", () => {
+  it("includes nonce in CSP (Astro 6: strict-dynamic removed — see csp.ts)", () => {
     const h = buildSecurityHeaders({ nonce: "abc123" });
     expect(h["Content-Security-Policy"]).toContain("'nonce-abc123'");
-    expect(h["Content-Security-Policy"]).toContain("'strict-dynamic'");
   });
 
   it("Turnstile integration adds CSP entries", () => {

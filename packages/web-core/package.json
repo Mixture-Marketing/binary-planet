@@ -93,9 +93,24 @@
     "./delivery": {
       "types": "./dist/delivery/index.d.ts",
       "import": "./dist/delivery/index.js"
+    },
+    "./motion": {
+      "types": "./dist/motion/index.d.ts",
+      "import": "./dist/motion/index.js"
+    },
+    "./ornaments": {
+      "types": "./dist/ornaments/index.d.ts",
+      "import": "./dist/ornaments/index.js"
+    },
+    "./theme": {
+      "types": "./dist/theme/index.d.ts",
+      "import": "./dist/theme/index.js"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc -b",
     "dev": "tsc -b --watch",
@@ -106,12 +121,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@material/material-color-utilities": "^0.3.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241127.0",
-    "happy-dom": "^15.11.0",
+    "happy-dom": "^20.9.0",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.5"
+    "vitest": "^2.1.9"
   }
 }

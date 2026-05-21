@@ -1,0 +1,40 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mm-client-template",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-04-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Assets emitted by Astro CF adapter
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Astro `trailingSlash: "never"` emituje canonical URL bez slash, ale CF Workers Assets
+    // domyślnie szuka `path/index.html` i 307-uje. `drop-trailing-slash` matchuje
+    // /path → /path/index.html bez redirect (utrzymuje canonical bez slash).
+    "html_handling": "drop-trailing-slash"
+  },
+  // Workers AI binding (chatbot_basic / chatbot_pro addons)
+  "ai": {
+    "binding": "AI"
+  },
+  // Vars (per-deploy; filled by provisioning workflow)
+  "vars": {
+    "HUB_BASE_URL": "https://api.mixturemarketing.pl"
+  },
+  "observability": {
+    "enabled": true
+  }
+  // KV (form rate limit + fallback queue — see web-core/forms)
+  // Provisioning script fills IDs per-klient before deploy:
+  // "kv_namespaces": [
+  //   { "binding": "RATE_LIMIT", "id": "<KV_ID>" },
+  //   { "binding": "FALLBACK_QUEUE", "id": "<KV_ID>" }
+  // ]
+  //
+  // Secrets — set via `wrangler secret put`:
+  // - BP_CLIENT_API_KEY     (spoke ↔ hub auth)
+  // - RESEND_API_KEY        (lead forwarding)
+  // - RESEND_FROM           (e.g. "leads@mixturemarketing.pl")
+  // - TURNSTILE_SECRET      (anti-bot)
+  // - PII_ENCRYPTION_KEY_B64 (optional per-tenant key for D1 *_enc columns)
+}

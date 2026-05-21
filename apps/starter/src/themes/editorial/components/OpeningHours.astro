@@ -1,0 +1,118 @@
+---
+/**
+ * Editorial OpeningHours — magazine-style table z italic note, mono dni.
+ */
+import clientConfig from "../../../client.config.ts";
+import { ORNAMENT_PATHS } from "@mixturemarketing/web-core/ornaments";
+
+const { hours, location } = clientConfig;
+const DAYS: Array<[keyof typeof hours, string]> = [
+  ["monday", "Pon"], ["tuesday", "Wt"], ["wednesday", "Śr"],
+  ["thursday", "Czw"], ["friday", "Pt"], ["saturday", "Sob"], ["sunday", "Niedz"],
+];
+const today = new Date().getDay();
+const todayKey: keyof typeof hours = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][today]! as keyof typeof hours;
+const renderHours = (v: unknown): string => {
+  if (v === "closed") return "—";
+  if (Array.isArray(v) && v.length === 2) return `${v[0]}–${v[1]}`;
+  return "—";
+};
+---
+
+<section aria-labelledby="hours-heading" class="ed-hours">
+  <div class="container-px ed-hours__inner">
+    <header class="ed-hours__head" data-reveal>
+      <p class="ed-hours__overline">Wizyta</p>
+      <h2 id="hours-heading" class="ed-hours__title">Czynne w tygodniu</h2>
+    </header>
+
+    <div class="ed-hours__split">
+      <dl class="ed-hours__grid">
+        {DAYS.map(([key, label]) => {
+          const isToday = key === todayKey;
+          return (
+            <div class={`ed-hours__col ${isToday ? "is-today" : ""}`}>
+              <dt>{label}</dt>
+              <dd>{renderHours(hours[key])}</dd>
+            </div>
+          );
+        })}
+      </dl>
+
+      <aside class="ed-hours__address">
+        <p class="ed-hours__locale">{location.address.streetAddress}<br />{location.address.postalCode} {location.address.city}</p>
+        {hours.note && <p class="ed-hours__note">„{hours.note}"</p>}
+      </aside>
+    </div>
+
+    <div class="ed-hours__ornament" aria-hidden="true">
+      <svg viewBox="0 0 100 24" width="140" height="20" set:html={ORNAMENT_PATHS["divider-3-dots"]}></svg>
+    </div>
+  </div>
+</section>
+
+<style>
+  .ed-hours { padding-block: 5rem; background: var(--color-surface); border-top: 1px solid var(--color-border); }
+  .ed-hours__inner { max-width: 56rem; margin: 0 auto; }
+  .ed-hours__head { text-align: center; margin-bottom: 2.5rem; }
+  .ed-hours__overline {
+    font-family: var(--font-body);
+    font-size: 0.75rem; font-weight: 600; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--color-accent); margin: 0 0 0.75rem 0;
+  }
+  .ed-hours__title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 600; margin: 0; color: var(--color-text); line-height: 1;
+  }
+  .ed-hours__split {
+    display: grid; grid-template-columns: 1fr; gap: 2.5rem;
+    align-items: center;
+  }
+  @media (min-width: 768px) { .ed-hours__split { grid-template-columns: 2fr 1fr; gap: 4rem; } }
+  .ed-hours__grid {
+    margin: 0; padding: 0;
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .ed-hours__col {
+    text-align: center;
+    padding: 1.25rem 0.25rem;
+    border-right: 1px solid var(--color-border);
+  }
+  .ed-hours__col:last-child { border-right: 0; }
+  .ed-hours__col dt {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin-bottom: 0.5rem;
+  }
+  .ed-hours__col dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    color: var(--color-text);
+  }
+  .ed-hours__col.is-today { background: var(--color-surface-muted); }
+  .ed-hours__col.is-today dt { color: var(--color-brand); }
+  .ed-hours__col.is-today dd { color: var(--color-brand); font-weight: 600; }
+  .ed-hours__address { font-family: var(--font-body); color: var(--color-text-muted); }
+  .ed-hours__locale { margin: 0 0 0.75rem 0; line-height: 1.5; }
+  .ed-hours__note {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--color-accent);
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  .ed-hours__ornament {
+    text-align: center;
+    color: var(--color-accent);
+    margin-top: 2.5rem;
+  }
+</style>

@@ -55,10 +55,10 @@ describe("db query helpers", () => {
     it("filters by status", async () => {
       await setup.db
         .prepare(
-          `INSERT INTO clients (id, business_name, industry, subtype_schema, theme_preset, city, tier, status, feature_flags_json, modules_json)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO clients (id, business_name, nip, industry, subtype_schema, theme_preset, city, tier, status, feature_flags_json, modules_json)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
-        .bind("clk_paused", "Paused Co", "locksmith", "Locksmith", "craftsman", "Kraków", "starter", "paused", "{}", "[]")
+        .bind("clk_paused", "Paused Co", "8121234568", "locksmith", "Locksmith", "craftsman", "Kraków", "starter", "paused", "{}", "[]")
         .run();
 
       const active = await listClients(setup.db, { status: "active" });
@@ -72,10 +72,10 @@ describe("db query helpers", () => {
       for (let i = 0; i < 3; i++) {
         await setup.db
           .prepare(
-            `INSERT INTO clients (id, business_name, industry, subtype_schema, theme_preset, city, tier, status, feature_flags_json, modules_json)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO clients (id, business_name, nip, industry, subtype_schema, theme_preset, city, tier, status, feature_flags_json, modules_json)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           )
-          .bind(`clk_${i}`, `Co ${i}`, "locksmith", "Locksmith", "craftsman", "Kraków", "starter", "active", "{}", "[]")
+          .bind(`clk_${i}`, `Co ${i}`, `812123456${i}`, "locksmith", "Locksmith", "craftsman", "Kraków", "starter", "active", "{}", "[]")
           .run();
       }
       const limited = await listClients(setup.db, { limit: 2 });

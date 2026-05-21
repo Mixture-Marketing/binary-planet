@@ -208,11 +208,12 @@ interface StripeInvoiceObject {
   last_finalization_error?: { message?: string };
 }
 
-function tierFromPriceId(env: import("../../../env.js").Env, priceId: string | undefined): "starter" | "standard" | "premium" | null {
+function tierFromPriceId(env: import("../../../env.js").Env, priceId: string | undefined): "starter" | "standard" | "premium" | "professional" | null {
   if (!priceId) return null;
   if (priceId === env.STRIPE_PRICE_STARTER) return "starter";
   if (priceId === env.STRIPE_PRICE_STANDARD) return "standard";
   if (priceId === env.STRIPE_PRICE_PREMIUM) return "premium";
+  if (priceId === env.STRIPE_PRICE_PROFESSIONAL) return "professional";
   return null;
 }
 
@@ -276,7 +277,8 @@ async function handleCheckoutCompleted(env: import("../../../env.js").Env, event
     return;
   }
 
-  // Flip client to 'provisioning' — Track 4 cron picks it up.
+  // Flip client to 'provisioning' — Track 4 cron picks it up (later, AFTER wizard done).
+  // For now: status = 'provisioning' signals "paid but config incomplete — wait for wizard submit".
   await env.DB
     .prepare(`UPDATE clients SET status = 'provisioning' WHERE id = ? AND status IN ('pending')`)
     .bind(clientId)
@@ -289,6 +291,104 @@ async function handleCheckoutCompleted(env: import("../../../env.js").Env, event
     )
     .bind(clientId, JSON.stringify({ session_id: obj.id, subscription_id: obj.subscription, customer_id: obj.customer }))
     .run();
+
+  // Track 13: send onboarding email — klient gets link to finish wizard in panel klienta.
+  await sendOnboardingEmail(env, clientId).catch((e) => {
+    // eslint-disable-next-line no-console
+    console.warn("onboarding email send failed:", e instanceof Error ? e.message : e);
+  });
+}
+
+/**
+ * Send "uzupełnij wizard" email after Stripe payment.
+ * Klient receives link to panel.mixturemarketing.pl/onboarding (auto-login via magic link).
+ */
+async function sendOnboardingEmail(env: import("../../../env.js").Env, clientId: string): Promise<void> {
+  if (!env.RESEND_API_KEY) return; // Skip in dev/test
+
+  // Fetch klient info
+  const row = await env.DB
+    .prepare(
+      `SELECT c.business_name, c.tier, cc.contact_email_enc
+         FROM clients c LEFT JOIN client_contacts cc ON cc.client_id = c.id
+        WHERE c.id = ? LIMIT 1`,
+    )
+    .bind(clientId)
+    .first<{ business_name: string; tier: string; contact_email_enc: string | null }>();
+  if (!row?.contact_email_enc) return;
+
+  // v0.1: stored as "dev:plaintext" prefix
+  const email = row.contact_email_enc.startsWith("dev:") ? row.contact_email_enc.slice(4) : row.contact_email_enc;
+  const businessName = row.business_name;
+  const panelLogin = "https://panel.mixturemarketing.pl/login";
+
+  const tierLabel = {
+    starter: "Starter (179 zł/mc)",
+    standard: "Standard (249 zł/mc)",
+    premium: "Premium (349 zł/mc)",
+    professional: "Professional (549 zł/mc)",
+  }[row.tier] ?? row.tier;
+
+  const subject = `MixtureMarketing — uzupełnij dane swojej strony`;
+  const html = `
+    <div style="font-family: system-ui, sans-serif; max-width: 540px; margin: 0 auto; padding: 24px;">
+      <h1 style="color: #047857; margin: 0 0 16px 0;">Dziękujemy za płatność!</h1>
+      <p>Cześć,</p>
+      <p>Twoje zamówienie pakietu <strong>${escapeHtml(tierLabel)}</strong> dla firmy <strong>${escapeHtml(businessName)}</strong> zostało opłacone.</p>
+      <p><strong>Co dalej?</strong></p>
+      <ol style="line-height: 1.7;">
+        <li>Kliknij przycisk poniżej, aby zalogować się do panelu klienta</li>
+        <li>Wypełnij 12-krokowy wizard (godziny otwarcia, usługi, domena, etc.) — zajmie 5-10 minut</li>
+        <li>W ciągu 24h Twoja strona internetowa będzie gotowa</li>
+        <li>Otrzymasz email z adresem strony + linkiem do panelu klienta</li>
+      </ol>
+      <p style="margin: 32px 0;">
+        <a href="${panelLogin}" style="display: inline-block; background: #047857; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600;">Zaloguj się do panelu</a>
+      </p>
+      <p style="color: #64748b; font-size: 14px;">
+        Logowanie: wpisz ten adres email (<strong>${escapeHtml(email)}</strong>), wyślemy Ci jednorazowy link logowania. Wygaśnie po 15 minutach.
+      </p>
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0;">
+      <p style="color: #64748b; font-size: 13px;">
+        Masz pytania? Odpowiedz na tego maila lub napisz na <a href="mailto:info@mixturemarketing.pl">info@mixturemarketing.pl</a>.<br>
+        MixtureMarketing · NIP wkrótce · Pisz po polsku 🇵🇱
+      </p>
+    </div>
+  `;
+  const text = `Dziękujemy za płatność!
+
+Pakiet: ${tierLabel}
+Firma: ${businessName}
+
+Co dalej:
+1. Zaloguj się do panelu klienta: ${panelLogin}
+2. Wypełnij wizard onboardingu (5-10 minut)
+3. W 24h Twoja strona będzie gotowa
+4. Otrzymasz email z adresem strony
+
+Logowanie magic-link: wpisz adres ${email} → otrzymasz jednorazowy link.
+
+Pytania: info@mixturemarketing.pl
+`;
+
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: env.RESEND_FROM ?? "admin@mixturemarketing.pl",
+      to: email,
+      subject,
+      html,
+      text,
+    }),
+  });
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 }
 
 async function handleSubscriptionUpserted(env: import("../../../env.js").Env, event: StripeEvent): Promise<void> {
@@ -329,10 +429,49 @@ async function handleSubscriptionUpserted(env: import("../../../env.js").Env, ev
 
   const newClientStatus = CLIENT_STATUS_FROM_STRIPE[obj.status];
   if (newClientStatus) {
+    // Don't overwrite 'provisioning' with 'active' — klient still needs to fill wizard
+    // + have site deployed. Activation happens via deploy-notify (sets activated_at).
+    if (newClientStatus === "active") {
+      await env.DB
+        .prepare(
+          `UPDATE clients SET status = ? WHERE id = ? AND status NOT IN (?, 'provisioning', 'churned')`,
+        )
+        .bind(newClientStatus, clientId, newClientStatus)
+        .run();
+    } else {
+      await env.DB
+        .prepare(`UPDATE clients SET status = ? WHERE id = ? AND status != ?`)
+        .bind(newClientStatus, clientId, newClientStatus)
+        .run();
+    }
+  }
+
+  // Track 22 B4 — Tier downgrade detection
+  // If klient changed tier (e.g. Premium → Standard), enforce addons that no longer
+  // belong to the new tier or that exceed allowed count.
+  const existingTier = await env.DB
+    .prepare(`SELECT tier FROM clients WHERE id = ? LIMIT 1`)
+    .bind(clientId)
+    .first<{ tier: string }>();
+  if (existingTier && existingTier.tier !== tier) {
     await env.DB
-      .prepare(`UPDATE clients SET status = ? WHERE id = ? AND status != ?`)
-      .bind(newClientStatus, clientId, newClientStatus)
+      .prepare(`UPDATE clients SET tier = ? WHERE id = ?`)
+      .bind(tier, clientId)
       .run();
+    await env.DB
+      .prepare(
+        `INSERT INTO audit_log (actor, action, resource_type, resource_id, client_id, severity, metadata_json)
+         VALUES ('system', 'client.tier_change', 'client', ?, ?, 'info', ?)`,
+      )
+      .bind(clientId, clientId, JSON.stringify({ from: existingTier.tier, to: tier }))
+      .run();
+    try {
+      const { enforceTierDowngrade } = await import("../../../scheduled/lifecycle.js");
+      await enforceTierDowngrade(env, clientId, existingTier.tier, tier);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn(`tier_downgrade_pipeline failed for ${clientId}:`, e instanceof Error ? e.message : e);
+    }
   }
 }
 
@@ -349,6 +488,15 @@ async function handleSubscriptionDeleted(env: import("../../../env.js").Env, eve
       .prepare(`UPDATE clients SET status = 'churned', churned_at = datetime('now') WHERE id = ?`)
       .bind(clientId)
       .run();
+
+    // Track 22 — run full churn pipeline (archive repo, detach domain, cancel addons, send winback)
+    try {
+      const { executeChurnPipeline } = await import("../../../scheduled/lifecycle.js");
+      await executeChurnPipeline(env, clientId);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn(`churn_pipeline failed for ${clientId}:`, e instanceof Error ? e.message : e);
+    }
   }
 }
 

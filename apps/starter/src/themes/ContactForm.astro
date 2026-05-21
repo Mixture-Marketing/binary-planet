@@ -1,0 +1,16 @@
+---
+import clientConfig from "../client.config.ts";
+import MinimalistContact from "./minimalist/components/ContactForm.astro";
+import ElegantContact from "./elegant/components/ContactForm.astro";
+import DynamicContact from "./dynamic/components/ContactForm.astro";
+import EditorialContact from "./editorial/components/ContactForm.astro";
+
+interface Props { heading?: string; }
+const props = Astro.props;
+const preset = clientConfig.theme.preset;
+---
+
+{preset === "minimalist" && <MinimalistContact {...props} />}
+{preset === "elegant" && <ElegantContact {...props} />}
+{preset === "dynamic" && <DynamicContact {...props} />}
+{preset === "editorial" && <EditorialContact {...props} />}

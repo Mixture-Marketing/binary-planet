@@ -1,0 +1,138 @@
+---
+/**
+ * Minimalist ServicesList — numbered practices list with hover-shift,
+ * 2-col on desktop, hairline borders, mono numbering. Linear-style data table feel.
+ */
+import clientConfig from "../../../client.config.ts";
+
+interface Props {
+  heading?: string;
+  linkToDetails?: boolean;
+}
+const { heading = "Praktyki, które prowadzimy", linkToDetails = false } = Astro.props;
+const { services } = clientConfig;
+---
+
+<section aria-labelledby="services-heading" class="m-services" id="praktyki">
+  <div class="container-px m-services__inner">
+    <header class="m-services__head">
+      <h2 id="services-heading" class="m-services__h2">{heading}</h2>
+      <p class="m-services__sub">Specjalizujemy się w {services.length} obszarach. Każda sprawa prowadzona przez dedykowanego prawnika z zespołu.</p>
+    </header>
+
+    <div class="m-services__grid">
+      {services.map((s, idx) => {
+        const num = String(idx + 1).padStart(2, "0");
+        const Tag = linkToDetails ? "a" : "div";
+        return (
+          <Tag
+            {...(linkToDetails ? { href: `/uslugi/${s.slug}` } : {})}
+            class="m-service"
+            data-track-event={linkToDetails ? "service_click" : undefined}
+            data-track-position="services"
+          >
+            <span class="m-service__num">{num}</span>
+            <div class="m-service__main">
+              <h3 class="m-service__name">{s.name}</h3>
+              <p class="m-service__desc">{s.description}</p>
+            </div>
+            {s.priceFrom && <span class="m-service__rate">{s.priceFrom}</span>}
+          </Tag>
+        );
+      })}
+    </div>
+  </div>
+</section>
+
+<style>
+  .m-services {
+    padding-block: clamp(4rem, 7vw, 6rem);
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+  }
+  .m-services__inner { max-width: 80rem; margin: 0 auto; }
+  .m-services__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+  .m-services__h2 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin: 0;
+    line-height: 1.05;
+    max-width: 28rem;
+    color: var(--color-text);
+  }
+  .m-services__sub {
+    color: var(--color-text-muted);
+    max-width: 24rem;
+    font-size: 0.95rem;
+    margin: 0;
+  }
+
+  .m-services__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    border-top: 1px solid var(--color-border);
+  }
+  @media (min-width: 768px) {
+    .m-services__grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  .m-service {
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--color-border);
+    display: grid;
+    grid-template-columns: 4rem 1fr auto;
+    align-items: baseline;
+    gap: 1.5rem;
+    text-decoration: none;
+    color: inherit;
+    transition: padding-left 200ms ease, background-color 200ms ease;
+  }
+  .m-service:hover { padding-left: 1rem; }
+  @media (min-width: 768px) {
+    .m-service:nth-child(odd) {
+      border-right: 1px solid var(--color-border);
+      padding-right: 2rem;
+    }
+    .m-service:nth-child(even) { padding-left: 2rem; }
+    .m-service:nth-child(even):hover { padding-left: 3rem; }
+  }
+  .m-service__num {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.78rem;
+    color: var(--color-accent);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+  .m-service__name {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.3rem;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+    color: var(--color-text);
+  }
+  .m-service__desc {
+    font-size: 0.92rem;
+    color: var(--color-text-muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .m-service__rate {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.85rem;
+    color: var(--color-text);
+    font-weight: 500;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+</style>

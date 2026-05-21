@@ -1,0 +1,14 @@
+---
+import clientConfig from "../client.config.ts";
+import MinimalistFooter from "./minimalist/components/Footer.astro";
+import ElegantFooter from "./elegant/components/Footer.astro";
+import DynamicFooter from "./dynamic/components/Footer.astro";
+import EditorialFooter from "./editorial/components/Footer.astro";
+
+const preset = clientConfig.theme.preset;
+---
+
+{preset === "minimalist" && <MinimalistFooter />}
+{preset === "elegant" && <ElegantFooter />}
+{preset === "dynamic" && <DynamicFooter />}
+{preset === "editorial" && <EditorialFooter />}

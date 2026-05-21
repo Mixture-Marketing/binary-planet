@@ -28,6 +28,12 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
 
   return applySecurityHeaders(response, {
     nonce,
+    // Astro 6 emituje niektóre `<script>` z `.astro` (theme toggle, mobile drawer)
+    // jako inline `<script type="module">` BEZ nonce. Astro 6 `security.csp` próbowane —
+    // meta tag NIE jest emitowany dla SSR routes. `allowAstroInlineScripts: true`
+    // (= 'unsafe-inline' bez nonce w script-src) pozostaje jako rozwiązanie pragmatyczne.
+    // Native View Transitions (CSS @view-transition) zastępują ClientRouter.
+    allowAstroInlineScripts: true,
     integrations: {
       turnstile: Boolean(clientConfig.integrations.turnstileSiteKey),
       plausible: Boolean(clientConfig.integrations.plausible),

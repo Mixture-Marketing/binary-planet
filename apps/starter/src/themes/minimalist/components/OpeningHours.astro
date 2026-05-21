@@ -1,0 +1,113 @@
+---
+/**
+ * Minimalist OpeningHours — clean 2-col table, current day subtle brand color, no badge.
+ */
+import clientConfig from "../../../client.config.ts";
+
+const { hours, location } = clientConfig;
+const DAYS: Array<[keyof typeof hours, string]> = [
+  ["monday", "Poniedziałek"], ["tuesday", "Wtorek"], ["wednesday", "Środa"],
+  ["thursday", "Czwartek"], ["friday", "Piątek"], ["saturday", "Sobota"], ["sunday", "Niedziela"],
+];
+const today = new Date().getDay();
+const todayKey: keyof typeof hours = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][today]! as keyof typeof hours;
+const renderHours = (v: unknown): string => {
+  if (v === "closed") return "zamknięte";
+  if (Array.isArray(v) && v.length === 2) return `${v[0]} – ${v[1]}`;
+  return "—";
+};
+---
+
+<section aria-labelledby="hours-heading" class="m-hours">
+  <div class="container-px m-hours__grid">
+    <div>
+      <p class="m-hours__overline">Godziny otwarcia</p>
+      <h2 id="hours-heading" class="m-hours__title">Kiedy nas zastaniesz</h2>
+      {hours.note && <p class="m-hours__note">{hours.note}</p>}
+    </div>
+
+    <dl class="m-hours__table">
+      {DAYS.map(([key, label]) => {
+        const isToday = key === todayKey;
+        return (
+          <div class={`m-hours__row ${isToday ? "is-today" : ""}`}>
+            <dt>{label}{isToday && <span class="m-hours__today">· dziś</span>}</dt>
+            <dd>{renderHours(hours[key])}</dd>
+          </div>
+        );
+      })}
+    </dl>
+  </div>
+</section>
+
+<style>
+  .m-hours {
+    padding-block: 5rem;
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .m-hours__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+  @media (min-width: 768px) { .m-hours__grid { grid-template-columns: 1fr 1.2fr; gap: 4rem; } }
+  .m-hours__overline {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin: 0 0 0.5rem 0;
+  }
+  .m-hours__title {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+    color: var(--color-text);
+    letter-spacing: -0.02em;
+  }
+  .m-hours__note {
+    color: var(--color-text-muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .m-hours__table {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .m-hours__row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--color-border);
+    align-items: baseline;
+  }
+  .m-hours__row:last-child { border-bottom: 0; }
+  .m-hours__row dt {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+  }
+  .m-hours__row dd {
+    margin: 0;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.9rem;
+    color: var(--color-text);
+  }
+  .m-hours__row.is-today dt,
+  .m-hours__row.is-today dd {
+    color: var(--color-brand);
+    font-weight: 600;
+  }
+  .m-hours__today {
+    color: var(--color-brand);
+    font-size: 0.75rem;
+    margin-left: 0.4rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+</style>

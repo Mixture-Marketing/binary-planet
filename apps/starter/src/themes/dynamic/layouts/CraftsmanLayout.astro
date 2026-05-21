@@ -1,0 +1,21 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import type { MetaInput } from "@mixturemarketing/web-core/seo";
+import Header from "../../Header.astro";
+import Footer from "../../Footer.astro";
+
+interface Props {
+  meta: MetaInput;
+  jsonLd?: unknown[];
+}
+
+const props = Astro.props;
+---
+
+<BaseLayout {...props}>
+  <Header />
+  <main id="main" tabindex="-1">
+    <slot />
+  </main>
+  <Footer />
+</BaseLayout>

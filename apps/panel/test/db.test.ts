@@ -33,8 +33,8 @@ describe("panel db helpers", () => {
   it("listLeads: returns only client's leads, newest first; respects status filter", async () => {
     // Seed a different client + lead to verify scoping
     await setup.db
-      .prepare(`INSERT INTO clients (id, business_name, industry, subtype_schema, theme_preset, city, tier, status, feature_flags_json, modules_json)
-                VALUES ('clk_other', 'Other', 'locksmith', 'Locksmith', 'craftsman', 'X', 'starter', 'active', '{}', '[]')`)
+      .prepare(`INSERT INTO clients (id, business_name, nip, industry, subtype_schema, theme_preset, city, tier, status, feature_flags_json, modules_json)
+                VALUES ('clk_other', 'Other', '8121234599', 'locksmith', 'Locksmith', 'craftsman', 'X', 'starter', 'active', '{}', '[]')`)
       .run();
     await seedLead(setup.db, "clk_other", { id: "lead_other" });
 

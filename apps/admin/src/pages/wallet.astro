@@ -1,0 +1,233 @@
+---
+import { env } from "cloudflare:workers";
+import AdminLayout from "../layouts/AdminLayout.astro";
+import Icon from "../components/Icon.astro";
+
+if (!env?.DB) return new Response("Runtime not available", { status: 500 });
+
+// Tier base prices (in grosze)
+const TIER_PRICES: Record<string, number> = {
+  starter: 17900,
+  standard: 24900,
+  premium: 34900,
+  professional: 54900,
+};
+
+// 1. Active clients per tier
+const tierBreakdown = await env.DB
+  .prepare(`SELECT tier, COUNT(*) AS count FROM clients WHERE status = 'active' GROUP BY tier`)
+  .all<{ tier: string; count: number }>();
+
+// 2. Active addons revenue (monthly only)
+const addonRevenue = await env.DB
+  .prepare(
+    `SELECT COALESCE(SUM(ca.price_grosze_at_activation), 0) AS revenue, COUNT(*) AS count
+       FROM client_addons ca
+       JOIN addon_modules am ON am.slug = ca.addon_slug
+      WHERE ca.status IN ('trial', 'active')
+        AND am.billing_period = 'monthly'`,
+  )
+  .first<{ revenue: number; count: number }>();
+
+// 3. Cost estimates (last 30 days)
+const aiCallsCost = await env.DB
+  .prepare(
+    `SELECT COALESCE(SUM(cost_grosze), 0) AS total
+       FROM ai_calls
+      WHERE occurred_at >= datetime('now', '-30 days')`,
+  )
+  .first<{ total: number }>();
+
+const dataforseoCost = await env.DB
+  .prepare(
+    `SELECT COALESCE(SUM(cost_grosze), 0) AS total
+       FROM competitor_snapshots
+      WHERE taken_at >= datetime('now', '-30 days')`,
+  )
+  .first<{ total: number }>();
+
+// 4. Klient distribution + per-klient ARPU
+interface ClientRevenue {
+  client_id: string;
+  business_name: string;
+  tier: string;
+  tier_revenue: number;
+  addon_count: number;
+  addon_revenue: number;
+  total_arpu: number;
+}
+
+const allActiveClients = await env.DB
+  .prepare(`SELECT id, business_name, tier FROM clients WHERE status = 'active' ORDER BY business_name`)
+  .all<{ id: string; business_name: string; tier: string }>();
+
+const clientRows: ClientRevenue[] = await Promise.all(
+  (allActiveClients.results ?? []).map(async (c) => {
+    const addons = await env.DB
+      .prepare(
+        `SELECT COALESCE(SUM(ca.price_grosze_at_activation), 0) AS revenue, COUNT(*) AS count
+           FROM client_addons ca JOIN addon_modules am ON am.slug = ca.addon_slug
+          WHERE ca.client_id = ? AND ca.status IN ('trial','active') AND am.billing_period = 'monthly'`,
+      )
+      .bind(c.id)
+      .first<{ revenue: number; count: number }>();
+    const tierRev = TIER_PRICES[c.tier] ?? 0;
+    const addonRev = addons?.revenue ?? 0;
+    return {
+      client_id: c.id,
+      business_name: c.business_name,
+      tier: c.tier,
+      tier_revenue: tierRev,
+      addon_count: addons?.count ?? 0,
+      addon_revenue: addonRev,
+      total_arpu: tierRev + addonRev,
+    };
+  }),
+);
+clientRows.sort((a, b) => b.total_arpu - a.total_arpu);
+
+// Totals
+const tierRevenueTotal = (tierBreakdown.results ?? []).reduce(
+  (s, t) => s + (TIER_PRICES[t.tier] ?? 0) * t.count,
+  0,
+);
+const totalMrr = tierRevenueTotal + (addonRevenue?.revenue ?? 0);
+const totalArr = totalMrr * 12;
+const totalCosts = (aiCallsCost?.total ?? 0) + (dataforseoCost?.total ?? 0);
+const grossMarginPct = totalMrr > 0 ? Math.round(((totalMrr - totalCosts) / totalMrr) * 100) : 0;
+
+const fmtPln = (g: number): string => `${(g / 100).toLocaleString("pl-PL", { maximumFractionDigits: 0 })} zł`;
+const tierLabel: Record<string, string> = { starter: "Starter", standard: "Standard", premium: "Premium", professional: "Professional" };
+---
+
+<AdminLayout title="Operator Wallet">
+  <header style="margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.6rem;">
+      <Icon name="target" size={28} /> Operator Wallet
+    </h1>
+    <p style="color: var(--c-text-muted); margin: 0;">Twoje przychody, koszty, ARPU per klient. Tylko aktywni klienci (status='active').</p>
+  </header>
+
+  {/* Top revenue stats */}
+  <section style="display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 2rem;">
+    <div class="card">
+      <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase;">MRR</p>
+      <p style="margin: 0.5rem 0 0 0; font-size: 1.75rem; font-weight: 800; color: #047857;">{fmtPln(totalMrr)}</p>
+      <p style="margin: 0; font-size: 0.78rem; color: var(--c-text-muted);">Monthly Recurring Revenue</p>
+    </div>
+    <div class="card">
+      <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase;">ARR</p>
+      <p style="margin: 0.5rem 0 0 0; font-size: 1.75rem; font-weight: 800;">{fmtPln(totalArr)}</p>
+      <p style="margin: 0; font-size: 0.78rem; color: var(--c-text-muted);">Annual Recurring Revenue</p>
+    </div>
+    <div class="card">
+      <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase;">Koszty / 30 dni</p>
+      <p style="margin: 0.5rem 0 0 0; font-size: 1.75rem; font-weight: 800; color: #dc2626;">{fmtPln(totalCosts)}</p>
+      <p style="margin: 0; font-size: 0.78rem; color: var(--c-text-muted);">Anthropic + DataForSEO</p>
+    </div>
+    <div class="card">
+      <p style="margin: 0; font-size: 0.85rem; color: var(--c-text-muted); font-weight: 600; text-transform: uppercase;">Marża brutto</p>
+      <p style="margin: 0.5rem 0 0 0; font-size: 1.75rem; font-weight: 800; color: {grossMarginPct >= 80 ? '#047857' : grossMarginPct >= 60 ? '#f59e0b' : '#dc2626'};">{grossMarginPct}%</p>
+      <p style="margin: 0; font-size: 0.78rem; color: var(--c-text-muted);">(MRR − koszty) / MRR</p>
+    </div>
+  </section>
+
+  {/* Tier breakdown */}
+  <section style="margin-bottom: 2rem;">
+    <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 1rem 0;">Klienci per pakiet</h2>
+    <div class="card" style="padding: 0;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Pakiet</th>
+            <th>Cena</th>
+            <th>Klientów</th>
+            <th>MRR z pakietu</th>
+          </tr>
+        </thead>
+        <tbody>
+          {["starter", "standard", "premium", "professional"].map((tier) => {
+            const row = (tierBreakdown.results ?? []).find((r) => r.tier === tier);
+            const count = row?.count ?? 0;
+            const price = TIER_PRICES[tier] ?? 0;
+            return (
+              <tr>
+                <td style="font-weight: 600;">{tierLabel[tier]}</td>
+                <td>{fmtPln(price)}/mc</td>
+                <td style="text-align: center;">{count}</td>
+                <td style="text-align: right; font-weight: 700;">{fmtPln(price * count)}</td>
+              </tr>
+            );
+          })}
+          <tr style="background: var(--c-bg); font-weight: 700;">
+            <td colspan="3" style="text-align: right;">RAZEM pakiety:</td>
+            <td style="text-align: right;">{fmtPln(tierRevenueTotal)}</td>
+          </tr>
+          <tr>
+            <td colspan="3" style="text-align: right; font-size: 0.85rem; color: var(--c-text-muted);">+ Addony recurring ({addonRevenue?.count ?? 0}):</td>
+            <td style="text-align: right; font-weight: 600;">{fmtPln(addonRevenue?.revenue ?? 0)}</td>
+          </tr>
+          <tr style="background: #dcfce7; font-weight: 700;">
+            <td colspan="3" style="text-align: right;">MRR TOTAL:</td>
+            <td style="text-align: right; color: #047857;">{fmtPln(totalMrr)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {/* Per-klient ARPU */}
+  <section style="margin-bottom: 2rem;">
+    <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 1rem 0;">ARPU per klient (sortowane malejąco)</h2>
+    <div class="card" style="padding: 0;">
+      {clientRows.length === 0 ? (
+        <p style="padding: 2rem; text-align: center; color: var(--c-text-muted);">Brak aktywnych klientów.</p>
+      ) : (
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Klient</th>
+              <th>Pakiet</th>
+              <th>Cena pakietu</th>
+              <th>Addony</th>
+              <th>Revenue/mc</th>
+            </tr>
+          </thead>
+          <tbody>
+            {clientRows.map((c) => (
+              <tr>
+                <td>
+                  <a href={`/clients/${c.client_id}`} style="color: var(--c-brand); text-decoration: none; font-weight: 600;">{c.business_name}</a>
+                  <br>
+                  <span style="font-family: ui-monospace, monospace; font-size: 0.7rem; color: var(--c-text-muted);">{c.client_id}</span>
+                </td>
+                <td><span class="badge">{tierLabel[c.tier] ?? c.tier}</span></td>
+                <td>{fmtPln(c.tier_revenue)}</td>
+                <td>{c.addon_count} × {fmtPln(c.addon_revenue)}</td>
+                <td style="font-weight: 700; text-align: right;">{fmtPln(c.total_arpu)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  </section>
+
+  {/* Cost breakdown */}
+  <section>
+    <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 1rem 0;">Koszty (ostatnie 30 dni)</h2>
+    <div class="card">
+      <dl style="display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1rem; margin: 0;">
+        <dt style="color: var(--c-text-muted);">Anthropic (Claude)</dt>
+        <dd style="margin: 0;">{fmtPln(aiCallsCost?.total ?? 0)}</dd>
+        <dt style="color: var(--c-text-muted);">DataForSEO (SERP queries)</dt>
+        <dd style="margin: 0;">{fmtPln(dataforseoCost?.total ?? 0)}</dd>
+        <dt style="color: var(--c-text-muted); font-weight: 700;">RAZEM</dt>
+        <dd style="margin: 0; font-weight: 700;">{fmtPln(totalCosts)}</dd>
+      </dl>
+      <p style="margin: 1rem 0 0 0; font-size: 0.78rem; color: var(--c-text-muted);">
+        Brakuje w kalkulacji: OVH (renewals domen ~60 zł/rok/klient), Resend (free tier wystarcza), SMSAPI (~0.12 zł/SMS), Workers AI (free tier 10k Neurons/dzień), R2 storage (~minimal).
+      </p>
+    </div>
+  </section>
+</AdminLayout>

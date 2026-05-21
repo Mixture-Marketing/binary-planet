@@ -1,11 +1,11 @@
 ---
+import { env } from "cloudflare:workers";
 import { buildSessionCookie, verifyMagicLink } from "../../lib/auth.ts";
 
 const url = new URL(Astro.request.url);
 const token = url.searchParams.get("token");
 const next = url.searchParams.get("next") ?? "/";
 
-const env = Astro.locals.runtime?.env;
 if (!env?.DB) {
   return new Response("Runtime not ready", { status: 500 });
 }

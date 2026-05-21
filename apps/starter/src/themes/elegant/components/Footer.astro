@@ -1,0 +1,135 @@
+---
+/**
+ * Elegant Footer — dark with gold accent column heads, italic Cormorant brand.
+ */
+import { formatPolishPhone } from "@mixturemarketing/web-core/local";
+import clientConfig from "../../../client.config.ts";
+
+const { business, contact, location } = clientConfig;
+const phoneDisplay = formatPolishPhone(contact.primaryPhone);
+const year = new Date().getFullYear();
+---
+
+<footer class="e-ft" role="contentinfo">
+  <div class="container-px e-ft__inner">
+    <div>
+      <p class="e-ft__brand">
+        {business.name}
+        {business.foundedYear && <small>est. {business.foundedYear}</small>}
+      </p>
+      <p class="e-ft__addr">
+        {location.address.streetAddress}<br />
+        {location.address.postalCode} {location.address.city}<br />
+        <a href={`tel:${contact.primaryPhone}`}>{phoneDisplay}</a><br />
+        <a href={`mailto:${contact.email}`}>{contact.email}</a>
+      </p>
+    </div>
+
+    <nav class="e-ft__col" aria-label="Usługi">
+      <h4 class="e-ft__col-h">Usługi</h4>
+      <ul>
+        <li><a href="/oferta">Wszystkie usługi</a></li>
+        <li><a href="/aktualnosci">Galeria prac</a></li>
+        <li><a href="/o-firmie">Zespół</a></li>
+      </ul>
+    </nav>
+
+    <nav class="e-ft__col" aria-label="Salon">
+      <h4 class="e-ft__col-h">Salon</h4>
+      <ul>
+        <li><a href="/o-firmie">O nas</a></li>
+        <li><a href="/faq">Najczęstsze pytania</a></li>
+        <li><a href="/kontakt#mapa">Jak dojechać</a></li>
+      </ul>
+    </nav>
+
+    <nav class="e-ft__col" aria-label="Kontakt i rezerwacja">
+      <h4 class="e-ft__col-h">Kontakt</h4>
+      <ul>
+        <li><a href="/kontakt">Rezerwacja</a></li>
+        <li><a href="/bony">Bony upominkowe</a></li>
+        <li><a href="/polityka-prywatnosci">Polityka prywatności</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <div class="container-px e-ft__bottom">
+    <span>© {year} {business.legalName ?? business.name}</span>
+    <span>NIP {business.nip} · {location.address.city}</span>
+  </div>
+</footer>
+
+<style>
+  .e-ft {
+    background: var(--color-text);
+    color: color-mix(in srgb, var(--color-surface) 75%, transparent);
+    padding: 4rem 0 2rem;
+  }
+  .e-ft__inner {
+    max-width: 76rem;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+  @media (min-width: 768px) {
+    .e-ft__inner { grid-template-columns: 2fr 1fr 1fr 1fr; }
+  }
+  .e-ft__brand {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.75rem;
+    margin: 0 0 0.5rem;
+    color: var(--color-surface);
+  }
+  .e-ft__brand small {
+    display: block;
+    font-style: normal;
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.6;
+    margin-top: 0.25rem;
+  }
+  .e-ft__addr {
+    font-family: var(--font-body);
+    margin: 1rem 0 0;
+    line-height: 1.7;
+    font-size: 0.92rem;
+  }
+  .e-ft__addr a { color: inherit; text-decoration: none; }
+  .e-ft__addr a:hover { color: var(--color-surface); text-decoration: underline; }
+
+  .e-ft__col-h {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--color-accent);
+    margin: 0 0 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+  .e-ft__col ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+  .e-ft__col a {
+    color: color-mix(in srgb, var(--color-surface) 70%, transparent);
+    text-decoration: none;
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+  }
+  .e-ft__col a:hover { color: var(--color-surface); }
+
+  .e-ft__bottom {
+    max-width: 76rem;
+    margin: 2.5rem auto 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-surface) 15%, transparent);
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    color: color-mix(in srgb, var(--color-surface) 45%, transparent);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+</style>

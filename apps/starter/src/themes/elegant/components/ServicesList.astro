@@ -1,0 +1,119 @@
+---
+/**
+ * Elegant ServicesList — printed-card menu with dot leaders.
+ * Group by category (uses iconKey as grouping hint when sensible), italic Cormorant titles.
+ */
+import clientConfig from "../../../client.config.ts";
+import { ORNAMENT_PATHS } from "@mixturemarketing/web-core/ornaments";
+
+interface Props { heading?: string; linkToDetails?: boolean }
+const { heading = "Karta usług" } = Astro.props;
+const services = clientConfig.services;
+---
+
+<section aria-labelledby="services-heading" class="e-services" id="uslugi">
+  <div class="container-px e-services__inner">
+    <header class="e-services__head">
+      <p class="e-services__eyebrow">Co dla Ciebie przygotujemy</p>
+      <h2 id="services-heading" class="e-services__h2">{heading}</h2>
+      <div class="e-services__ornament" aria-hidden="true">
+        <svg viewBox="0 0 100 24" width="120" height="20" set:html={ORNAMENT_PATHS["divider-fleuron"]}></svg>
+      </div>
+    </header>
+
+    <ul class="e-services__list">
+      {services.map((s) => (
+        <li class="e-service">
+          <div class="e-service__content">
+            <span class="e-service__name">{s.name}</span>
+            {s.description && <p class="e-service__desc">{s.description}</p>}
+          </div>
+          {s.priceFrom && <span class="e-service__price">{s.priceFrom}</span>}
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .e-services {
+    background: var(--color-surface);
+    padding-block: clamp(4rem, 7vw, 6rem);
+  }
+  .e-services__inner { max-width: 56rem; margin: 0 auto; }
+  .e-services__head { text-align: center; margin-bottom: 3rem; }
+  .e-services__eyebrow {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin: 0 0 0.75rem;
+  }
+  .e-services__h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-style: italic;
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    margin: 0 0 1.25rem;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    color: var(--color-text);
+  }
+  .e-services__ornament { color: var(--color-accent); }
+
+  /* Restraint pass — long-scrolling prose column, NOT card grid.
+     Aesop-style: service name italic 32px, 2-line description sans 14px, price small-caps right. */
+  .e-services__list { list-style: none; margin: 0; padding: 0; }
+  .e-service {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: 2rem;
+    padding: 2rem 0;
+    position: relative;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+  }
+  .e-service:last-child { border-bottom: 0; }
+  .e-service__content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: relative;
+    max-width: 36rem;
+  }
+  /* No dot leaders — clean separation by spacing, not noise */
+  .e-service__name {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-style: italic;
+    font-size: clamp(1.5rem, 2.4vw, 2rem);
+    line-height: 1.15;
+    color: var(--color-text);
+    position: relative;
+    z-index: 1;
+    padding-right: 0.5rem;
+    width: max-content;
+    max-width: 100%;
+  }
+  .e-service__desc {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: var(--color-text-muted);
+    margin: 0;
+    max-width: 32rem;
+  }
+  .e-service__price {
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    font-variant-numeric: tabular-nums;
+    align-self: flex-start;
+    padding-top: 0.5rem;
+    white-space: nowrap;
+  }
+</style>

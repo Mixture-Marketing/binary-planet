@@ -1,8 +1,8 @@
 ---
+import { env } from "cloudflare:workers";
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import Icon from "../../components/Icon.astro";
 
-const env = Astro.locals.runtime?.env;
 if (!env?.DB) return new Response("Runtime not ready", { status: 500 });
 
 interface Row {

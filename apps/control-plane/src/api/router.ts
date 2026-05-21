@@ -14,7 +14,15 @@ import { featureFlagsRouter } from "./routes/feature-flags.js";
 import { healthRouter } from "./routes/health.js";
 import { leadsRouter } from "./routes/leads.js";
 import { adminCheckoutRouter } from "./routes/admin/checkout.js";
+import { adminAddonsRouter } from "./routes/admin/addons.js";
+import { adminBackupRouter } from "./routes/admin/backup.js";
 import { adminCronRouter } from "./routes/admin/cron.js";
+import { deployNotifyRouter } from "./routes/admin/deploy-notify.js";
+import { adminExtraSubpageRouter } from "./routes/admin/extra-subpage.js";
+import { adminLifecycleRouter } from "./routes/admin/lifecycle.js";
+import { adminNewsletterRouter } from "./routes/admin/newsletter.js";
+import { adminOvhRouter } from "./routes/admin/ovh.js";
+import { adminSiteMigrationRouter } from "./routes/admin/site-migration.js";
 import { preonboardRouter } from "./routes/admin/preonboard.js";
 import { sveltiaOauthRouter } from "./routes/sveltia-oauth.js";
 import { stripeWebhookRouter } from "./routes/webhooks/stripe.js";
@@ -38,6 +46,16 @@ export function createApp(): Hono<HonoEnv> {
   // authClientKey middleware intercepts these routes first.
   app.route("/api/admin/stripe/checkout", adminCheckoutRouter);
   app.route("/api/admin/cron/run-now", adminCronRouter);
+  app.route("/api/admin/ovh", adminOvhRouter);
+  app.route("/api/admin/deploy-notify", deployNotifyRouter);
+  app.route("/api/admin/addons", adminAddonsRouter);
+  app.route("/api/admin/lifecycle", adminLifecycleRouter);
+  app.route("/api/admin/backup", adminBackupRouter);
+  app.route("/api/admin/newsletter", adminNewsletterRouter);
+  app.route("/api/admin/extra-subpage", adminExtraSubpageRouter);
+  app.route("/api/admin/site-migration", adminSiteMigrationRouter);
+  // Newsletter public endpoints (confirm + unsubscribe — klikalne z maila)
+  app.route("/api/newsletter", adminNewsletterRouter);
   // Preonboard — public-ish, X-BP-Preonboard-Key auth, rate-limited per IP
   app.route("/api/admin/preonboard", preonboardRouter);
 

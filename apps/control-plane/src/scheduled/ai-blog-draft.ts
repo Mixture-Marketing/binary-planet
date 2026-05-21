@@ -78,8 +78,13 @@ export async function generateAiBlogDrafts(env: Env): Promise<OrchestratorResult
                 WHERE client_id = c.id AND action = 'ai_blog.draft_opened') AS last_blog_at
          FROM clients c
         WHERE c.status = 'active'
-          AND c.modules_json LIKE '%blog_ai%'
-          AND c.github_repo_url IS NOT NULL`,
+          AND c.github_repo_url IS NOT NULL
+          AND EXISTS (
+            SELECT 1 FROM client_addons ca
+             WHERE ca.client_id = c.id
+               AND ca.addon_slug = 'blog_ai'
+               AND ca.status IN ('trial', 'active')
+          )`,
     )
     .all<AiBlogClient & { primary_phone: string | null }>();
 

@@ -1,9 +1,9 @@
 ---
+import { env } from "cloudflare:workers";
 import PanelLayout from "../layouts/PanelLayout.astro";
 import Icon from "../components/Icon.astro";
 import { listLeads } from "../lib/db.ts";
 
-const env = Astro.locals.runtime?.env;
 const client = Astro.locals.client;
 if (!env?.DB || !client) return new Response("Runtime not ready", { status: 500 });
 
@@ -86,7 +86,20 @@ const STATUSES = [
                 {lead.email_hash ? lead.email_hash.slice(0, 12) + "…" : "—"}
               </td>
               <td>
-                <span class={`badge ${lead.status === "new" ? "badge-warning" : lead.status === "won" ? "badge-success" : lead.status === "lost" || lead.status === "spam" ? "badge-danger" : ""}`}>{lead.status}</span>
+                <select
+                  class={`lead-status-select badge ${lead.status === "new" ? "badge-warning" : lead.status === "won" ? "badge-success" : lead.status === "lost" || lead.status === "spam" ? "badge-danger" : ""}`}
+                  data-lead-id={lead.id}
+                  aria-label={`Zmień status leada (obecnie: ${lead.status})`}
+                  style="font: inherit; padding: 0.25rem 0.4rem; border: 1px solid var(--c-border); cursor: pointer;"
+                >
+                  <option value="new" selected={lead.status === "new"}>nowy</option>
+                  <option value="contacted" selected={lead.status === "contacted"}>skontaktowany</option>
+                  <option value="qualified" selected={lead.status === "qualified"}>zakwalifikowany</option>
+                  <option value="won" selected={lead.status === "won"}>wygrany</option>
+                  <option value="lost" selected={lead.status === "lost"}>przegrany</option>
+                  <option value="unqualified" selected={lead.status === "unqualified"}>niezakwalifikowany</option>
+                  <option value="spam" selected={lead.status === "spam"}>spam</option>
+                </select>
                 {lead.is_hot === 1 && <span class="badge badge-danger" style="margin-left: 0.25rem; display: inline-flex; align-items: center; gap: 0.25rem;"><Icon name="flame" size={11} /> hot</span>}
               </td>
               <td style="font-size: 0.8rem;">
@@ -116,3 +129,39 @@ const STATUSES = [
     </p>
   </details>
 </PanelLayout>
+
+<script>
+  // Lead status mutation — debounced PATCH to /api/leads/:id
+  document.addEventListener("change", async (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLSelectElement)) return;
+    if (!target.classList.contains("lead-status-select")) return;
+    const leadId = target.dataset.leadId;
+    if (!leadId) return;
+    const prevClass = target.className;
+    target.disabled = true;
+    try {
+      const res = await fetch(`/api/leads/${encodeURIComponent(leadId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: target.value }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // Update badge color class to match new status
+      const colorMap: Record<string, string> = {
+        new: "badge-warning",
+        won: "badge-success",
+        lost: "badge-danger",
+        spam: "badge-danger",
+      };
+      const baseClass = "lead-status-select badge";
+      target.className = colorMap[target.value] ? `${baseClass} ${colorMap[target.value]}` : baseClass;
+    } catch (err) {
+      target.className = prevClass;
+      console.error("[leads] status update failed", err);
+      alert("Nie udało się zaktualizować statusu. Odśwież i spróbuj ponownie.");
+    } finally {
+      target.disabled = false;
+    }
+  });
+</script>

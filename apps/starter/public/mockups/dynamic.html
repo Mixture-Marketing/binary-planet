@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dynamic mockup — Ślusarz Kowalski</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+  :root {
+    --ink: #0a0a0a;
+    --paper: #ffffff;
+    --paper-2: #fafafa;
+    --line: #e6e6e6;
+    --red: #dc2626;
+    --red-dark: #991b1b;
+    --orange: #f97316;
+    --green: #16a34a;
+    --muted: #525252;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(--paper); color: var(--ink); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+
+  .ribbon { background: #fbbf24; color: #1a1a1a; padding: 0.5rem 1rem; text-align: center; font-size: 0.85rem; font-weight: 600; }
+  .ribbon a { color: #1a1a1a; text-decoration: underline; }
+
+  /* Top compact header */
+  .hdr { background: var(--paper); border-bottom: 1px solid var(--line); }
+  .hdr__inner { max-width: 80rem; margin: 0 auto; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .hdr__brand { font-family: 'Bricolage Grotesque'; font-weight: 700; font-size: 1.05rem; letter-spacing: -0.015em; }
+  .hdr__brand-mark { display: inline-block; width: 28px; height: 28px; background: var(--red); border-radius: 8px; margin-right: 0.5rem; vertical-align: middle; position: relative; }
+  .hdr__brand-mark::after { content: '⚿'; color: #fff; font-size: 1rem; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -52%); }
+  .hdr__cta {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.55rem 1rem;
+    background: var(--ink); color: #fff;
+    text-decoration: none;
+    border-radius: 8px;
+    font-family: var(--mono); font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  /* HERO BENTO GRID */
+  .hero { padding: 1.5rem 1.5rem 3rem; max-width: 80rem; margin: 0 auto; }
+  .hero__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-auto-rows: minmax(180px, auto);
+    gap: 1rem;
+  }
+  @media (min-width: 768px) {
+    .hero__grid {
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(2, minmax(220px, 1fr));
+      gap: 1.25rem;
+    }
+  }
+
+  .tile {
+    border-radius: 20px;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+    overflow: hidden;
+    transition: transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 250ms;
+  }
+  .tile:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -16px rgba(0,0,0,0.18); }
+  .tile:active { transform: translateY(-1px) scale(0.99); }
+
+  /* Tile 1 — BIG PHONE (dominant on mobile, 2 cols x 2 rows on desktop) */
+  .tile--phone {
+    background: var(--red);
+    color: #fff;
+    grid-column: span 1;
+    min-height: 280px;
+  }
+  @media (min-width: 768px) {
+    .tile--phone { grid-column: span 2; grid-row: span 2; }
+  }
+  .tile--phone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 70% 30%, color-mix(in srgb, var(--orange) 60%, transparent) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .tile__phone-label {
+    font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase;
+    opacity: 0.9;
+  }
+  .tile__phone-icon { width: 56px; height: 56px; background: rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; }
+  .tile__phone-icon::before {
+    content: ''; position: absolute; inset: -6px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.6);
+    animation: pulse-ring 1.8s ease-out infinite;
+  }
+  @keyframes pulse-ring {
+    0% { transform: scale(0.8); opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .tile__phone-icon::before { animation: none; } }
+  .tile__phone-icon svg { width: 28px; height: 28px; color: #fff; }
+  .tile__phone-number {
+    font-family: 'Bricolage Grotesque';
+    font-weight: 800;
+    font-size: clamp(2.5rem, 5.5vw, 4rem);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-top: auto;
+    font-variation-settings: "wdth" 110;
+  }
+  .tile__phone-sub { font-family: var(--mono); font-size: 0.85rem; opacity: 0.9; }
+
+  /* Tile 2 — Open Now status */
+  .tile--status {
+    background: linear-gradient(135deg, #052e1c 0%, #0d5d3b 100%);
+    color: #fff;
+  }
+  .tile__status-dot {
+    width: 12px; height: 12px; background: #4ade80; border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(74,222,128,0.25), 0 0 0 12px rgba(74,222,128,0.1);
+    animation: pulse-soft 2s ease-in-out infinite;
+  }
+  @keyframes pulse-soft { 50% { box-shadow: 0 0 0 6px rgba(74,222,128,0.35), 0 0 0 16px rgba(74,222,128,0.15); } }
+  .tile__status-headline {
+    font-family: 'Bricolage Grotesque';
+    font-weight: 700; font-size: clamp(1.5rem, 3vw, 2.25rem);
+    line-height: 1.05; letter-spacing: -0.02em; margin: 0;
+  }
+  .tile__status-meta { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.08em; opacity: 0.8; }
+
+  /* Tile 3 — Area served (map-ish) */
+  .tile--map {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+  }
+  .tile__map-label { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .tile__map-title { font-family: 'Bricolage Grotesque'; font-weight: 700; font-size: 1.4rem; margin: 0; line-height: 1.15; }
+  .tile__map-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: auto; }
+  .chip {
+    background: var(--paper); border: 1px solid var(--line);
+    padding: 0.3rem 0.75rem; border-radius: 999px;
+    font-family: var(--mono); font-size: 0.78rem; font-weight: 500;
+  }
+  .chip strong { color: var(--red); font-weight: 700; }
+
+  /* Tile 4 — Before / After */
+  .tile--proof {
+    background: #fff;
+    border: 1px solid var(--line);
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    overflow: hidden;
+  }
+  .tile__proof-img {
+    background-size: cover;
+    background-position: center;
+    min-height: 200px;
+    position: relative;
+  }
+  .tile__proof-img--before { background-image: url('https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=500&q=70'); filter: grayscale(0.3) brightness(0.85); }
+  .tile__proof-img--after { background-image: url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&q=70'); }
+  .tile__proof-tag {
+    position: absolute; top: 0.75rem; left: 0.75rem;
+    background: rgba(0,0,0,0.7); color: #fff;
+    padding: 0.2rem 0.6rem; border-radius: 4px;
+    font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .tile__proof-tag--after { background: var(--green); }
+
+  /* Tile 5 — Headline & sub-CTA */
+  .tile--headline {
+    background: var(--ink);
+    color: #fff;
+    grid-column: span 1;
+  }
+  @media (min-width: 768px) { .tile--headline { grid-column: span 2; } }
+  .tile__headline-text {
+    font-family: 'Bricolage Grotesque';
+    font-weight: 700;
+    font-size: clamp(1.5rem, 3.2vw, 2.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .tile__headline-text em { font-style: italic; color: var(--orange); }
+  .tile__headline-sub { font-family: var(--mono); font-size: 0.85rem; opacity: 0.7; margin-top: auto; }
+
+  /* Service grid (signature row of small cards) */
+  .services { padding: 5rem 1.5rem; max-width: 80rem; margin: 0 auto; }
+  .services__head { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 2.5rem; }
+  .services__eyebrow { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.12em; color: var(--muted); }
+  .services__h2 { font-family: 'Bricolage Grotesque'; font-weight: 700; font-size: clamp(1.75rem, 3.5vw, 2.5rem); margin: 0; letter-spacing: -0.025em; }
+  .services__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.85rem; }
+  .service {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    padding: 1.5rem;
+    border-radius: 12px;
+    display: flex; flex-direction: column; gap: 0.5rem;
+    transition: border-color 200ms, transform 200ms;
+    text-decoration: none; color: inherit;
+  }
+  .service:hover { border-color: var(--red); transform: translateY(-2px); }
+  .service__name { font-family: 'Bricolage Grotesque'; font-weight: 700; font-size: 1.05rem; margin: 0; }
+  .service__price { font-family: var(--mono); font-size: 0.85rem; color: var(--red); font-weight: 600; margin-top: auto; }
+
+  /* Social proof / FOMO strip */
+  .proof-strip { background: var(--ink); color: #fff; padding: 3rem 1.5rem; }
+  .proof-strip__inner { max-width: 80rem; margin: 0 auto; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; text-align: center; }
+  @media (min-width: 768px) { .proof-strip__inner { grid-template-columns: repeat(4, 1fr); } }
+  .proof__num { font-family: 'Bricolage Grotesque'; font-weight: 800; font-size: clamp(2rem, 4vw, 3.25rem); letter-spacing: -0.025em; line-height: 1; color: #fff; margin: 0; }
+  .proof__num em { font-style: normal; color: var(--orange); }
+  .proof__label { font-family: var(--mono); font-size: 0.78rem; color: #a3a3a3; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 0.5rem; }
+
+  /* Reviews — emergency-vibe cards */
+  .d-reviews { padding: 5rem 1.5rem; max-width: 80rem; margin: 0 auto; }
+  .d-reviews__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 2.5rem; }
+  .d-reviews__h2 { font-family: 'Bricolage Grotesque'; font-weight: 700; font-size: clamp(1.75rem, 3.5vw, 2.5rem); margin: 0; letter-spacing: -0.025em; line-height: 1.05; }
+  .d-reviews__rating { font-family: var(--mono); font-size: 0.85rem; color: var(--muted); }
+  .d-reviews__rating strong { color: var(--red); font-weight: 700; }
+  .d-reviews__grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+  @media (min-width: 768px) { .d-reviews__grid { grid-template-columns: repeat(3, 1fr); } }
+  .d-review {
+    background: #fff;
+    border: 1px solid var(--line);
+    padding: 1.75rem;
+    border-radius: 16px;
+    display: flex; flex-direction: column; gap: 0.75rem;
+    position: relative;
+  }
+  .d-review::before {
+    content: '"';
+    position: absolute;
+    top: 0.5rem; right: 1.25rem;
+    font-family: 'Bricolage Grotesque'; font-weight: 800; font-size: 4rem;
+    color: var(--red); opacity: 0.15; line-height: 1;
+  }
+  .d-review__stars { color: #fbbf24; letter-spacing: 0.1em; }
+  .d-review__text { font-family: 'Inter'; font-size: 0.95rem; line-height: 1.55; color: var(--ink); margin: 0; }
+  .d-review__author { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); margin-top: auto; padding-top: 0.5rem; border-top: 1px solid var(--line); }
+  .d-review__author strong { color: var(--ink); font-family: 'Bricolage Grotesque'; font-size: 0.92rem; font-weight: 600; }
+
+  /* FAQ — accordion-style */
+  .faq { background: var(--paper-2); padding: 5rem 1.5rem; border-block: 1px solid var(--line); }
+  .faq__inner { max-width: 56rem; margin: 0 auto; }
+  .faq__head { margin-bottom: 2.5rem; }
+  .faq__eyebrow { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.12em; color: var(--muted); display: block; margin-bottom: 0.5rem; text-transform: uppercase; }
+  .faq__h2 { font-family: 'Bricolage Grotesque'; font-weight: 700; font-size: clamp(1.75rem, 3.5vw, 2.5rem); margin: 0; letter-spacing: -0.025em; }
+  .faq__item {
+    background: #fff; border: 1px solid var(--line); border-radius: 12px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .faq__item summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 1.25rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    font-family: 'Bricolage Grotesque'; font-weight: 600; font-size: 1.05rem; letter-spacing: -0.01em;
+    min-height: 56px;
+  }
+  .faq__item summary::-webkit-details-marker { display: none; }
+  .faq__item summary::after { content: '+'; font-family: var(--mono); font-size: 1.5rem; color: var(--red); transition: transform 200ms; }
+  .faq__item[open] summary::after { transform: rotate(45deg); }
+  .faq__item-content { padding: 0 1.5rem 1.5rem; font-size: 0.95rem; line-height: 1.6; color: var(--muted); }
+
+  /* Final CTA */
+  .final-cta { padding: 6rem 1.5rem; max-width: 80rem; margin: 0 auto; }
+  .final-cta__card {
+    background: linear-gradient(135deg, var(--red) 0%, var(--orange) 100%);
+    color: #fff;
+    padding: 4rem 2.5rem;
+    border-radius: 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .final-cta__card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 20% 80%, rgba(255,255,255,0.15) 0%, transparent 50%);
+  }
+  .final-cta__eyebrow { font-family: var(--mono); font-size: 0.85rem; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.85; margin: 0 0 0.5rem; position: relative; }
+  .final-cta__h2 { font-family: 'Bricolage Grotesque'; font-weight: 800; font-size: clamp(2rem, 5vw, 3.5rem); margin: 0 0 1.5rem; letter-spacing: -0.03em; line-height: 1.05; position: relative; }
+  .final-cta__h2 em { font-style: normal; text-decoration: underline; text-decoration-thickness: 4px; text-underline-offset: 4px; text-decoration-color: rgba(255,255,255,0.5); }
+  .final-cta__sub { font-size: 1.05rem; opacity: 0.9; margin: 0 0 2rem; position: relative; }
+  .final-cta__btn {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    padding: 1.1rem 2rem;
+    background: var(--ink); color: #fff;
+    text-decoration: none;
+    border-radius: 12px;
+    font-family: 'Bricolage Grotesque'; font-weight: 700; font-size: 1.1rem;
+    transition: transform 200ms;
+    position: relative;
+  }
+  .final-cta__btn:hover { transform: translateY(-2px); }
+
+  /* Footer */
+  .ft { background: var(--ink); color: #a3a3a3; padding: 3rem 1.5rem 2rem; }
+  .ft__inner { max-width: 80rem; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 2rem; }
+  @media (min-width: 768px) { .ft__inner { grid-template-columns: 2fr 1fr 1fr 1fr; } }
+  .ft__brand { font-family: 'Bricolage Grotesque'; font-weight: 700; color: #fff; font-size: 1.05rem; margin: 0 0 0.5rem; }
+  .ft__addr { font-size: 0.92rem; line-height: 1.7; margin: 0; }
+  .ft__nav-h { font-family: 'Bricolage Grotesque'; font-weight: 600; color: #fff; margin: 0 0 0.5rem; font-size: 0.95rem; }
+  .ft__nav { display: flex; flex-direction: column; gap: 0.4rem; }
+  .ft__nav a { color: #a3a3a3; text-decoration: none; font-size: 0.92rem; }
+  .ft__nav a:hover { color: #fff; }
+  .ft__bottom { max-width: 80rem; margin: 2rem auto 0; padding-top: 1.5rem; border-top: 1px solid #262626; font-family: var(--mono); font-size: 0.78rem; color: #525252; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; }
+
+  /* Sticky mobile bar */
+  .sticky-cta {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex; gap: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line);
+  }
+  @media (min-width: 768px) { .sticky-cta { display: none; } }
+  .sticky-cta a {
+    flex: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0.85rem;
+    border-radius: 10px;
+    text-decoration: none;
+    font-family: 'Bricolage Grotesque'; font-weight: 700;
+    min-height: 48px;
+    font-size: 0.95rem;
+  }
+  .sticky-cta__primary { flex: 2; background: var(--red); color: #fff; }
+  .sticky-cta__ghost { background: var(--paper-2); color: var(--ink); border: 1px solid var(--line); }
+
+  .footer-note { padding: 2rem; text-align: center; font-family: var(--mono); font-size: 0.78rem; color: var(--muted); background: var(--paper-2); }
+  body { padding-bottom: 80px; }
+  @media (min-width: 768px) { body { padding-bottom: 0; } }
+</style>
+</head>
+<body>
+  <div class="ribbon">MOCKUP DYNAMIC · proof-of-concept · <a href="/mockups/">wszystkie 4 motywy</a></div>
+
+  <header class="hdr">
+    <div class="hdr__inner">
+      <div class="hdr__brand">
+        <span class="hdr__brand-mark"></span>
+        Ślusarz Kowalski · Rzeszów
+      </div>
+      <a href="tel:+48171234567" class="hdr__cta">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        +48 17 123 45 67
+      </a>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero__grid">
+      <!-- BIG PHONE (2x2 on desktop, full-width on mobile) -->
+      <a href="tel:+48171234567" class="tile tile--phone">
+        <div class="tile__phone-label">Otwieram zamki · 24/7 · Rzeszów</div>
+        <div class="tile__phone-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </div>
+        <div class="tile__phone-number">+48 17<br/>123 45 67</div>
+        <div class="tile__phone-sub">Dojazd w 30 minut · Awaryjne wezwania</div>
+      </a>
+
+      <!-- Status -->
+      <div class="tile tile--status">
+        <span class="tile__status-dot" aria-hidden="true"></span>
+        <h2 class="tile__status-headline">Otwarte teraz<br/>do 18:00</h2>
+        <span class="tile__status-meta">Pn–Pt 8–18 · Sb 9–14 · 24/7 awaryjnie</span>
+      </div>
+
+      <!-- Map / Area -->
+      <div class="tile tile--map">
+        <span class="tile__map-label">Obszar działania</span>
+        <h3 class="tile__map-title">Cały Rzeszów<br/>+ 5 miejscowości</h3>
+        <div class="tile__map-chips">
+          <span class="chip">Rzeszów</span>
+          <span class="chip">Boguchwała</span>
+          <span class="chip">Tyczyn</span>
+          <span class="chip">Łańcut</span>
+          <span class="chip"><strong>+2</strong></span>
+        </div>
+      </div>
+
+      <!-- Headline -->
+      <div class="tile tile--headline">
+        <h2 class="tile__headline-text">Otwarcie<br/>bez <em>uszkodzenia</em><br/>drzwi.</h2>
+        <span class="tile__headline-sub">21 lat doświadczenia · 847 zamków · 0 odmów</span>
+      </div>
+
+      <!-- Proof (before/after) -->
+      <div class="tile tile--proof">
+        <div class="tile__proof-img tile__proof-img--before">
+          <span class="tile__proof-tag">Przed</span>
+        </div>
+        <div class="tile__proof-img tile__proof-img--after">
+          <span class="tile__proof-tag tile__proof-tag--after">Po</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="services">
+    <header class="services__head">
+      <span class="services__eyebrow"># cennik usług</span>
+      <h2 class="services__h2">Wycena bez wychodzenia z domu</h2>
+    </header>
+    <div class="services__grid">
+      <a href="#" class="service">
+        <h3 class="service__name">Awaryjne otwieranie zamków</h3>
+        <p style="margin:0;font-size:0.88rem;color:var(--muted)">Bez uszkodzenia · dojazd 30 min · 24/7</p>
+        <span class="service__price">od 100 zł</span>
+      </a>
+      <a href="#" class="service">
+        <h3 class="service__name">Dorabianie kluczy</h3>
+        <p style="margin:0;font-size:0.88rem;color:var(--muted)">Drzwi, kłódki, samochody, mebel</p>
+        <span class="service__price">od 30 zł</span>
+      </a>
+      <a href="#" class="service">
+        <h3 class="service__name">Wymiana zamków</h3>
+        <p style="margin:0;font-size:0.88rem;color:var(--muted)">Klasy B/C/C+ · gwarancja 24 mc</p>
+        <span class="service__price">od 200 zł</span>
+      </a>
+      <a href="#" class="service">
+        <h3 class="service__name">Systemy zabezpieczeń</h3>
+        <p style="margin:0;font-size:0.88rem;color:var(--muted)">Zamki elektroniczne, drzwi antywłam</p>
+        <span class="service__price">od 500 zł</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="proof-strip">
+    <div class="proof-strip__inner">
+      <div>
+        <p class="proof__num"><em>21</em>+</p>
+        <p class="proof__label">Lat doświadczenia</p>
+      </div>
+      <div>
+        <p class="proof__num"><em>847</em></p>
+        <p class="proof__label">Zamków otwartych</p>
+      </div>
+      <div>
+        <p class="proof__num"><em>30</em>min</p>
+        <p class="proof__label">Średni czas dojazdu</p>
+      </div>
+      <div>
+        <p class="proof__num"><em>24</em>/7</p>
+        <p class="proof__label">Awaryjne wezwania</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="d-reviews">
+    <header class="d-reviews__head">
+      <h2 class="d-reviews__h2">Klienci mówią</h2>
+      <p class="d-reviews__rating"><strong>5.0 / 5</strong> · 47 opinii Google · 100% pomocnych</p>
+    </header>
+    <div class="d-reviews__grid">
+      <article class="d-review">
+        <div class="d-review__stars">★★★★★</div>
+        <p class="d-review__text">Przyjechał w środku nocy po wyważeniu drzwi. Otworzył zamek w 5 minut, bez uszkodzenia. Cena uczciwa, polecam.</p>
+        <p class="d-review__author"><strong>Anna M.</strong> · 12 marca · Rzeszów</p>
+      </article>
+      <article class="d-review">
+        <div class="d-review__stars">★★★★★</div>
+        <p class="d-review__text">Dorobił klucz do starych drzwi z lat 70. Inne firmy odmówiły, on zrobił w 30 minut. Profesjonalista.</p>
+        <p class="d-review__author"><strong>Marek T.</strong> · 28 lutego · Boguchwała</p>
+      </article>
+      <article class="d-review">
+        <div class="d-review__stars">★★★★★</div>
+        <p class="d-review__text">Profesjonalna wymiana zamków po włamaniu. Doradził rozwiązania, zamontował tego samego dnia. Mega.</p>
+        <p class="d-review__author"><strong>Beata K.</strong> · 15 stycznia · Rzeszów</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="faq">
+    <div class="faq__inner">
+      <header class="faq__head">
+        <span class="faq__eyebrow"># pytania</span>
+        <h2 class="faq__h2">Najczęściej pytasz</h2>
+      </header>
+      <details class="faq__item">
+        <summary>Ile kosztuje awaryjne otwarcie zamka?</summary>
+        <div class="faq__item-content">Od 100 zł. Cena zależy od pory dnia (24/7 dostępność, ale w nocy +30 zł), rodzaju zamka i lokalizacji. Wycena telefoniczna zawsze bezpłatna — zadzwoń przed.</div>
+      </details>
+      <details class="faq__item">
+        <summary>Czy otwieracie zamki bez uszkadzania drzwi?</summary>
+        <div class="faq__item-content">Tak, w 95% przypadków. Używam profesjonalnych narzędzi do bezpiecznego pickowania. Gwarantuję jakość — jeśli zamek wymaga uszkodzenia (np. zacięty), uprzedzę przed.</div>
+      </details>
+      <details class="faq__item">
+        <summary>W jakim czasie dojeżdżam?</summary>
+        <div class="faq__item-content">Średnio 30 minut na terenie Rzeszowa. Okolice (Boguchwała, Tyczyn, Łańcut) — 40-50 min. Możliwe szybsze dojazdy w godzinach 8-18, gdy jestem już w trasie.</div>
+      </details>
+      <details class="faq__item">
+        <summary>Czy obsługujecie samochody?</summary>
+        <div class="faq__item-content">Tak. Dorabiam klucze do większości marek (też z transponderem) oraz otwieram zatrzaśnięte auta. Z transponderem do samochodów po 2010 wycena indywidualna.</div>
+      </details>
+      <details class="faq__item">
+        <summary>Czy wystawiacie fakturę VAT?</summary>
+        <div class="faq__item-content">Tak, na życzenie. Wystarczy podać NIP przed lub po wizycie. Fakturę przesyłam elektronicznie w ciągu 24h.</div>
+      </details>
+    </div>
+  </section>
+
+  <section class="final-cta">
+    <div class="final-cta__card">
+      <p class="final-cta__eyebrow">Awaryjne wezwania 24/7</p>
+      <h2 class="final-cta__h2">Zatrzaśnięte drzwi?<br/><em>Zadzwoń teraz.</em></h2>
+      <p class="final-cta__sub">Dojazd 30 minut. Bez uszkodzenia. Faktura VAT.</p>
+      <a href="tel:+48171234567" class="final-cta__btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        +48 17 123 45 67
+      </a>
+    </div>
+  </section>
+
+  <footer class="ft">
+    <div class="ft__inner">
+      <div>
+        <p class="ft__brand">Ślusarz Kowalski · Rzeszów</p>
+        <p class="ft__addr">ul. Słowackiego 12<br/>35-060 Rzeszów<br/>+48 17 123 45 67<br/>kontakt@kowalski-slusarz.pl</p>
+      </div>
+      <div>
+        <h4 class="ft__nav-h">Usługi</h4>
+        <nav class="ft__nav">
+          <a href="#">Awaryjne otwieranie</a>
+          <a href="#">Dorabianie kluczy</a>
+          <a href="#">Wymiana zamków</a>
+          <a href="#">Systemy zabezpieczeń</a>
+        </nav>
+      </div>
+      <div>
+        <h4 class="ft__nav-h">Obszar</h4>
+        <nav class="ft__nav">
+          <a href="#">Rzeszów</a>
+          <a href="#">Boguchwała</a>
+          <a href="#">Tyczyn</a>
+          <a href="#">Łańcut · Krasne</a>
+        </nav>
+      </div>
+      <div>
+        <h4 class="ft__nav-h">Firma</h4>
+        <nav class="ft__nav">
+          <a href="#">O mnie</a>
+          <a href="#">FAQ</a>
+          <a href="#">Polityka prywatności</a>
+          <a href="#">Regulamin</a>
+        </nav>
+      </div>
+    </div>
+    <div class="ft__bottom">
+      <span>© 2026 Kowalski Jan — Usługi Ślusarskie</span>
+      <span>NIP 8121234567 · REGON 123456789 · OC 100k zł</span>
+    </div>
+  </footer>
+
+  <nav class="sticky-cta" aria-label="Szybki kontakt">
+    <a href="tel:+48171234567" class="sticky-cta__primary">📞 Zadzwoń teraz</a>
+    <a href="#" class="sticky-cta__ghost">Wycena</a>
+  </nav>
+
+  <p class="footer-note">↑ Pełny Dynamic: header + bento hero (4 tiles, BIG phone) + cennik usług + social proof strip ciemny + recenzje z quote-mark watermark + FAQ accordion + final CTA gradient card + footer + mobile sticky CTA bar. Sygnatura: Bricolage + JetBrains Mono + red/orange splash + spring physics.</p>
+</body>
+</html>

@@ -90,6 +90,14 @@ export interface SecurityHeadersOptions {
 
   /** Send CSP in report-only mode (testing). Default false (enforce). */
   cspReportOnly?: boolean;
+
+  /**
+   * Allow `'unsafe-inline'` in script-src to support Astro 6's inlined module scripts
+   * (theme-toggle, mobile drawer). Recommended for public-facing starter where
+   * removing ClientRouter View Transitions for hash-based CSP is too disruptive.
+   * Auth-gated apps (panel/admin) should leave this OFF.
+   */
+  allowAstroInlineScripts?: boolean;
 }
 
 const TWO_YEARS_SECONDS = 63_072_000;
@@ -210,7 +218,10 @@ export function securityMiddleware(options: SecurityMiddlewareOptions = {}): any
 // ---------------------------------------------------------------------------
 
 function buildCspFromOptions(options: SecurityHeadersOptions): CspDirectives {
-  let csp = defaultCspDirectives(options.nonce !== undefined ? { nonce: options.nonce } : {});
+  const baseOpts: { nonce?: string; allowAstroInlineScripts?: boolean } = {};
+  if (options.nonce !== undefined) baseOpts.nonce = options.nonce;
+  if (options.allowAstroInlineScripts) baseOpts.allowAstroInlineScripts = true;
+  let csp = defaultCspDirectives(baseOpts);
 
   const i = options.integrations ?? {};
   const additions: CspDirectives[] = [];

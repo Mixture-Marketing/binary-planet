@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minimalist mockup — Kancelaria Wiśniewski</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ink: #0a0a0a;
+    --muted: #525252;
+    --line: #e6e6ea;
+    --bg: #ffffff;
+    --accent: #0a4cff;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+
+  /* Top mockup ribbon */
+  .ribbon { background: #fbbf24; color: #1a1a1a; padding: 0.5rem 1rem; text-align: center; font-size: 0.85rem; font-weight: 600; }
+  .ribbon a { color: #1a1a1a; text-decoration: underline; }
+
+  /* Header */
+  .hdr { border-bottom: 1px solid var(--line); }
+  .hdr__inner { max-width: 80rem; margin: 0 auto; padding: 1.25rem 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; }
+  .hdr__brand { font-family: 'Inter Tight'; font-weight: 700; font-size: 1.05rem; letter-spacing: -0.01em; }
+  .hdr__brand small { font-family: var(--mono); font-weight: 500; font-size: 0.7rem; color: var(--muted); margin-left: 0.5rem; letter-spacing: 0; }
+  .hdr__nav { display: none; gap: 2rem; }
+  @media (min-width: 768px) { .hdr__nav { display: flex; } }
+  .hdr__nav a { text-decoration: none; font-size: 0.92rem; color: var(--muted); transition: color 200ms; }
+  .hdr__nav a:hover { color: var(--ink); }
+  .hdr__cta { font-family: var(--mono); font-size: 0.85rem; padding: 0.5rem 0.9rem; border: 1px solid var(--ink); color: var(--ink); text-decoration: none; border-radius: 4px; }
+
+  /* Hero — asymmetric split 60/40 */
+  .hero { padding: 5rem 2rem 8rem; max-width: 80rem; margin: 0 auto; }
+  .hero__grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+  @media (min-width: 900px) { .hero__grid { grid-template-columns: 1.7fr 1fr; gap: 4rem; align-items: end; } }
+
+  .hero__eyebrow { font-family: var(--mono); font-size: 0.78rem; font-weight: 500; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 1.5rem; }
+  .hero__eyebrow span { color: var(--accent); }
+
+  .hero__h1 {
+    font-family: 'Inter Tight';
+    font-size: clamp(2.5rem, 6.5vw, 5.5rem);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    margin: 0 0 1.5rem;
+    text-wrap: balance;
+  }
+  .hero__h1 span { display: block; }
+  .hero__h1 .light { font-weight: 400; color: var(--muted); }
+  .hero__h1 .accent { color: var(--accent); font-weight: 800; }
+
+  .hero__lead { font-size: 1.15rem; line-height: 1.55; color: var(--muted); max-width: 32rem; margin: 0 0 2.5rem; }
+
+  .hero__actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.95rem 1.5rem; background: var(--ink); color: #fff;
+    text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 0.95rem;
+    transition: background 150ms;
+  }
+  .btn-primary:hover { background: var(--accent); }
+  .btn-primary svg { transition: transform 150ms; }
+  .btn-primary:hover svg { transform: translateX(2px); }
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.95rem 1.25rem; color: var(--ink); font-family: var(--mono); font-size: 0.92rem;
+    text-decoration: none; border-radius: 6px;
+  }
+
+  /* Data card on right */
+  .hero__data { display: flex; flex-direction: column; gap: 0; border-left: 1px solid var(--line); padding-left: 2rem; }
+  .hero__row { display: flex; flex-direction: column; padding: 1.25rem 0; border-bottom: 1px solid var(--line); }
+  .hero__row:last-child { border-bottom: 0; }
+  .hero__row-key { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; }
+  .hero__row-val { font-family: 'Inter Tight'; font-size: 2.5rem; font-weight: 700; letter-spacing: -0.025em; margin-top: 0.1rem; line-height: 1; }
+  .hero__row-val small { font-size: 0.85rem; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-left: 0.4rem; }
+
+  /* Signature section — Publications bento */
+  .pubs { border-top: 1px solid var(--line); background: #fafafa; padding: 6rem 2rem; }
+  .pubs__inner { max-width: 80rem; margin: 0 auto; }
+  .pubs__head { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 3rem; max-width: 36rem; }
+  .pubs__eyebrow { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.08em; color: var(--muted); }
+  .pubs__h2 { font-family: 'Inter Tight'; font-size: clamp(2rem, 4vw, 3rem); font-weight: 700; letter-spacing: -0.03em; margin: 0; line-height: 1.05; }
+
+  .pubs__grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+  @media (min-width: 768px) { .pubs__grid { grid-template-columns: repeat(3, 1fr); grid-auto-rows: minmax(180px, auto); } }
+  .pub {
+    background: #fff; border: 1px solid var(--line); padding: 1.75rem; border-radius: 12px;
+    display: flex; flex-direction: column; gap: 0.75rem;
+    transition: border-color 200ms, transform 200ms;
+  }
+  .pub:hover { border-color: var(--ink); transform: translateY(-2px); }
+  .pub--wide { grid-column: span 2; }
+  .pub__date { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+  .pub__title { font-family: 'Inter Tight'; font-size: 1.15rem; font-weight: 600; line-height: 1.25; letter-spacing: -0.01em; margin: 0; }
+  .pub__src { font-size: 0.85rem; color: var(--muted); margin-top: auto; }
+  .pub__src strong { color: var(--ink); font-weight: 600; }
+  .pub__type {
+    display: inline-block; font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--accent);
+    border: 1px solid var(--accent); padding: 0.1rem 0.4rem; border-radius: 3px; width: fit-content;
+  }
+
+  /* Practice areas */
+  .practices { padding: 6rem 2rem; max-width: 80rem; margin: 0 auto; border-top: 1px solid var(--line); }
+  .practices__head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 2rem; margin-bottom: 3rem; }
+  .practices__h2 { font-family: 'Inter Tight'; font-size: clamp(2rem, 4vw, 3rem); font-weight: 700; letter-spacing: -0.03em; margin: 0; line-height: 1.05; max-width: 28rem; }
+  .practices__sub { color: var(--muted); max-width: 24rem; font-size: 0.95rem; }
+  .practices__grid { display: grid; grid-template-columns: 1fr; gap: 0; border-top: 1px solid var(--line); }
+  @media (min-width: 768px) { .practices__grid { grid-template-columns: repeat(2, 1fr); } }
+  .practice {
+    padding: 2.5rem 0;
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 5rem 1fr auto;
+    align-items: baseline;
+    gap: 2rem;
+    text-decoration: none; color: inherit;
+    transition: padding-left 200ms;
+  }
+  .practice:hover { padding-left: 1.5rem; }
+  @media (min-width: 768px) { .practice:nth-child(2n+1) { border-right: 1px solid var(--line); padding-right: 2rem; } .practice:nth-child(2n) { padding-left: 2rem; } .practice:nth-child(2n):hover { padding-left: 3.5rem; } }
+  .practice__num { font-family: var(--mono); font-size: 0.78rem; color: var(--accent); font-weight: 500; }
+  .practice__name { font-family: 'Inter Tight'; font-size: 1.3rem; font-weight: 600; margin: 0 0 0.25rem; letter-spacing: -0.015em; }
+  .practice__desc { font-size: 0.92rem; color: var(--muted); margin: 0; }
+  .practice__rate { font-family: var(--mono); font-size: 0.85rem; color: var(--ink); font-weight: 500; white-space: nowrap; }
+
+  /* Team strip */
+  .team { background: #fafafa; padding: 6rem 2rem; border-top: 1px solid var(--line); }
+  .team__inner { max-width: 80rem; margin: 0 auto; }
+  .team__head { margin-bottom: 3rem; max-width: 36rem; }
+  .team__eyebrow { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.08em; color: var(--muted); display: block; margin-bottom: 0.5rem; }
+  .team__h2 { font-family: 'Inter Tight'; font-size: clamp(2rem, 4vw, 3rem); font-weight: 700; letter-spacing: -0.03em; margin: 0; line-height: 1.05; }
+  .team__grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+  @media (min-width: 768px) { .team__grid { grid-template-columns: repeat(3, 1fr); } }
+  .person { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 1.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .person__avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), #1a1a1a); color: #fff; display: flex; align-items: center; justify-content: center; font-family: 'Inter Tight'; font-weight: 700; font-size: 1.1rem; letter-spacing: -0.01em; margin-bottom: 0.5rem; }
+  .person__name { font-family: 'Inter Tight'; font-size: 1.1rem; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .person__role { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em; color: var(--accent); text-transform: uppercase; }
+  .person__bio { font-size: 0.92rem; color: var(--muted); margin: 0.5rem 0 0; line-height: 1.55; }
+
+  /* Stats row — mono-monumental */
+  .stats { padding: 5rem 2rem; max-width: 80rem; margin: 0 auto; border-top: 1px solid var(--line); }
+  .stats__grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; }
+  @media (min-width: 768px) { .stats__grid { grid-template-columns: repeat(4, 1fr); } }
+  .stat { padding: 1.5rem; border-right: 1px solid var(--line); }
+  .stat:last-child { border-right: 0; }
+  @media (max-width: 767px) { .stat:nth-child(2n) { border-right: 0; } .stat:nth-child(-n+2) { border-bottom: 1px solid var(--line); } }
+  .stat__value {
+    font-family: 'Inter Tight'; font-weight: 800;
+    font-size: clamp(2.5rem, 5vw, 4rem); line-height: 1; letter-spacing: -0.04em;
+    margin: 0;
+    color: var(--ink);
+  }
+  .stat__value-accent { color: var(--accent); }
+  .stat__label { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.08em; color: var(--muted); margin-top: 0.5rem; text-transform: uppercase; }
+
+  /* Reviews — minimal blockquote list */
+  .reviews { padding: 6rem 2rem; max-width: 64rem; margin: 0 auto; border-top: 1px solid var(--line); }
+  .reviews__head { margin-bottom: 3rem; }
+  .reviews__h2 { font-family: 'Inter Tight'; font-size: clamp(2rem, 4vw, 3rem); font-weight: 700; letter-spacing: -0.03em; margin: 0; line-height: 1.05; }
+  .reviews__rating { font-family: var(--mono); font-size: 0.92rem; color: var(--muted); margin-top: 0.5rem; }
+  .reviews__rating strong { color: var(--ink); font-weight: 700; }
+  .review { padding: 2.5rem 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr; gap: 0.75rem; }
+  @media (min-width: 768px) { .review { grid-template-columns: 12rem 1fr; gap: 3rem; } }
+  .review__meta { font-family: var(--mono); font-size: 0.85rem; color: var(--muted); }
+  .review__meta strong { display: block; color: var(--ink); font-size: 0.95rem; font-weight: 600; font-family: 'Inter Tight'; letter-spacing: -0.01em; }
+  .review__stars { color: var(--accent); margin-top: 0.25rem; letter-spacing: 0.1em; }
+  .review__text { font-size: 1.05rem; line-height: 1.6; color: var(--ink); margin: 0; }
+
+  /* Contact CTA card */
+  .contact { padding: 6rem 2rem; background: var(--ink); color: #fff; }
+  .contact__inner { max-width: 64rem; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 3rem; align-items: center; }
+  @media (min-width: 768px) { .contact__inner { grid-template-columns: 1.2fr 1fr; gap: 4rem; } }
+  .contact__h2 { font-family: 'Inter Tight'; font-size: clamp(2rem, 4.5vw, 3.5rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; margin: 0 0 1rem; }
+  .contact__h2 em { font-style: normal; color: #93c5fd; }
+  .contact__sub { color: #a3a3a3; margin: 0 0 2rem; font-size: 1.05rem; }
+  .contact__form { display: flex; flex-direction: column; gap: 0.75rem; }
+  .contact__input { padding: 0.95rem 1.1rem; background: #171717; border: 1px solid #262626; color: #fff; border-radius: 8px; font: inherit; font-size: 0.95rem; }
+  .contact__input::placeholder { color: #737373; }
+  .contact__input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+  .contact__submit { padding: 1rem 1.5rem; background: var(--accent); color: #fff; border: 0; border-radius: 8px; font: inherit; font-weight: 600; font-size: 0.95rem; cursor: pointer; }
+  .contact__submit:hover { background: #2563eb; }
+
+  /* Footer */
+  .ft { border-top: 1px solid #262626; background: var(--ink); color: #a3a3a3; padding: 3rem 2rem 2rem; }
+  .ft__inner { max-width: 80rem; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 2rem; }
+  @media (min-width: 768px) { .ft__inner { grid-template-columns: 2fr 1fr 1fr; } }
+  .ft__brand { font-family: 'Inter Tight'; font-weight: 700; color: #fff; font-size: 1.05rem; margin: 0 0 0.5rem; }
+  .ft__nip { font-family: var(--mono); font-size: 0.8rem; color: #737373; }
+  .ft__nav { display: flex; flex-direction: column; gap: 0.5rem; }
+  .ft__nav a { color: #d4d4d4; text-decoration: none; font-size: 0.92rem; }
+  .ft__nav a:hover { color: #fff; }
+  .ft__bottom { max-width: 80rem; margin: 2rem auto 0; padding-top: 1.5rem; border-top: 1px solid #262626; font-family: var(--mono); font-size: 0.78rem; color: #737373; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; }
+
+  /* Footer note */
+  .footer-note { padding: 2rem; text-align: center; font-family: var(--mono); font-size: 0.78rem; color: var(--muted); background: #fafafa; }
+</style>
+</head>
+<body>
+  <div class="ribbon">MOCKUP MINIMALIST · proof-of-concept · <a href="/mockups/">wszystkie 4 motywy</a></div>
+
+  <header class="hdr">
+    <div class="hdr__inner">
+      <div class="hdr__brand">
+        Wiśniewski &amp; Partnerzy
+        <small>est. 2012</small>
+      </div>
+      <nav class="hdr__nav">
+        <a href="#">Praktyki</a>
+        <a href="#">Zespół</a>
+        <a href="#">Publikacje</a>
+        <a href="#">Kontakt</a>
+      </nav>
+      <a href="tel:+48717123456" class="hdr__cta">+48 71 712 34 56</a>
+    </div>
+  </header>
+
+  <section class="hero">
+    <p class="hero__eyebrow">Kancelaria <span>/</span> Wrocław <span>/</span> 14 lat praktyki</p>
+
+    <div class="hero__grid">
+      <div>
+        <h1 class="hero__h1">
+          <span>Prawo to nie</span>
+          <span class="light">obietnice.</span>
+          <span class="accent">To wyrok.</span>
+        </h1>
+        <p class="hero__lead">Specjalizujemy się w prawie gospodarczym, cywilnym i pracy. Reprezentujemy przedsiębiorców i klientów indywidualnych przed sądami wszystkich instancji.</p>
+        <div class="hero__actions">
+          <a href="#" class="btn-primary">
+            Umów konsultację
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="#" class="btn-ghost">Pierwsza 15 min bezpłatna →</a>
+        </div>
+      </div>
+
+      <aside class="hero__data" aria-label="Dane kancelarii">
+        <div class="hero__row">
+          <span class="hero__row-key">Sprawy</span>
+          <span class="hero__row-val">847<small>wygrane</small></span>
+        </div>
+        <div class="hero__row">
+          <span class="hero__row-key">Zespół</span>
+          <span class="hero__row-val">8<small>prawników</small></span>
+        </div>
+        <div class="hero__row">
+          <span class="hero__row-key">OC zawodowa</span>
+          <span class="hero__row-val">10<small>mln zł · PZU</small></span>
+        </div>
+        <div class="hero__row">
+          <span class="hero__row-key">Wpis ORA</span>
+          <span class="hero__row-val">№ 1872</span>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="pubs">
+    <div class="pubs__inner">
+      <header class="pubs__head">
+        <span class="pubs__eyebrow"># publikacje</span>
+        <h2 class="pubs__h2">Piszemy o prawie. Bo trzeba.</h2>
+      </header>
+
+      <div class="pubs__grid">
+        <article class="pub pub--wide">
+          <span class="pub__date">2026 / 03</span>
+          <span class="pub__type">Artykuł</span>
+          <h3 class="pub__title">Nowy ład w prawie spadkowym — co zmienia rok 2026?</h3>
+          <p class="pub__src">w <strong>Rzeczpospolita</strong></p>
+        </article>
+        <article class="pub">
+          <span class="pub__date">2025 / 11</span>
+          <span class="pub__type">Wystąpienie</span>
+          <h3 class="pub__title">Mediacja w sporach gospodarczych</h3>
+          <p class="pub__src">VII Kongres Prawa Gospodarczego, <strong>Warszawa</strong></p>
+        </article>
+        <article class="pub">
+          <span class="pub__date">2025 / 09</span>
+          <span class="pub__type">Wywiad</span>
+          <h3 class="pub__title">Prawo upadłościowe dla mikrofirm</h3>
+          <p class="pub__src">w <strong>Forbes Polska</strong></p>
+        </article>
+        <article class="pub">
+          <span class="pub__date">2024 / 06</span>
+          <span class="pub__type">Książka</span>
+          <h3 class="pub__title">Prawo handlowe w praktyce</h3>
+          <p class="pub__src"><strong>C.H. Beck</strong>, wyd. III rozszerzone</p>
+        </article>
+        <article class="pub pub--wide">
+          <span class="pub__date">2024 / 02</span>
+          <span class="pub__type">Artykuł</span>
+          <h3 class="pub__title">Klauzule abuzywne w umowach B2B — co Sąd Najwyższy uznaje za nieuczciwe</h3>
+          <p class="pub__src">w <strong>Dziennik Gazeta Prawna</strong></p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="practices" id="praktyki">
+    <header class="practices__head">
+      <h2 class="practices__h2">Praktyki, które&nbsp;prowadzimy</h2>
+      <p class="practices__sub">Specjalizujemy się w pięciu obszarach prawa. Reprezentujemy przedsiębiorców i klientów indywidualnych przed sądami wszystkich instancji.</p>
+    </header>
+    <div class="practices__grid">
+      <a href="#" class="practice">
+        <span class="practice__num">01</span>
+        <div>
+          <h3 class="practice__name">Prawo gospodarcze</h3>
+          <p class="practice__desc">Obsługa firm, kontrakty handlowe, spory między przedsiębiorcami, M&amp;A.</p>
+        </div>
+        <span class="practice__rate">250 zł/h</span>
+      </a>
+      <a href="#" class="practice">
+        <span class="practice__num">02</span>
+        <div>
+          <h3 class="practice__name">Prawo cywilne</h3>
+          <p class="practice__desc">Sprawy o zapłatę, odszkodowania, spadkowe, nieruchomości.</p>
+        </div>
+        <span class="practice__rate">200 zł/h</span>
+      </a>
+      <a href="#" class="practice">
+        <span class="practice__num">03</span>
+        <div>
+          <h3 class="practice__name">Prawo pracy</h3>
+          <p class="practice__desc">Pracownicy i pracodawcy. Spory sądowe, due diligence HR.</p>
+        </div>
+        <span class="practice__rate">200 zł/h</span>
+      </a>
+      <a href="#" class="practice">
+        <span class="practice__num">04</span>
+        <div>
+          <h3 class="practice__name">Prawo rodzinne</h3>
+          <p class="practice__desc">Rozwody, podział majątku, alimenty, władza rodzicielska.</p>
+        </div>
+        <span class="practice__rate">200 zł/h</span>
+      </a>
+      <a href="#" class="practice" style="grid-column: 1 / -1">
+        <span class="practice__num">05</span>
+        <div>
+          <h3 class="practice__name">Windykacja należności</h3>
+          <p class="practice__desc">Sądowa i pozasądowa windykacja dla firm. Stawka prowizyjna od skuteczności.</p>
+        </div>
+        <span class="practice__rate">prowizja</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="stats__grid">
+      <div class="stat">
+        <p class="stat__value">14</p>
+        <p class="stat__label">Lat praktyki</p>
+      </div>
+      <div class="stat">
+        <p class="stat__value stat__value-accent">847</p>
+        <p class="stat__label">Spraw wygranych</p>
+      </div>
+      <div class="stat">
+        <p class="stat__value">10<small style="font-size:1.5rem;color:var(--muted);font-weight:500;margin-left:0.25rem">mln</small></p>
+        <p class="stat__label">OC zawodowa PZU</p>
+      </div>
+      <div class="stat">
+        <p class="stat__value">8</p>
+        <p class="stat__label">Prawników w zespole</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="team">
+    <div class="team__inner">
+      <header class="team__head">
+        <span class="team__eyebrow"># zespół</span>
+        <h2 class="team__h2">Reprezentują&nbsp;Cię ludzie, nie firma.</h2>
+      </header>
+      <div class="team__grid">
+        <article class="person">
+          <div class="person__avatar">KW</div>
+          <h3 class="person__name">adw. Krzysztof Wiśniewski</h3>
+          <span class="person__role">Partner zarządzający</span>
+          <p class="person__bio">Specjalista prawa gospodarczego z 18-letnim doświadczeniem. Reprezentował klientów przed Sądem Najwyższym.</p>
+        </article>
+        <article class="person">
+          <div class="person__avatar">MK</div>
+          <h3 class="person__name">adw. Maria Kowalska</h3>
+          <span class="person__role">Adwokat</span>
+          <p class="person__bio">Prawo pracy i rodzinne. Mediator w sprawach cywilnych. 11 lat praktyki.</p>
+        </article>
+        <article class="person">
+          <div class="person__avatar">TL</div>
+          <h3 class="person__name">r.pr. Tomasz Lewandowski</h3>
+          <span class="person__role">Radca prawny</span>
+          <p class="person__bio">Doradztwo podatkowe i prawne dla firm. Były ekspert Ministerstwa Finansów.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="reviews">
+    <header class="reviews__head">
+      <h2 class="reviews__h2">Co mówią klienci</h2>
+      <p class="reviews__rating"><strong>5.0 / 5</strong> · 47 opinii Google · 100% poleciłoby znajomemu</p>
+    </header>
+    <div class="review">
+      <div class="review__meta">
+        <strong>Spółka X.</strong>
+        Klient B2B · 2026-04-05
+        <div class="review__stars">★★★★★</div>
+      </div>
+      <p class="review__text">Rzetelna obsługa prawna naszej firmy od 3 lat. Adwokat Wiśniewski wygrał kluczowy spór z kontrahentem o 1.2 mln zł. Doceniam komunikację — co tydzień status sprawy bez pytania.</p>
+    </div>
+    <div class="review">
+      <div class="review__meta">
+        <strong>Marek L.</strong>
+        Klient indywidualny · 2026-02-22
+        <div class="review__stars">★★★★★</div>
+      </div>
+      <p class="review__text">Kompleksowa pomoc przy rozwodzie. Profesjonalizm, empatia, znajomość prawa. Mecenas Kowalska potrafi prowadzić trudne rozmowy bez eskalacji emocji.</p>
+    </div>
+    <div class="review">
+      <div class="review__meta">
+        <strong>Anna B.</strong>
+        Klient indywidualny · 2026-01-30
+        <div class="review__stars">★★★★★</div>
+      </div>
+      <p class="review__text">Pomoc w sprawie spadkowej — wszystko jasno wytłumaczone. Polecam komuś kto pierwszy raz ma do czynienia z sądem. Wyjaśnili dlaczego i co po kolei.</p>
+    </div>
+  </section>
+
+  <section class="contact">
+    <div class="contact__inner">
+      <div>
+        <h2 class="contact__h2">Pierwsza konsultacja<br/><em>15 min, bezpłatnie.</em></h2>
+        <p class="contact__sub">Zostaw kontakt — oddzwonimy w ciągu 4 godzin roboczych. Lub umów wizytę w cal.com.</p>
+      </div>
+      <form class="contact__form" onsubmit="event.preventDefault()">
+        <input type="text" class="contact__input" placeholder="Imię i nazwisko" autocomplete="name">
+        <input type="tel" class="contact__input" placeholder="Telefon" autocomplete="tel">
+        <input type="email" class="contact__input" placeholder="Email" autocomplete="email">
+        <textarea class="contact__input" rows="3" placeholder="Krótko o sprawie"></textarea>
+        <button type="submit" class="contact__submit">Wyślij zgłoszenie →</button>
+      </form>
+    </div>
+  </section>
+
+  <footer class="ft">
+    <div class="ft__inner">
+      <div>
+        <p class="ft__brand">Kancelaria Wiśniewski &amp; Partnerzy</p>
+        <p style="margin: 0; color: #a3a3a3; font-size: 0.92rem;">ul. Świdnicka 38/12, 50-068 Wrocław</p>
+        <p class="ft__nip">NIP 8961234567 · KRS 0001234567</p>
+      </div>
+      <nav class="ft__nav" aria-label="Stopka">
+        <a href="#">Praktyki</a>
+        <a href="#">Zespół</a>
+        <a href="#">Publikacje</a>
+        <a href="#">Kontakt</a>
+      </nav>
+      <nav class="ft__nav" aria-label="Stopka prawna">
+        <a href="#">Polityka prywatności</a>
+        <a href="#">Regulamin</a>
+        <a href="#">RODO</a>
+        <a href="#">Mapa strony</a>
+      </nav>
+    </div>
+    <div class="ft__bottom">
+      <span>© 2026 Wiśniewski Adwokaci Sp.p.</span>
+      <span>Wpis ORA Wrocław № 1872 · OC PZU 10 mln zł</span>
+    </div>
+  </footer>
+
+  <p class="footer-note">↑ Pełny mockup Minimalist: header + hero 60/40 + publikacje bento + praktyki numerowane + stats mono + zespół + recenzje + kontakt CTA dark + footer. Sygnatura: mono numerals + cobalt + zero stocku + monumentalna typo.</p>
+</body>
+</html>

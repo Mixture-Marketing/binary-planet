@@ -75,10 +75,13 @@ export interface OrganizationJsonLd {
 export function organizationSchema(input: OrganizationInput): OrganizationJsonLd {
   if (!input.name.trim()) throw new Error("organizationSchema: name required");
 
+  // Use #organization fragment to avoid @id collision with WebSite/LocalBusiness
+  // (Google's Knowledge Graph uses @id for entity disambiguation).
+  const orgId = input.url.replace(/\/+$/, "") + "/#organization";
   const out: OrganizationJsonLd = {
     "@context": SCHEMA_CONTEXT,
     "@type": "Organization",
-    "@id": input.url,
+    "@id": orgId,
     url: input.url,
     name: input.name,
   };

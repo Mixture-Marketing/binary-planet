@@ -1,0 +1,17 @@
+---
+/**
+ * Header dispatcher — per-style header component.
+ */
+import clientConfig from "../client.config.ts";
+import MinimalistHeader from "./minimalist/components/Header.astro";
+import ElegantHeader from "./elegant/components/Header.astro";
+import DynamicHeader from "./dynamic/components/Header.astro";
+import EditorialHeader from "./editorial/components/Header.astro";
+
+const preset = clientConfig.theme.preset;
+---
+
+{preset === "minimalist" && <MinimalistHeader />}
+{preset === "elegant" && <ElegantHeader />}
+{preset === "dynamic" && <DynamicHeader />}
+{preset === "editorial" && <EditorialHeader />}

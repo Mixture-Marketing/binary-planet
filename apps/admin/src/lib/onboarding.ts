@@ -74,7 +74,7 @@ export interface OnboardingPayload {
   canonical_scheme: "https";
 
   // Tier
-  tier: "starter" | "standard" | "premium";
+  tier: "starter" | "standard" | "premium" | "professional";
 
   // Integrations
   plausible: boolean;
@@ -150,7 +150,7 @@ export function validateOnboarding(p: OnboardingPayload): ValidationError[] {
     errors.push({ field: "primary_domain", message: "Domena w formacie example.pl (bez https://)" });
   }
 
-  if (!["starter", "standard", "premium"].includes(p.tier)) {
+  if (!["starter", "standard", "premium", "professional"].includes(p.tier)) {
     errors.push({ field: "tier", message: "Wybierz pakiet" });
   }
   if (!p.dpa_signed) {

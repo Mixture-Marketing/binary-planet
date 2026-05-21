@@ -1,0 +1,150 @@
+---
+/**
+ * Minimalist Header — compact horizontal row, brand + small EST label,
+ * mono phone CTA on the right (no big buttons, type-only signature).
+ */
+import { formatPolishPhone, phoneAriaLabel } from "@mixturemarketing/web-core/local";
+import clientConfig from "../../../client.config.ts";
+import Icon from "../../dynamic/components/Icon.astro";
+import ThemeToggle from "../../ThemeToggle.astro";
+import MobileDrawer from "../../MobileDrawer.astro";
+
+const navItems = [
+  { href: "/", label: "Strona główna" },
+  { href: "/oferta", label: "Praktyki" },
+  { href: "/o-firmie", label: "Zespół" },
+  { href: "/aktualnosci", label: "Publikacje" },
+  { href: "/kontakt", label: "Kontakt" },
+];
+const currentPath = Astro.url.pathname.replace(/\/+$/, "") || "/";
+const phoneDisplay = formatPolishPhone(clientConfig.contact.primaryPhone);
+const phoneAria = phoneAriaLabel(clientConfig.contact.primaryPhone);
+const foundedYear = clientConfig.business.foundedYear;
+---
+
+<header role="banner" class="m-header">
+  <div class="container-px m-header__inner">
+    <a href="/" class="m-header__brand" aria-label={`${clientConfig.business.name} — strona główna`}>
+      <span class="m-header__brand-name">{clientConfig.business.name}</span>
+      {foundedYear && <span class="m-header__brand-est">est. {foundedYear}</span>}
+    </a>
+
+    <nav class="m-header__nav" aria-label="Główna nawigacja" data-nav-desktop>
+      <ul>
+        {navItems.map((item) => {
+          const isCurrent = currentPath === item.href.replace(/\/+$/, "") || (item.href === "/" && currentPath === "/");
+          return (
+            <li>
+              <a href={item.href} aria-current={isCurrent ? "page" : undefined} class={isCurrent ? "is-current" : ""}>
+                {item.label}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+
+    <div class="m-header__right">
+      <ThemeToggle style="minimalist" />
+      <a
+        href={`tel:${clientConfig.contact.primaryPhone}`}
+        class="m-header__phone"
+        aria-label={phoneAria}
+        data-track-event="phone_click"
+        data-track-position="header"
+      >
+        {phoneDisplay}
+      </a>
+      <button type="button" class="m-header__menu" aria-label="Otwórz menu" data-menu-toggle aria-controls="mobile-drawer" aria-expanded="false">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<MobileDrawer navItems={navItems} style="minimalist" />
+
+<style>
+  .m-header {
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .m-header__inner {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 1.1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+  .m-header__brand {
+    color: var(--color-text);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .m-header__brand-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+  }
+  .m-header__brand-est {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    letter-spacing: 0;
+  }
+
+  .m-header__nav { display: none; }
+  @media (min-width: 900px) { .m-header__nav { display: flex; } }
+  .m-header__nav ul {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .m-header__nav a {
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: 0.92rem;
+    transition: color 200ms ease;
+  }
+  .m-header__nav a:hover,
+  .m-header__nav a.is-current { color: var(--color-text); }
+
+  .m-header__right { display: flex; align-items: center; gap: 0.5rem; }
+  .m-header__phone {
+    display: none;
+    padding: 0.5rem 0.9rem;
+    border: 1px solid var(--color-text);
+    color: var(--color-text);
+    text-decoration: none;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.85rem;
+    border-radius: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  @media (min-width: 640px) { .m-header__phone { display: inline-flex; } }
+
+  .m-header__menu {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text);
+    cursor: pointer;
+  }
+  @media (min-width: 900px) { .m-header__menu { display: none; } }
+</style>

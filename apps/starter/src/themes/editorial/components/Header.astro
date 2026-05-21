@@ -1,0 +1,177 @@
+---
+/**
+ * Editorial Header — newspaper masthead. Top line (data + city + edition),
+ * giant italic brand wordmark center, bottom nav row with current marker.
+ */
+import clientConfig from "../../../client.config.ts";
+import {
+  computeOpenStatus,
+  openStatusMessage,
+  type DayKey,
+} from "@mixturemarketing/web-core/local";
+import ThemeToggle from "../../ThemeToggle.astro";
+import MobileDrawer from "../../MobileDrawer.astro";
+
+const { business, location } = clientConfig;
+const cityName = location.address.city;
+const today = new Date();
+const todayLabel = today.toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" });
+const issueNumber = today.getDate();
+const navItems = [
+  { href: "/", label: "Główna" },
+  { href: "/oferta", label: "Karta" },
+  { href: "/o-firmie", label: "Historia" },
+  { href: "/aktualnosci", label: "Magazyn" },
+  { href: "/kontakt", label: "Rezerwacja" },
+];
+const currentPath = Astro.url.pathname.replace(/\/+$/, "") || "/";
+
+// Open status
+const hoursForStatus: Partial<Record<DayKey, [string, string] | "closed">> & { note?: string } = {
+  ...(clientConfig.hours.note !== undefined && { note: clientConfig.hours.note }),
+};
+for (const k of ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"] as const) {
+  const v = clientConfig.hours[k];
+  if (v === "closed" || (Array.isArray(v) && v.length === 2)) {
+    hoursForStatus[k] = v as [string, string] | "closed";
+  }
+}
+const status = computeOpenStatus({ hours: hoursForStatus });
+const openMsg = openStatusMessage(status);
+---
+
+<header role="banner" class="ed-header">
+  <div class="container-px ed-header__inner">
+    <div class="ed-header__top">
+      <span>{todayLabel}</span>
+      <span>№ {issueNumber} · {cityName}</span>
+    </div>
+
+    <a href="/" class="ed-header__brand" aria-label={`${business.name} — strona główna`}>
+      <h1 class="ed-header__brand-name">{business.name}</h1>
+    </a>
+
+    <div class="ed-header__bottom">
+      <span class="ed-header__year">{business.foundedYear ? <>Est. <em>{business.foundedYear}</em></> : cityName}</span>
+
+      <nav class="ed-header__nav" aria-label="Główna nawigacja" data-nav-desktop>
+        <ul>
+          {navItems.map((item) => {
+            const isCurrent = currentPath === item.href.replace(/\/+$/, "") || (item.href === "/" && currentPath === "/");
+            return (
+              <li>
+                <a href={item.href} aria-current={isCurrent ? "page" : undefined} class={isCurrent ? "is-current" : ""}>
+                  {item.label}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      <div class="ed-header__right">
+        <span class="ed-header__status">{status.kind === "open" ? <>Otwarte do <em>{(status as { kind: "open"; closesAt: string }).closesAt}</em></> : openMsg}</span>
+        <ThemeToggle style="editorial" />
+        <button type="button" class="ed-header__menu" aria-label="Otwórz menu" data-menu-toggle aria-controls="mobile-drawer" aria-expanded="false">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<MobileDrawer navItems={navItems} style="editorial" />
+
+<style>
+  .ed-header {
+    background: var(--color-surface);
+    border-bottom: 3px double var(--color-text);
+    padding: 1.75rem 0 1.25rem;
+  }
+  .ed-header__inner { max-width: 76rem; margin: 0 auto; }
+
+  .ed-header__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin-bottom: 0.5rem;
+    padding-inline: 1.5rem;
+  }
+
+  .ed-header__brand {
+    display: block;
+    text-decoration: none;
+    color: var(--color-text);
+    text-align: center;
+    padding: 0.25rem 1.5rem 0.5rem;
+  }
+  .ed-header__brand-name {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-style: italic;
+    font-size: clamp(2.25rem, 6.5vw, 5rem);
+    line-height: 1;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .ed-header__bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    padding-inline: 1.5rem;
+    gap: 1rem;
+  }
+  .ed-header__year em { font-style: italic; color: var(--color-text); font-family: var(--font-display); text-transform: none; letter-spacing: 0; }
+
+  .ed-header__nav { display: none; }
+  @media (min-width: 900px) { .ed-header__nav { display: flex; } }
+  .ed-header__nav ul {
+    display: flex;
+    gap: 1.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .ed-header__nav a {
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: color 200ms ease, border-color 200ms ease;
+    padding-bottom: 2px;
+    border-bottom: 2px solid transparent;
+  }
+  .ed-header__nav a:hover { color: var(--color-text); }
+  .ed-header__nav a.is-current {
+    color: var(--color-brand);
+    border-bottom-color: var(--color-accent);
+  }
+
+  .ed-header__right { display: flex; align-items: center; gap: 0.85rem; }
+  .ed-header__status { display: none; font-style: normal; }
+  .ed-header__status em { font-style: italic; color: var(--color-text); font-family: var(--font-display); text-transform: none; letter-spacing: 0; }
+  @media (min-width: 1024px) { .ed-header__status { display: inline; } }
+
+  .ed-header__menu {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    background: transparent;
+    border: 0;
+    color: var(--color-text);
+    cursor: pointer;
+  }
+  @media (min-width: 900px) { .ed-header__menu { display: none; } }
+</style>

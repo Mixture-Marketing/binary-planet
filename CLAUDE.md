@@ -4,9 +4,11 @@ Ten plik jest auto-ładowany w każdej sesji. **Zacznij od niego.**
 
 ## Czym jest projekt
 
-Wewnętrzna usługa SaaS agencji **MixtureMarketing.pl**: subskrypcyjne strony www + local SEO + GBP dla mikrofirm w PL (149–299 zł/mc). Kodename `binary-planet` (tylko tech-internal, brand klienta-facing = MixtureMarketing). Nie jest to standalone produkt z osobną spółką/domeną.
+Wewnętrzna usługa SaaS agencji **MixtureMarketing.pl**: subskrypcyjne strony www + local SEO + GBP + dodatki dla mikrofirm w PL. Kodename `binary-planet` (tylko tech-internal, brand klienta-facing = MixtureMarketing). Nie jest to standalone produkt z osobną spółką/domeną.
 
-**Aktualna faza:** Faza 0 preflight (start 2026-05-18, target end 2026-06-01).
+**Pakiety (Track 25):** Starter 179 / Standard 249 / Premium 349 / Professional 549 zł/mc.
+
+**Aktualna faza:** Faza 1 launch-ready (start 2026-05-19). Pełny pipeline E2E działa na produkcji, czeka na pierwszego płacącego klienta. Faza 0 preflight (REGON, prawnik RODO, OC IT) wciąż w toku.
 
 ## Mapa repo
 
@@ -83,18 +85,22 @@ pnpm format
 
 | Co | Status |
 |----|--------|
-| Stripe + Subscriptions | ✅ JEST |
-| GitHub org MixtureMarketing | ✅ JEST |
+| Stripe + Subscriptions (test mode) | ✅ JEST |
+| GitHub org Mixture-Marketing | ✅ JEST (template repo + klient repos generated) |
 | DNS mixturemarketing.pl na Cloudflare | ✅ JEST |
 | Regulamin + polityka prywatności | 🟡 JEST, wymaga update pod SaaS + DPA template |
-| Cloudflare Workers Paid | 🔴 TODO (konto Free osobiste, upgrade $5/mc) |
+| Cloudflare Workers Paid | 🟡 Działa na Free + 4 crony (max). Upgrade dla pełnych 10 crons |
+| Resend + verified DKIM/SPF/MX (mixturemarketing.pl) | ✅ JEST |
+| Anthropic + DataForSEO + SMSAPI + OVH (CK z grants) | ✅ Konta + secrets w hub |
+| Marketing landing mixturemarketing.pl/abonament | ✅ Live (czeka na Track 25 repricing landing update) |
 | Przelewy24, Fakturownia, OC IT cyber 500k zł | 🔴 TODO |
-| Anthropic / DataForSEO / Resend / SMSAPI / OVH / Better Stack / Google Cloud | 🔴 TODO (wszystkie nowe konta) |
+| Better Stack, Google Cloud (Service Account dla Analytics PRO) | 🔴 TODO |
 | REGON BIR1 (1–2 tyg czekania) | 🔴 TODO (draft maila gotowy) |
 
 ## Stack technologiczny (potwierdzony)
 
-- **Astro 5** + **Cloudflare Workers** (1 Worker per klient, migration-ready do multi-tenant) + **Tailwind v4**
+- **Astro 6** + **@astrojs/cloudflare v13** + **Wrangler 4** + **Cloudflare Workers** (1 Worker per klient, migration-ready do multi-tenant) + **Tailwind v4**
+  - Upgrade dokonany 2026-05-21 (starter+panel+admin). `import { env } from "cloudflare:workers"` zamiast usuniętego `Astro.locals.runtime.env`. Konfig w `wrangler.jsonc` z `main: "@astrojs/cloudflare/entrypoints/server"`. Build wymaga `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` (vite-plugin). Zod 3.23 (4.x = osobna migracja). control-plane to Hono — bez Astro.
 - Monorepo: **pnpm** + **turbo**
 - Pakiety: `@mixturemarketing/web-core` (lub `@mm-internal/*`) — scope do potwierdzenia
 - CMS: **Sveltia** git-based (embed w repo klienta, ✅ mm-starter `/admin/` v0.1 — local backend dev, OAuth proxy v0.2)
@@ -114,9 +120,35 @@ pnpm format
 - **Medical/legal/finansowe:** ZOSTAJE z manual content flow; pierwsze 10 klientów pilotowych NIE z tych branż
 - **Pre-validation:** cold outreach pierwszy (NIE landing/Ads), pod brandem MixtureMarketing
 - **Pierwsza branża pilot:** rekomendacja — craftsman (ślusarz/mechanik), najprostszy ROI (telefony)
-- **Tier cenowy:** Starter 149 / Standard 199 / Premium 299 zł
+- **Tier cenowy (Track 25):** Starter 179 / Standard 249 / Premium 349 / Professional 549 zł/mc — setup 0 zł
 - **Multi-tenancy:** 1 Worker per klient (CF for SaaS), z migration path do multi-tenant w Fazie 5+
 - **Storage split:** D1 (transactional) + Analytics Engine (events) + Logpush (audit) — NIE D1 dla wszystkiego
+- **Klient repos:** Mixture-Marketing org, PUBLIC (Track 19a) — bo org secrets na Free plan działają tylko z public. Migracja do private po GitHub Team upgrade ($4/mc)
+
+## Zasady projektowania UI/UX (egzekwowane przez Skills)
+
+Przy budowie lub zmianie dowolnego interfejsu w `apps/starter/` (strona klienta),
+`apps/panel/` (panel klienta) lub `apps/admin/` (panel agencji) obowiązują standardy
+z `.claude/skills/`. Skille uruchamiają się automatycznie wg kontekstu zadania:
+
+- **Dostępność WCAG 2.2 AA** — baseline produkcyjny dla każdego UI. Skill: [`wcag-2.2`](.claude/skills/wcag-2.2/SKILL.md)
+  - Target size ≥24×24px, focus indicators kontrast 3:1, focus not obscured by sticky header,
+    alternatywa dla drag gestures, redundant entry forbidden, accessible auth.
+- **Checkout / formularze / konwersja** — heurystyki dla Stripe checkout,
+  ContactForm, panel/onboarding wizard, /ustawienia repeatery. Skill: [`checkout-ux`](.claude/skills/checkout-ux/SKILL.md)
+- **Wzorce UI 2026** — dark mode, mikrointerakcje, bento grids,
+  bold typography, kinetic typo. Skill: [`ui-patterns-2026`](.claude/skills/ui-patterns-2026/SKILL.md)
+- **Estetyka szkła** — efekty Liquid Glass tylko warunkowo, nigdy kosztem czytelności.
+  Skill: [`liquid-glass`](.claude/skills/liquid-glass/SKILL.md)
+
+**Zasada nadrzędna:** Dostępność (WCAG 2.2 AA) i czytelność mają pierwszeństwo nad
+każdym efektem wizualnym. Przy pracy nad nowymi komponentami zawsze stosuj
+te skille zanim zaczniesz pisać kod.
+
+**Stack-uwaga:** skille są stack-agnostic w treści, ale wzorce kodu pokazują React 18 +
+Tailwind. Nasz stack to **Astro 5 + Tailwind v4 + Cloudflare Workers** — adaptuj składnię
+(Astro `.astro` files zamiast `.tsx`, vanilla DOM API zamiast hooks, server-side
+rendering zamiast useState dla stanu initial).
 
 ## Konwencje pracy
 
@@ -127,14 +159,15 @@ pnpm format
 - **Każda decyzja zmieniająca plan** → update [preflight.md](preflight.md) lub odpowiedniego chunku planu, plus memory jeśli ma znaczenie cross-session
 - **Wszystkie nowe konta SaaS** zakładane na MixtureMarketing (nie nowy podmiot)
 
-## Co teraz (Faza 0)
+## Co teraz (Faza 1 launch-ready, czeka na biznesowe preflight)
 
-Patrz [preflight.md](preflight.md) sekcje A–I. Bottlenecki (start jak najszybciej):
+System techniczny **gotowy do pierwszego płacącego klienta**. Co czeka:
 1. Mail do GUS (REGON, 1–2 tyg czekania) — uzupełnij dane firmy w [regon-request.md](regon-request.md) i wyślij
-2. Research prawnika RODO/IT — kryteria w [legal-questions.md](legal-questions.md) sekcja "Jak znaleźć prawnika"
-3. CF Workers Paid upgrade — $5/mc, niezbędne dla D1 + Cron
+2. Research prawnika RODO/IT — kryteria w [legal-questions.md](legal-questions.md)
+3. Karta na OVH (do realnego zakupu domen — Track 19b code-ready)
+4. Track 25 landing pricing update — handoff doc w [TODO-landing-pricing-update-track25.md](TODO-landing-pricing-update-track25.md)
 
-Po preflight → Faza 1: `@mixturemarketing/web-core` v0.1.
+Pełna roadmap stanu po sesji 2026-05-19: **[RUNBOOK-tracks-status.md](RUNBOOK-tracks-status.md)** (auto-update każdej sesji).
 
 ## Czego NIE robić
 

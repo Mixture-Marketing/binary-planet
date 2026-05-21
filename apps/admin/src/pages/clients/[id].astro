@@ -1,14 +1,14 @@
 ---
+import { env } from "cloudflare:workers";
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import StatCard from "../../components/StatCard.astro";
 import Icon from "../../components/Icon.astro";
 
-import { getClient, listLeadsForClient } from "../../lib/db.ts";
+import { getClient, getProvisioning, listLeadsForClient } from "../../lib/db.ts";
 
 const { id } = Astro.params;
 if (!id) return new Response("Missing id", { status: 400 });
 
-const env = Astro.locals.runtime?.env;
 if (!env?.DB) return new Response("Runtime not available", { status: 500 });
 
 const client = await getClient(env.DB, id);
@@ -17,6 +17,14 @@ if (!client) {
 }
 
 const leads = await listLeadsForClient(env.DB, id, 20);
+const provisioning = await getProvisioning(env.DB, id);
+
+const provBadgeClass: Record<string, string> = {
+  done: "badge-success",
+  running: "badge-warning",
+  pending: "badge-warning",
+  failed: "badge-error",
+};
 const modules: string[] = (() => {
   try {
     const parsed = JSON.parse(client.modules_json) as unknown;
@@ -55,12 +63,100 @@ const formatRelative = (iso: string): string => {
         {client.has_lock_in ? <span class="badge badge-warning" style="margin-left: 0.25rem;">Lock-in do {formatDate(client.lock_in_until)}</span> : null}
       </p>
     </div>
-    {client.primary_domain && (
-      <a href={`https://${client.primary_domain}`} target="_blank" rel="noopener" class="btn">
-        Otwórz stronę ↗
-      </a>
-    )}
+    <div style="display: flex; gap: 0.5rem;">
+      {client.primary_domain && (
+        <a href={`https://${client.primary_domain}`} target="_blank" rel="noopener" class="btn">
+          Otwórz stronę ↗
+        </a>
+      )}
+      <button type="button" id="client-edit-toggle" class="btn btn-primary" data-client-id={id}>
+        <Icon name="settings" size={16} /> Edytuj
+      </button>
+    </div>
   </header>
+
+  <!-- Edit panel (collapsed by default) -->
+  <details id="client-edit-panel" class="card" style="margin-bottom: 1.5rem; border-left: 3px solid var(--c-brand);">
+    <summary style="cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem;">
+      <Icon name="settings" size={18} /> Edytuj klienta
+    </summary>
+    <form id="client-edit-form" data-client-id={id} style="display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; margin-top: 1.25rem;">
+      <label style="display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--c-text-muted);">
+        Tier
+        <select name="tier" required class="form-select" style="padding: 0.5rem 0.75rem; border: 1px solid var(--c-border); border-radius: 6px; font: inherit; min-height: 38px;">
+          <option value="starter" selected={client.tier === "starter"}>Starter (179 zł)</option>
+          <option value="standard" selected={client.tier === "standard"}>Standard (249 zł)</option>
+          <option value="premium" selected={client.tier === "premium"}>Premium (349 zł)</option>
+          <option value="professional" selected={client.tier === "professional"}>Professional (549 zł)</option>
+        </select>
+      </label>
+      <label style="display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--c-text-muted);">
+        Status
+        <select name="status" required class="form-select" style="padding: 0.5rem 0.75rem; border: 1px solid var(--c-border); border-radius: 6px; font: inherit; min-height: 38px;">
+          <option value="pending" selected={client.status === "pending"}>pending</option>
+          <option value="provisioning" selected={client.status === "provisioning"}>provisioning</option>
+          <option value="active" selected={client.status === "active"}>active</option>
+          <option value="paused" selected={client.status === "paused"}>paused</option>
+          <option value="churned" selected={client.status === "churned"}>churned</option>
+        </select>
+      </label>
+      <label style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--c-text-muted);">
+        Notatki wewnętrzne (visible only to agency)
+        <textarea name="notes" rows="3" class="form-input" placeholder="np. preferowany kontakt po południu, sezonowość lata, etc." style="padding: 0.5rem 0.75rem; border: 1px solid var(--c-border); border-radius: 6px; font: inherit; resize: vertical;">{client.notes ?? ""}</textarea>
+      </label>
+      <div style="grid-column: 1 / -1; display: flex; gap: 0.5rem; align-items: center;">
+        <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+          <Icon name="check-circle-2" size={16} /> Zapisz zmiany
+        </button>
+        <span id="client-edit-feedback" style="font-size: 0.85rem; color: var(--c-text-muted);"></span>
+      </div>
+    </form>
+  </details>
+
+  <script is:inline define:vars={{ clientId: id }}>
+    document.getElementById("client-edit-toggle").addEventListener("click", () => {
+      const panel = document.getElementById("client-edit-panel");
+      panel.open = !panel.open;
+      if (panel.open) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    document.getElementById("client-edit-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const feedback = document.getElementById("client-edit-feedback");
+      const submitBtn = form.querySelector("button[type='submit']");
+      const fd = new FormData(form);
+      const body = {
+        tier: fd.get("tier"),
+        status: fd.get("status"),
+        notes: fd.get("notes") || null,
+      };
+      submitBtn.disabled = true;
+      feedback.textContent = "Zapisuję…";
+      feedback.style.color = "var(--c-text-muted)";
+      try {
+        const res = await fetch(`/api/clients/${encodeURIComponent(clientId)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const json = await res.json();
+        if (res.ok && json.ok) {
+          feedback.textContent = "Zapisano — odświeżam…";
+          feedback.style.color = "var(--c-success, #16a34a)";
+          setTimeout(() => window.location.reload(), 600);
+        } else {
+          feedback.textContent = "Błąd: " + (json.error ?? `HTTP ${res.status}`);
+          feedback.style.color = "var(--c-danger, #dc2626)";
+          submitBtn.disabled = false;
+        }
+      } catch (err) {
+        feedback.textContent = "Błąd sieci: " + err.message;
+        feedback.style.color = "var(--c-danger, #dc2626)";
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
 
   <section aria-label="Statystyki" style="display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 2rem;">
     <StatCard label="Leady (wszystkie)" value={leads.length} icon="inbox" />
@@ -94,6 +190,88 @@ const formatRelative = (iso: string): string => {
       )}
     </div>
   </div>
+
+  {provisioning && (
+    <section aria-labelledby="prov-heading" style="margin-bottom: 2rem;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin: 0 0 1rem 0;">
+        <h2 id="prov-heading" style="font-size: 1.25rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <Icon name="settings" size={20} /> Provisioning
+          <span class={`badge ${provBadgeClass[provisioning.provisioning_status ?? ""] ?? "badge-warning"}`}>{provisioning.provisioning_status ?? "—"}</span>
+        </h2>
+        {(provisioning.provisioning_status === "failed" || provisioning.provisioning_status === "done") && (
+          <button type="button" id="retry-prov-btn" class="btn" data-client-id={client.id} style="font-size: 0.85rem; padding: 0.4rem 0.85rem; min-height: 32px; gap: 0.4rem;">
+            <Icon name="play" size={14} /> Retry provisioning
+          </button>
+        )}
+      </div>
+
+      <div class="card" style="margin-bottom: 1rem;">
+        <dl style="display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1rem; margin: 0; font-size: 0.88rem;">
+          <dt style="color: var(--c-text-muted);">Wizard version</dt><dd style="margin: 0; font-family: ui-monospace, monospace;">{provisioning.wizard_version ?? "—"}</dd>
+          <dt style="color: var(--c-text-muted);">Generated at</dt><dd style="margin: 0;">{formatDate(provisioning.generated_at)}</dd>
+          <dt style="color: var(--c-text-muted);">Started</dt><dd style="margin: 0;">{provisioning.provisioning_started_at ?? "—"}</dd>
+          <dt style="color: var(--c-text-muted);">Finished</dt><dd style="margin: 0;">{provisioning.provisioning_finished_at ?? "—"}</dd>
+          <dt style="color: var(--c-text-muted);">GitHub repo</dt><dd style="margin: 0;">{provisioning.github_repo_url ? <a href={provisioning.github_repo_url} target="_blank" rel="noopener" style="color: var(--c-brand);">{provisioning.github_repo_url.replace("https://github.com/", "")}</a> : "—"}</dd>
+          <dt style="color: var(--c-text-muted);">Worker name</dt><dd style="margin: 0; font-family: ui-monospace, monospace;">{provisioning.cf_worker_name ?? "—"}</dd>
+          <dt style="color: var(--c-text-muted);">Deploy email</dt><dd style="margin: 0;">{provisioning.deploy_email_sent_at ?? <span style="color: var(--c-text-muted);">nie wysłany</span>}</dd>
+        </dl>
+
+        {provisioning.provisioning_error && (
+          <div style="margin-top: 1rem; padding: 0.75rem 1rem; background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444; border-radius: 6px; font-size: 0.88rem; font-family: ui-monospace, monospace; white-space: pre-wrap; word-break: break-word;">
+            <strong style="color: #b91c1c;">Error:</strong> {provisioning.provisioning_error}
+          </div>
+        )}
+      </div>
+
+      {provisioning.steps.length > 0 && (
+        <details class="card">
+          <summary style="cursor: pointer; font-weight: 600;">Pipeline steps ({provisioning.steps.length})</summary>
+          <ol style="margin: 1rem 0 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.5rem;">
+            {provisioning.steps.map((step) => (
+              <li style="display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.6rem 0.8rem; background: var(--c-bg); border-radius: 6px; font-size: 0.85rem;">
+                <span style={`color: ${step.ok ? "#16a34a" : "#dc2626"}; flex-shrink: 0; margin-top: 2px;`}>
+                  <Icon name={step.ok ? "check" : "x"} size={14} />
+                </span>
+                <div style="flex: 1; min-width: 0;">
+                  <strong style="font-family: ui-monospace, monospace; font-size: 0.85rem;">{step.step}</strong>
+                  <span style="color: var(--c-text-muted); margin-left: 0.5rem; font-size: 0.78rem;">{new Date(step.ts).toLocaleTimeString("pl-PL")}</span>
+                  {step.dry_run ? <span class="badge" style="margin-left: 0.5rem; font-size: 0.7rem;">DRY-RUN</span> : null}
+                  <div style="color: var(--c-text-muted); margin-top: 2px; word-break: break-word;">{step.message}</div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </details>
+      )}
+
+      <script is:inline>
+        document.getElementById("retry-prov-btn")?.addEventListener("click", async (e) => {
+          const btn = e.currentTarget;
+          const id = btn.dataset.clientId;
+          if (!id) return;
+          if (!confirm("Wyzerować provisioning i odpalić cron ponownie?")) return;
+          btn.disabled = true;
+          btn.innerText = "Czekaj…";
+          try {
+            const res = await fetch(`/api/clients/${id}/retry-provisioning`, { method: "POST" });
+            const json = await res.json();
+            if (json.ok) {
+              alert(`OK. Triggered=${json.triggered?.ok}, processed=${json.triggered?.processed ?? "—"}, failed=${json.triggered?.failed ?? "—"}.\nOdśwież stronę za chwilę żeby zobaczyć nowe steps.`);
+              location.reload();
+            } else {
+              alert("Błąd: " + (json.error ?? "unknown"));
+              btn.disabled = false;
+              btn.innerText = "Retry provisioning";
+            }
+          } catch (err) {
+            alert("Network error: " + err);
+            btn.disabled = false;
+            btn.innerText = "Retry provisioning";
+          }
+        });
+      </script>
+    </section>
+  )}
 
   <section aria-labelledby="leads-heading">
     <h2 id="leads-heading" style="font-size: 1.25rem; font-weight: 700; margin: 0 0 1rem 0;">Leady (ostatnie 20)</h2>

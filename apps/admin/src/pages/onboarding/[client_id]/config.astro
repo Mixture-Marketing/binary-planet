@@ -1,8 +1,8 @@
 ---
+import { env } from "cloudflare:workers";
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import Icon from "../../../components/Icon.astro";
 
-const env = Astro.locals.runtime?.env;
 if (!env?.DB) return new Response("Runtime not ready", { status: 500 });
 
 const { client_id } = Astro.params;
@@ -91,6 +91,28 @@ const statusBadgeClass = (s: string): string => {
     <span id="dry-run-status" style="margin-left: 0.75rem; color: var(--c-text-muted); font-size: 0.85rem;"></span>
   </div>
 
+  <!-- Manual status override — for when cron is down or admin needs to unstick a klient -->
+  <div class="card" style="margin-bottom: 1.5rem; border-left: 3px solid var(--c-warning, #f59e0b);">
+    <h2 style="font-size: 1rem; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.4rem;"><Icon name="shield-check" size={18} /> Manualny override statusu</h2>
+    <p style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: var(--c-text-muted);">
+      Użyj tylko gdy provisioning utknął lub cron nie działa. Wybór statusu = bezpośredni UPDATE w D1 (audytowane przez timestamp).
+    </p>
+    <form id="status-override-form" data-client-id={client_id} style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+      <label for="status-override-select" class="visually-hidden">Nowy status</label>
+      <select id="status-override-select" name="status" class="form-select" required style="padding: 0.5rem 0.75rem; border: 1px solid var(--c-border); border-radius: 6px; font: inherit; min-height: 38px;">
+        <option value="">— wybierz status —</option>
+        <option value="pending" selected={row.provisioning_status === "pending"}>pending</option>
+        <option value="running" selected={row.provisioning_status === "running"}>running</option>
+        <option value="done" selected={row.provisioning_status === "done"}>done (provisioning OK)</option>
+        <option value="failed" selected={row.provisioning_status === "failed"}>failed</option>
+      </select>
+      <button type="submit" class="btn" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem;">
+        <Icon name="check-circle-2" size={16} /> Zapisz status
+      </button>
+      <span id="status-override-feedback" style="font-size: 0.85rem; color: var(--c-text-muted);"></span>
+    </form>
+  </div>
+
   <!-- Steps timeline -->
   {steps.length > 0 && (
     <div class="card" style="margin-bottom: 1.5rem;">
@@ -172,6 +194,45 @@ const statusBadgeClass = (s: string): string => {
         statusEl.textContent = "Błąd sieci: " + e.message;
         btn.disabled = false;
         btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.18em;"><polygon points="6 3 20 12 6 21 6 3"/></svg> Uruchom dry-run`;
+      }
+    });
+
+    // Manual status override submission
+    document.getElementById("status-override-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const select = document.getElementById("status-override-select");
+      const feedback = document.getElementById("status-override-feedback");
+      const submitBtn = form.querySelector("button[type='submit']");
+      if (!select.value) {
+        feedback.textContent = "Wybierz status";
+        feedback.style.color = "var(--c-danger, #dc2626)";
+        return;
+      }
+      if (!confirm(`Zmienić status provisioningu na "${select.value}"? To bezpośredni UPDATE w D1.`)) return;
+      submitBtn.disabled = true;
+      feedback.textContent = "Zapisuję…";
+      feedback.style.color = "var(--c-text-muted)";
+      try {
+        const res = await fetch(`/api/clients/${encodeURIComponent(client_id)}/provisioning-status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: select.value }),
+        });
+        const json = await res.json();
+        if (res.ok && json.ok) {
+          feedback.textContent = `OK — odświeżam stronę…`;
+          feedback.style.color = "var(--c-success, #16a34a)";
+          setTimeout(() => window.location.reload(), 700);
+        } else {
+          feedback.textContent = "Błąd: " + (json.error ?? `HTTP ${res.status}`);
+          feedback.style.color = "var(--c-danger, #dc2626)";
+          submitBtn.disabled = false;
+        }
+      } catch (err) {
+        feedback.textContent = "Błąd sieci: " + err.message;
+        feedback.style.color = "var(--c-danger, #dc2626)";
+        submitBtn.disabled = false;
       }
     });
   </script>

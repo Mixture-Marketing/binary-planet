@@ -1,9 +1,9 @@
 ---
+import { env } from "cloudflare:workers";
 import PanelLayout from "../layouts/PanelLayout.astro";
 import Icon from "../components/Icon.astro";
 import { getDashboardStats, listLeads } from "../lib/db.ts";
 
-const env = Astro.locals.runtime?.env;
 const client = Astro.locals.client;
 if (!env?.DB || !client) return new Response("Runtime not ready", { status: 500 });
 

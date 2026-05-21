@@ -1,0 +1,14 @@
+---
+import clientConfig from "../client.config.ts";
+import MinimalistHours from "./minimalist/components/OpeningHours.astro";
+import ElegantHours from "./elegant/components/OpeningHours.astro";
+import DynamicHours from "./dynamic/components/OpeningHours.astro";
+import EditorialHours from "./editorial/components/OpeningHours.astro";
+
+const preset = clientConfig.theme.preset;
+---
+
+{preset === "minimalist" && <MinimalistHours />}
+{preset === "elegant" && <ElegantHours />}
+{preset === "dynamic" && <DynamicHours />}
+{preset === "editorial" && <EditorialHours />}

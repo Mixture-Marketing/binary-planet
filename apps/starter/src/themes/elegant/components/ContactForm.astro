@@ -1,0 +1,178 @@
+---
+/**
+ * Elegant ContactForm — floating-label form, italic placeholders, pill button.
+ * Split fields: name + phone + email + service interest + message.
+ */
+import clientConfig from "../../../client.config.ts";
+
+interface Props { heading?: string; }
+const { heading = "Umów wizytę" } = Astro.props;
+const consentVersion = clientConfig.rodo.consentVersion;
+---
+
+<section aria-labelledby="contact-heading" class="e-contact" id="rezerwacja">
+  <div class="container-px e-contact__inner">
+    <header class="e-contact__head">
+      <h2 id="contact-heading" class="e-contact__h2">{heading}</h2>
+      <p class="e-contact__sub">Odpowiadamy w ciągu 4 godzin roboczych. Lub zadzwoń: <a href={`tel:${clientConfig.contact.primaryPhone}`}>{clientConfig.contact.primaryPhone}</a></p>
+    </header>
+
+    <form id="contact-form" method="POST" action="/api/contact" class="e-contact__form" novalidate>
+      <input type="hidden" name="consent_text_version" value={consentVersion} />
+      <input type="hidden" name="source_page" value={Astro.url.pathname} />
+      <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">
+        <label><input type="text" name="honeypot" tabindex="-1" autocomplete="off" /></label>
+      </div>
+
+      <p id="contact-form__status" role="status" aria-live="polite" class="e-contact__status"></p>
+
+      <div class="e-contact__field">
+        <input type="text" id="cf-name" name="name" required minlength="2" maxlength="100" autocomplete="name" placeholder=" " aria-required="true" />
+        <label for="cf-name">Imię i nazwisko</label>
+      </div>
+      <div class="e-contact__field">
+        <input type="tel" id="cf-phone" name="phone" required minlength="6" maxlength="20" autocomplete="tel" inputmode="tel" placeholder=" " aria-required="true" />
+        <label for="cf-phone">Telefon</label>
+      </div>
+      <div class="e-contact__field e-contact__field--full">
+        <input type="email" id="cf-email" name="email" maxlength="120" autocomplete="email" inputmode="email" placeholder=" " />
+        <label for="cf-email">Email</label>
+      </div>
+      <div class="e-contact__field e-contact__field--full">
+        <input type="text" id="cf-service" name="service_interest" maxlength="100" placeholder=" " />
+        <label for="cf-service">Jaką usługę chcesz umówić?</label>
+      </div>
+      <div class="e-contact__field e-contact__field--full">
+        <textarea id="cf-msg" name="message" maxlength="2000" rows="3" placeholder=" "></textarea>
+        <label for="cf-msg">Dodatkowe informacje (opcjonalne)</label>
+      </div>
+
+      <label class="e-contact__consent">
+        <input type="checkbox" name="consent" required aria-required="true" />
+        <span>Zgadzam się na kontakt zwrotny. <a href={clientConfig.rodo.privacyPolicyUrl ?? "/polityka-prywatnosci"}>Polityka prywatności</a></span>
+      </label>
+
+      <button type="submit" class="e-contact__submit">Zarezerwuj wizytę →</button>
+    </form>
+  </div>
+</section>
+
+<style>
+  .e-contact {
+    padding-block: clamp(4rem, 7vw, 6rem);
+    background: var(--color-surface);
+  }
+  .e-contact__inner { max-width: 56rem; margin: 0 auto; }
+  .e-contact__head { text-align: center; margin-bottom: 2.5rem; }
+  .e-contact__h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-style: italic;
+    font-size: clamp(2rem, 4.5vw, 3.25rem);
+    margin: 0;
+    line-height: 1;
+    color: var(--color-text);
+    letter-spacing: -0.01em;
+  }
+  .e-contact__sub {
+    font-family: var(--font-body);
+    color: var(--color-text-muted);
+    margin: 1rem 0 0;
+    font-size: 1rem;
+  }
+  .e-contact__sub a { color: var(--color-brand); text-decoration: none; font-weight: 500; }
+  .e-contact__sub a:hover { text-decoration: underline; }
+
+  .e-contact__form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+  @media (min-width: 640px) { .e-contact__form { grid-template-columns: 1fr 1fr; } }
+  .e-contact__field { position: relative; }
+  .e-contact__field--full { grid-column: 1 / -1; }
+  .e-contact__field input,
+  .e-contact__field textarea {
+    width: 100%;
+    padding: 1.4rem 0.5rem 0.5rem;
+    border: 0;
+    border-bottom: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 1rem;
+    font-family: var(--font-body);
+  }
+  .e-contact__field input:focus,
+  .e-contact__field textarea:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    border-bottom-color: var(--color-brand);
+  }
+  .e-contact__field label {
+    position: absolute;
+    top: 1.4rem;
+    left: 0.5rem;
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--color-text-muted);
+    pointer-events: none;
+    transition: all 250ms ease;
+  }
+  .e-contact__field input:focus + label,
+  .e-contact__field input:not(:placeholder-shown) + label,
+  .e-contact__field textarea:focus + label,
+  .e-contact__field textarea:not(:placeholder-shown) + label {
+    top: 0;
+    left: 0.5rem;
+    font-style: normal;
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  .e-contact__consent {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+    margin-top: 0.5rem;
+  }
+  .e-contact__consent a { color: var(--color-brand); text-decoration: underline; }
+
+  .e-contact__submit {
+    grid-column: 1 / -1;
+    justify-self: center;
+    margin-top: 0.5rem;
+    padding: 1rem 2.5rem;
+    background: var(--color-brand);
+    color: var(--color-brand-fg);
+    border: 0;
+    border-radius: 999px;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.15rem;
+    cursor: pointer;
+    transition: transform 200ms ease, box-shadow 200ms ease;
+    min-height: 52px;
+  }
+  .e-contact__submit:hover {
+    transform: scale(1.03);
+    box-shadow: 0 10px 30px -8px color-mix(in srgb, var(--color-brand) 50%, transparent);
+  }
+
+  .e-contact__status:not(:empty) {
+    grid-column: 1 / -1;
+    padding: 0.85rem 1.1rem;
+    background: color-mix(in srgb, var(--color-brand) 8%, transparent);
+    border-left: 3px solid var(--color-brand);
+    color: var(--color-text);
+    font-size: 0.95rem;
+  }
+</style>

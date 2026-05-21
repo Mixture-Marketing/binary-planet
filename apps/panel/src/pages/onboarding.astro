@@ -1,0 +1,652 @@
+---
+import "../styles/panel.css";
+import Icon from "../components/Icon.astro";
+import { INDUSTRIES, POLISH_VOIVODESHIPS } from "../lib/industries.ts";
+import { previewSvg, type PreviewStyle, type ThemeTokens } from "@mixturemarketing/web-core/theme";
+
+// Style cards with default variant per style (light tokens for preview)
+const STYLE_CARDS: Array<{
+  slug: PreviewStyle;
+  labelPl: string;
+  tagline: string;
+  industries: string;
+  defaultVariant: string;
+  tokens: ThemeTokens;
+  recommendedSections: string[];
+}> = [
+  {
+    slug: "minimalist",
+    labelPl: "Czysty",
+    tagline: "Profesjonalny, spokojny, klarowny",
+    industries: "Prawnik · Lekarz · Księgowy · Doradca · IT · Architekt",
+    defaultVariant: "mono-blue",
+    tokens: { brand: "#0a4cff", brandFg: "#ffffff", accent: "#ff5c1f", surface: "#ffffff", surfaceMuted: "#f7f8fa", text: "#0a0a0a", textMuted: "#4a4a4a", border: "#e6e8ec" },
+    recommendedSections: ["pricing", "team"],
+  },
+  {
+    slug: "elegant",
+    labelPl: "Elegancki",
+    tagline: "Premium, ciepły, atmosfera",
+    industries: "SPA · Salon · Fryzjer · Fotograf · Butik · Hotel",
+    defaultVariant: "rose-cream",
+    tokens: { brand: "#c4546d", brandFg: "#ffffff", accent: "#b08d57", surface: "#fdfaf6", surfaceMuted: "#f5ebe4", text: "#2a1d1f", textMuted: "#6b525a", border: "#e8d8d4" },
+    recommendedSections: ["gallery", "history", "team"],
+  },
+  {
+    slug: "dynamic",
+    labelPl: "Dynamiczny",
+    tagline: "Konwersyjny, mocny, \"zadzwoń teraz\"",
+    industries: "Ślusarz · Mechanik · Hydraulik · Kurier · Fast-food · Siłownia",
+    defaultVariant: "red-action",
+    tokens: { brand: "#dc2626", brandFg: "#ffffff", accent: "#fbbf24", surface: "#ffffff", surfaceMuted: "#fef2f2", text: "#0a0a0a", textMuted: "#525252", border: "#fecaca" },
+    recommendedSections: ["pricing", "video"],
+  },
+  {
+    slug: "editorial",
+    labelPl: "Magazynowy",
+    tagline: "Narracyjny, historia firmy",
+    industries: "Restauracja · Hotel butikowy · Winnica · Marka osobista",
+    defaultVariant: "forest-amber",
+    tokens: { brand: "#2d4a36", brandFg: "#fef8f0", accent: "#c47a2e", surface: "#fef8f0", surfaceMuted: "#f0e6d4", text: "#1a1410", textMuted: "#5c4f3f", border: "#d9c8a8" },
+    recommendedSections: ["history", "gallery", "video", "team"],
+  },
+];
+
+const client = Astro.locals.client;
+const nonce = Astro.locals.nonce ?? "";
+if (!client) return Astro.redirect("/login");
+---
+
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Wizard onboardingu — {client.businessName}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body style="background: var(--c-bg);">
+    <header style="background: var(--c-surface); border-bottom: 1px solid var(--c-border); padding: 1.25rem 2rem;">
+      <div style="max-width: 880px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h1 style="margin: 0; font-size: 1.1rem; font-weight: 700;">Skonfigurujmy Twoją stronę</h1>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">{client.businessName} · pakiet <strong>{client.tier}</strong></p>
+        </div>
+        <form method="POST" action="/api/auth/logout">
+          <button type="submit" class="btn" style="font-size: 0.85rem; padding: 0.4rem 0.85rem; min-height: 32px;">
+            <Icon name="log-out" size={14} /> Wyloguj
+          </button>
+        </form>
+      </div>
+    </header>
+
+    <main style="max-width: 880px; margin: 0 auto; padding: 2rem;" data-nonce={nonce}>
+      <div class="card" style="margin-bottom: 1.5rem; background: #ecfdf5; border-color: #a7f3d0;">
+        <div style="display: flex; gap: 0.75rem; align-items: start;">
+          <div style="color: var(--c-brand); flex-shrink: 0;"><Icon name="info" size={20} /></div>
+          <div>
+            <p style="margin: 0 0 0.25rem 0; font-weight: 600;">Wypełnij formularz w 5-10 minut</p>
+            <p style="margin: 0; font-size: 0.9rem; color: var(--c-text-muted);">
+              Stan zapisuje się automatycznie. Możesz przerwać i wrócić w każdej chwili. Po zatwierdzeniu Twoja strona będzie gotowa w 24h.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <form id="onboarding-form" novalidate>
+        <!-- ============ 1. DANE FIRMY ============ -->
+        <details open class="card" style="margin-bottom: 1rem;">
+          <summary style="font-weight: 700; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="background: var(--c-brand); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">1</span>
+            Dodatkowe dane firmy
+          </summary>
+          <p style="margin: 0.75rem 0; color: var(--c-text-muted); font-size: 0.85rem;">NIP, nazwę i email już podałeś. Tu wpisujesz to czego brakuje.</p>
+          <div class="grid-2">
+            <label>Nazwa prawna (jeśli inna niż handlowa)
+              <input type="text" name="legal_name" placeholder="np. Kowalski Jan — Usługi Ślusarskie" />
+            </label>
+            <label>REGON (9 lub 14 cyfr)
+              <input type="text" name="regon" pattern="\d{9}(\d{5})?" placeholder="123456789" />
+            </label>
+            <label>Branża *
+              <select name="industry" required data-industry>
+                <option value="">— wybierz —</option>
+                {INDUSTRIES.map((i) => (
+                  <option value={i.slug} data-schema={i.schemaType}>{i.label}</option>
+                ))}
+              </select>
+            </label>
+            <input type="hidden" name="schema_type" required />
+            <label>Rok założenia
+              <input type="number" name="founded_year" min="1900" max={new Date().getFullYear()} />
+            </label>
+            <label>Liczba pracowników
+              <input type="number" name="employee_count" min="1" max="10000" />
+            </label>
+            <label>Imię i nazwisko osoby kontaktowej
+              <input type="text" name="contact_person_name" maxlength="100" />
+            </label>
+          </div>
+          <label style="display: block; margin-top: 0.75rem;">Krótki opis firmy * (do 500 znaków — pokazany w meta + wynikach Google)
+            <textarea name="description" required maxlength="500" rows="2" placeholder="Profesjonalne usługi ślusarskie w Rzeszowie. Otwieranie zamków, dorabianie kluczy — 24/7."></textarea>
+          </label>
+          <label style="display: block; margin-top: 0.75rem;">Tagline * (jedna linia — na stronie głównej w hero)
+            <input type="text" name="tagline" required maxlength="140" placeholder="Otworzymy każdy zamek — 24/7 w Rzeszowie" />
+          </label>
+          <label style="display: block; margin-top: 0.75rem;">Długi opis * (do 5000 znaków — na stronie "O firmie")
+            <textarea name="long_description" required maxlength="5000" rows="6" placeholder="Działam jako ślusarz w Rzeszowie od ponad 20 lat..."></textarea>
+          </label>
+        </details>
+
+        <!-- ============ 2. DOMENA ============ -->
+        <details open class="card" style="margin-bottom: 1rem;">
+          <summary style="font-weight: 700; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="background: var(--c-brand); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">2</span>
+            Domena Twojej strony
+          </summary>
+          <div style="margin-top: 0.75rem;">
+            <label style="display: flex; gap: 0.6rem; align-items: start; padding: 0.75rem; border: 1px solid var(--c-border); border-radius: 6px; cursor: pointer; margin-bottom: 0.5rem;">
+              <input type="radio" name="domain_source" value="register" required checked style="margin-top: 0.25rem;" />
+              <div>
+                <strong>Chcę żeby MixtureMarketing zarejestrował dla mnie</strong>
+                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">Sprawdzimy dostępność i kupimy w OVH (40 zł/rok wliczone w pakiet).</p>
+              </div>
+            </label>
+            <label style="display: flex; gap: 0.6rem; align-items: start; padding: 0.75rem; border: 1px solid var(--c-border); border-radius: 6px; cursor: pointer;">
+              <input type="radio" name="domain_source" value="owned" style="margin-top: 0.25rem;" />
+              <div>
+                <strong>Mam już własną domenę</strong>
+                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">Skonfigurujemy DNS — wystarczy że dasz nam dostęp do panelu rejestratora.</p>
+              </div>
+            </label>
+            <label style="display: block; margin-top: 0.75rem;">Domena * (np. kowalski-slusarz.pl)
+              <input type="text" name="primary_domain" required placeholder="twojafirma.pl" pattern="[a-z0-9.-]+\.[a-z]{2,}" />
+            </label>
+          </div>
+        </details>
+
+        <!-- ============ 3. LOKALIZACJA ============ -->
+        <details open class="card" style="margin-bottom: 1rem;">
+          <summary style="font-weight: 700; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="background: var(--c-brand); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">3</span>
+            Lokalizacja
+          </summary>
+          <div class="grid-2" style="margin-top: 0.75rem;">
+            <label>Ulica i numer *
+              <input type="text" name="street_address" required placeholder="ul. Słowackiego 12" />
+            </label>
+            <label>Miasto (siedziba) *
+              <input type="text" name="city" required placeholder="Rzeszów" />
+            </label>
+            <label>Województwo *
+              <select name="voivodeship" required>
+                <option value="">— wybierz —</option>
+                {POLISH_VOIVODESHIPS.map((v) => <option value={v}>{v}</option>)}
+              </select>
+            </label>
+            <label>Kod pocztowy * (NN-NNN)
+              <input type="text" name="postal_code" required pattern="\d{2}-\d{3}" placeholder="35-060" />
+            </label>
+            <label>Latitude (opcjonalne)
+              <input type="number" name="latitude" step="any" placeholder="50.0413" />
+            </label>
+            <label>Longitude (opcjonalne)
+              <input type="number" name="longitude" step="any" placeholder="21.999" />
+            </label>
+          </div>
+          <label style="display: block; margin-top: 0.75rem;">Obszar obsługi * (oddzielone przecinkami)
+            <input type="text" name="service_area" required placeholder="Rzeszów, Boguchwała, Tyczyn, Łańcut, Krasne" />
+            <small style="color: var(--c-text-muted); font-size: 0.8rem;">Wpisz miasta gdzie dojeżdżasz — generujemy osobną stronę local SEO dla każdego.</small>
+          </label>
+        </details>
+
+        <!-- ============ 4. USŁUGI ============ -->
+        <details open class="card" style="margin-bottom: 1rem;">
+          <summary style="font-weight: 700; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="background: var(--c-brand); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">4</span>
+            Twoje usługi (1-8)
+          </summary>
+          <div id="services-list" style="margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.75rem;"></div>
+          <button type="button" id="add-service" class="btn" style="margin-top: 0.75rem;">+ Dodaj usługę</button>
+        </details>
+
+        <!-- ============ 5. GODZINY ============ -->
+        <details class="card" style="margin-bottom: 1rem;">
+          <summary style="font-weight: 700; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="background: var(--c-brand); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">5</span>
+            Godziny otwarcia
+          </summary>
+          <p style="color: var(--c-text-muted); font-size: 0.85rem; margin: 0.5rem 0;">
+            Format: <code>HH:MM-HH:MM</code> (np. 08:00-18:00) lub <code>closed</code>. Puste = ukryj dzień.
+          </p>
+          <div class="grid-2" style="margin-top: 0.75rem;">
+            <label>Poniedziałek <input type="text" name="hours_monday" placeholder="08:00-18:00" /></label>
+            <label>Wtorek <input type="text" name="hours_tuesday" placeholder="08:00-18:00" /></label>
+            <label>Środa <input type="text" name="hours_wednesday" placeholder="08:00-18:00" /></label>
+            <label>Czwartek <input type="text" name="hours_thursday" placeholder="08:00-18:00" /></label>
+            <label>Piątek <input type="text" name="hours_friday" placeholder="08:00-18:00" /></label>
+            <label>Sobota <input type="text" name="hours_saturday" placeholder="09:00-14:00 lub closed" /></label>
+            <label>Niedziela <input type="text" name="hours_sunday" placeholder="closed" /></label>
+          </div>
+          <label style="display: block; margin-top: 0.75rem;">Dodatkowa notatka
+            <input type="text" name="hours_note" maxlength="200" placeholder="Awaryjne wezwania 24/7 — telefon w każdej chwili" />
+          </label>
+        </details>
+
+        <!-- ============ 6. THEME ============ -->
+        <details open class="card" style="margin-bottom: 1rem;">
+          <summary style="font-weight: 700; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="background: var(--c-brand); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">6</span>
+            Styl strony — wybierz wizualnie
+          </summary>
+          <p style="margin: 0.75rem 0; color: var(--c-text-muted); font-size: 0.9rem;">
+            Każdy styl ma inny charakter — kolory, fonty, układ. Kliknij ten, który najlepiej pasuje do Twojej firmy.
+            Możesz to zmienić w każdej chwili po onboardingu w <code>Ustawienia → Wygląd strony</code>.
+          </p>
+
+          <input type="hidden" name="theme_preset" id="theme_preset" value="minimalist" required />
+          <input type="hidden" name="theme_variant" id="theme_variant" value="mono-blue" required />
+          <input type="hidden" name="theme_hero" id="theme_hero" value="" />
+          <input type="hidden" name="theme_accent" id="theme_accent" value="" />
+          <input type="hidden" name="theme_sections" id="theme_sections" value={JSON.stringify(STYLE_CARDS[0]!.recommendedSections)} />
+
+          <div class="style-picker" style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem;">
+            {STYLE_CARDS.map((card, idx) => (
+              <button
+                type="button"
+                class={`style-card ${idx === 0 ? "is-current" : ""}`}
+                data-style-pick
+                data-slug={card.slug}
+                data-variant={card.defaultVariant}
+                data-sections={JSON.stringify(card.recommendedSections)}
+                aria-pressed={idx === 0 ? "true" : "false"}
+                style={`background: transparent; border: 2px solid ${idx === 0 ? "var(--c-brand)" : "var(--c-border)"}; border-radius: 12px; padding: 0; cursor: pointer; text-align: left; overflow: hidden; transition: border-color 200ms, transform 150ms; display: block;`}
+              >
+                <div style="position: relative;">
+                  <Fragment set:html={previewSvg(card.slug, card.tokens, card.labelPl)} />
+                  <span class="style-card__check" aria-hidden="true" style={`position: absolute; top: 0.75rem; right: 0.75rem; width: 28px; height: 28px; border-radius: 50%; background: var(--c-brand); color: #fff; display: ${idx === 0 ? "flex" : "none"}; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.15);`}>✓</span>
+                </div>
+                <div style="padding: 1rem 1.25rem 1.25rem 1.25rem; background: var(--c-surface);">
+                  <div style="display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.4rem;">
+                    <strong style="font-size: 1.1rem; color: var(--c-text);">{card.labelPl}</strong>
+                    <span style="font-size: 0.85rem; color: var(--c-text-muted); font-style: italic;">{card.tagline}</span>
+                  </div>
+                  <div style="font-size: 0.78rem; color: var(--c-text-muted); margin-bottom: 0.5rem;">{card.industries}</div>
+                  <div style="display: flex; gap: 0.3rem; align-items: center;">
+                    <span style={`width: 14px; height: 14px; border-radius: 50%; background: ${card.tokens.brand}; border: 1px solid var(--c-border);`} aria-hidden="true"></span>
+                    <span style={`width: 14px; height: 14px; border-radius: 50%; background: ${card.tokens.accent}; border: 1px solid var(--c-border);`} aria-hidden="true"></span>
+                    <span style={`width: 14px; height: 14px; border-radius: 50%; background: ${card.tokens.surface}; border: 1px solid var(--c-border);`} aria-hidden="true"></span>
+                    <span style="font-size: 0.78rem; color: var(--c-text-muted); margin-left: 0.4rem;">Domyślnie włączone sekcje: <strong>{card.recommendedSections.join(", ")}</strong></span>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <p style="margin: 0.75rem 0 0 0; color: var(--c-text-muted); font-size: 0.78rem;">
+            <strong>Po wyborze:</strong> ten styl ma domyślną paletę kolorów, parę fontów (np. Inter / Playfair Display / Barlow Condensed / Fraunces) i wybrane sekcje strony.
+            Wszystko można zmienić w <code>Ustawienia → Wygląd strony</code> i <code>Sekcje strony</code>.
+          </p>
+
+          <style is:global>
+            .style-picker { width: 100%; }
+            @media (min-width: 768px) { .style-picker { grid-template-columns: 1fr 1fr !important; } }
+            .style-card { width: 100%; }
+            .style-card:hover { transform: translateY(-2px); border-color: var(--c-brand) !important; }
+            .style-card svg { display: block; width: 100% !important; height: auto !important; }
+          </style>
+
+          <script is:inline>
+            (function () {
+              document.addEventListener("click", (e) => {
+                const btn = e.target.closest("[data-style-pick]");
+                if (!btn) return;
+                e.preventDefault();
+                const slug = btn.dataset.slug;
+                const variant = btn.dataset.variant;
+                const sections = btn.dataset.sections;
+                document.getElementById("theme_preset").value = slug;
+                document.getElementById("theme_variant").value = variant;
+                document.getElementById("theme_sections").value = sections;
+                // Visual update
+                document.querySelectorAll("[data-style-pick]").forEach((b) => {
+                  const isCurrent = b === btn;
+                  b.classList.toggle("is-current", isCurrent);
+                  b.setAttribute("aria-pressed", isCurrent ? "true" : "false");
+                  b.style.borderColor = isCurrent ? "var(--c-brand)" : "var(--c-border)";
+                  const check = b.querySelector(".style-card__check");
+                  if (check) check.style.display = isCurrent ? "flex" : "none";
+                });
+              });
+            })();
+          </script>
+        </details>
+
+        <!-- ============ 7. INTEGRACJE ============ -->
+        <details class="card" style="margin-bottom: 1rem;">
+          <summary style="font-weight: 700; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="background: var(--c-text-muted); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">7</span>
+            Analityka (opcjonalne)
+          </summary>
+          <div style="margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
+            <label style="display: flex; gap: 0.5rem; align-items: center;">
+              <input type="checkbox" name="plausible" checked /> Plausible Analytics (cookieless, RODO-friendly)
+            </label>
+            <label style="display: flex; gap: 0.5rem; align-items: center;">
+              <input type="checkbox" name="zaraz" /> Cloudflare Zaraz (server-side GA/Meta — wymaga konfiguracji)
+            </label>
+          </div>
+          <div class="grid-2" style="margin-top: 0.75rem;">
+            <label>GA4 Measurement ID
+              <input type="text" name="ga4_id" pattern="G-[A-Z0-9]+" placeholder="G-XXXXXXXXXX" />
+            </label>
+            <label>Meta Pixel ID
+              <input type="text" name="meta_pixel" pattern="\d+" />
+            </label>
+          </div>
+        </details>
+
+        <!-- ============ 8. OPINIE ============ -->
+        <details class="card" style="margin-bottom: 1rem;">
+          <summary style="font-weight: 700; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="background: var(--c-text-muted); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">8</span>
+            Opinie startowe (opcjonalne, max 3)
+          </summary>
+          <p style="color: var(--c-text-muted); font-size: 0.85rem; margin: 0.5rem 0;">
+            Wpisz opinie z GBP które chcesz pokazać na starcie. Później klienci końcowi sami będą dawać opinie po wykonanej usłudze.
+          </p>
+          <div id="reviews-list" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
+          <button type="button" id="add-review" class="btn" style="margin-top: 0.5rem;">+ Dodaj opinię</button>
+        </details>
+
+        <!-- ============ 9. RODO ============ -->
+        <details open class="card" style="margin-bottom: 1rem;">
+          <summary style="font-weight: 700; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="background: var(--c-brand); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">9</span>
+            RODO i DPA
+          </summary>
+          <p style="color: var(--c-text-muted); font-size: 0.85rem; margin: 0.5rem 0;">
+            MixtureMarketing działa jako podmiot przetwarzający (Art. 28 RODO). Musisz zaakceptować umowę powierzenia (DPA).
+          </p>
+          <div class="grid-2" style="margin-top: 0.75rem;">
+            <label>Wersja zgody
+              <input type="text" name="consent_version" value="v1.0" required />
+            </label>
+            <label>URL polityki prywatności (opcjonalne)
+              <input type="text" name="privacy_policy_url" placeholder="https://twojafirma.pl/polityka-prywatnosci" />
+            </label>
+            <label>URL regulaminu (opcjonalne)
+              <input type="text" name="terms_url" placeholder="https://twojafirma.pl/regulamin" />
+            </label>
+          </div>
+          <label style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.75rem;">
+            <input type="checkbox" name="dpa_signed" required />
+            <span>Akceptuję umowę powierzenia przetwarzania (DPA) z MixtureMarketing *</span>
+          </label>
+        </details>
+
+        <!-- ============ SUBMIT ============ -->
+        <div id="form-errors" style="display: none; padding: 1rem; background: #fef2f2; border: 1px solid #fecaca; color: var(--c-danger); border-radius: 8px; margin-bottom: 1rem;"></div>
+
+        <div style="display: flex; gap: 1rem; align-items: center;">
+          <button type="submit" id="submit-btn" class="btn btn-primary" style="flex: 1; min-height: 48px; font-size: 1rem;">
+            Zatwierdź i rozpocznij budowę strony →
+          </button>
+          <span id="draft-status" style="color: var(--c-text-muted); font-size: 0.85rem;"></span>
+        </div>
+      </form>
+    </main>
+
+    <style is:global>
+      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+      @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
+      label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.9rem; }
+      input[type="text"], input[type="email"], input[type="number"], select, textarea {
+        padding: 0.5rem 0.65rem; border: 1px solid var(--c-border); border-radius: 6px;
+        font-family: inherit; font-size: 0.95rem; background: white;
+      }
+      input:invalid:not(:placeholder-shown) { border-color: var(--c-danger); }
+      .service-row, .review-row { background: var(--c-surface-muted); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--c-border); }
+    </style>
+
+    <script is:inline>
+      const servicesList = document.getElementById("services-list");
+      const addServiceBtn = document.getElementById("add-service");
+      let serviceIdx = 0;
+      function addServiceRow(prefill) {
+        prefill = prefill || {};
+        const i = serviceIdx++;
+        const row = document.createElement("div");
+        row.className = "service-row";
+        row.innerHTML = `
+          <div class="grid-2">
+            <label>Slug * (małe litery + myślniki)
+              <input type="text" name="services_${i}_slug" required pattern="[a-z0-9-]+" value="${prefill.slug||''}" placeholder="awaryjne-otwieranie-zamkow" />
+            </label>
+            <label>Nazwa *
+              <input type="text" name="services_${i}_name" required maxlength="120" value="${prefill.name||''}" placeholder="Awaryjne otwieranie zamków" />
+            </label>
+            <label>Cena od (opcjonalne)
+              <input type="text" name="services_${i}_price_from" maxlength="40" value="${prefill.price_from||''}" placeholder="od 100 zł" />
+            </label>
+            <label>Ikona (opcjonalne)
+              <input type="text" name="services_${i}_icon_key" maxlength="40" value="${prefill.icon_key||''}" />
+            </label>
+          </div>
+          <label style="margin-top: 0.5rem;">Krótki opis *
+            <textarea name="services_${i}_description" required maxlength="500" rows="2" placeholder="Otwieram każdy zamek bez uszkodzenia drzwi...">${prefill.description||''}</textarea>
+          </label>
+          <button type="button" class="btn" data-remove style="margin-top: 0.5rem; font-size: 0.8rem;">Usuń</button>
+        `;
+        row.querySelector("[data-remove]").addEventListener("click", () => row.remove());
+        servicesList.appendChild(row);
+      }
+      addServiceBtn.addEventListener("click", () => addServiceRow());
+
+      const reviewsList = document.getElementById("reviews-list");
+      const addReviewBtn = document.getElementById("add-review");
+      let reviewIdx = 0;
+      function addReviewRow(prefill) {
+        prefill = prefill || {};
+        const i = reviewIdx++;
+        const row = document.createElement("div");
+        row.className = "review-row";
+        row.innerHTML = `
+          <div class="grid-2">
+            <label>Autor *<input type="text" name="reviews_${i}_author" required maxlength="80" value="${prefill.author||''}" /></label>
+            <label>Ocena *
+              <select name="reviews_${i}_rating" required>
+                ${[5,4,3,2,1].map(r => `<option value="${r}" ${prefill.rating == String(r) ? 'selected' : ''}>${"★".repeat(r)}</option>`).join('')}
+              </select>
+            </label>
+            <label>Data * (YYYY-MM-DD)<input type="text" name="reviews_${i}_date" required pattern="\\d{4}-\\d{2}-\\d{2}" value="${prefill.date||''}" /></label>
+            <label>Źródło
+              <select name="reviews_${i}_source">
+                <option value="gbp">GBP</option><option value="manual">Manual</option><option value="facebook">Facebook</option>
+              </select>
+            </label>
+          </div>
+          <label style="margin-top: 0.5rem;">Treść *<textarea name="reviews_${i}_text" required maxlength="800" rows="2">${prefill.text||''}</textarea></label>
+          <button type="button" class="btn" data-remove style="margin-top: 0.5rem; font-size: 0.8rem;">Usuń</button>
+        `;
+        row.querySelector("[data-remove]").addEventListener("click", () => row.remove());
+        reviewsList.appendChild(row);
+      }
+      addReviewBtn.addEventListener("click", () => addReviewRow());
+
+      // Industry → schema_type
+      const industrySel = document.querySelector("[data-industry]");
+      const schemaInput = document.querySelector('input[name="schema_type"]');
+      industrySel.addEventListener("change", () => {
+        const opt = industrySel.selectedOptions[0];
+        schemaInput.value = (opt && opt.dataset.schema) || "";
+      });
+
+      // localStorage draft
+      const form = document.getElementById("onboarding-form");
+      const DRAFT_KEY = "mm-panel-onboarding-draft-v1";
+      const draftStatus = document.getElementById("draft-status");
+
+      function snapshotForm() {
+        const data = new FormData(form);
+        const out = {};
+        for (const [k, v] of data.entries()) out[k] = v;
+        return out;
+      }
+      function saveDraft() {
+        try {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(snapshotForm()));
+          draftStatus.textContent = "Zapisano " + new Date().toLocaleTimeString("pl-PL");
+        } catch {}
+      }
+      function loadDraft() {
+        try {
+          const raw = localStorage.getItem(DRAFT_KEY);
+          if (!raw) { addServiceRow(); return; }
+          const data = JSON.parse(raw);
+          const sc = Object.keys(data).filter(k => /^services_\d+_slug$/.test(k)).length;
+          const rc = Object.keys(data).filter(k => /^reviews_\d+_author$/.test(k)).length;
+          for (let i = 0; i < Math.max(sc, 1); i++) addServiceRow();
+          for (let i = 0; i < rc; i++) addReviewRow();
+          for (const [k, v] of Object.entries(data)) {
+            const el = form.elements.namedItem(k);
+            if (!el) continue;
+            if (el instanceof HTMLInputElement && el.type === "checkbox") el.checked = v === "on" || v === "true";
+            else if ("value" in el) el.value = v;
+          }
+          industrySel.dispatchEvent(new Event("change"));
+          draftStatus.textContent = "Szkic przywrócony";
+        } catch { addServiceRow(); }
+      }
+      loadDraft();
+      form.addEventListener("input", () => {
+        clearTimeout(window.__draftTimer);
+        window.__draftTimer = setTimeout(saveDraft, 400);
+      });
+
+      const SUBMIT_LABEL = "Zatwierdź i rozpocznij budowę strony →";
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const submitBtn = document.getElementById("submit-btn");
+        const errBox = document.getElementById("form-errors");
+        errBox.style.display = "none";
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Wysyłam…";
+
+        const data = snapshotForm();
+        const get = (k) => String(data[k] || "").trim();
+        const num = (k) => { const v = get(k); return v ? Number(v) : undefined; };
+
+        const services = [];
+        for (let i = 0; i < serviceIdx; i++) {
+          if (!get(`services_${i}_slug`)) continue;
+          const s = {
+            slug: get(`services_${i}_slug`),
+            name: get(`services_${i}_name`),
+            description: get(`services_${i}_description`),
+          };
+          const price = get(`services_${i}_price_from`);
+          const icon = get(`services_${i}_icon_key`);
+          if (price) s.price_from = price;
+          if (icon) s.icon_key = icon;
+          services.push(s);
+        }
+
+        const reviews = [];
+        for (let i = 0; i < reviewIdx; i++) {
+          if (!get(`reviews_${i}_author`)) continue;
+          reviews.push({
+            author: get(`reviews_${i}_author`),
+            rating: Number(get(`reviews_${i}_rating`)) || 5,
+            date: get(`reviews_${i}_date`),
+            text: get(`reviews_${i}_text`),
+            source: get(`reviews_${i}_source`) || "gbp",
+          });
+        }
+
+        const payload = {
+          legal_name: get("legal_name") || undefined,
+          regon: get("regon") || undefined,
+          industry: get("industry"),
+          schema_type: get("schema_type"),
+          founded_year: num("founded_year"),
+          employee_count: num("employee_count"),
+          description: get("description"),
+          tagline: get("tagline"),
+          long_description: get("long_description"),
+          primary_domain: get("primary_domain"),
+          domain_source: get("domain_source"),
+          street_address: get("street_address"),
+          city: get("city"),
+          voivodeship: get("voivodeship"),
+          postal_code: get("postal_code"),
+          latitude: num("latitude"),
+          longitude: num("longitude"),
+          service_area: get("service_area").split(",").map(s => s.trim()).filter(Boolean),
+          contact_person_name: get("contact_person_name") || undefined,
+          services,
+          hours: {
+            monday: get("hours_monday") || undefined,
+            tuesday: get("hours_tuesday") || undefined,
+            wednesday: get("hours_wednesday") || undefined,
+            thursday: get("hours_thursday") || undefined,
+            friday: get("hours_friday") || undefined,
+            saturday: get("hours_saturday") || undefined,
+            sunday: get("hours_sunday") || undefined,
+            note: get("hours_note") || undefined,
+          },
+          theme_preset: get("theme_preset"),
+          theme_variant: get("theme_variant") || undefined,
+          theme_hero: get("theme_hero") || undefined,
+          theme_accent: get("theme_accent") || undefined,
+          theme_sections: (() => {
+            const raw = get("theme_sections");
+            if (!raw) return undefined;
+            try {
+              const arr = JSON.parse(raw);
+              if (Array.isArray(arr)) return arr.map((kind) => ({ kind, enabled: true }));
+            } catch { /* empty */ }
+            return undefined;
+          })(),
+          plausible: form.elements.namedItem("plausible").checked,
+          zaraz: form.elements.namedItem("zaraz").checked,
+          ga4_id: get("ga4_id") || undefined,
+          meta_pixel: get("meta_pixel") || undefined,
+          reviews,
+          consent_version: get("consent_version") || "v1.0",
+          privacy_policy_url: get("privacy_policy_url") || undefined,
+          terms_url: get("terms_url") || undefined,
+          dpa_signed: form.elements.namedItem("dpa_signed").checked,
+        };
+
+        try {
+          const res = await fetch("/api/onboarding/submit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const json = await res.json();
+          if (json.ok) {
+            localStorage.removeItem(DRAFT_KEY);
+            window.location.href = json.data.next || "/onboarding/complete";
+          } else {
+            const errs = json.errors || [];
+            errBox.innerHTML = errs.length
+              ? "<strong>Brakuje danych:</strong><ul>" + errs.map(e => `<li><code>${e.field}</code>: ${e.message}</li>`).join("") + "</ul>"
+              : "<strong>Błąd:</strong> " + (json.error || "Nieznany błąd");
+            errBox.style.display = "block";
+            errBox.scrollIntoView({ behavior: "smooth" });
+            submitBtn.disabled = false;
+            submitBtn.textContent = SUBMIT_LABEL;
+          }
+        } catch (err) {
+          errBox.innerHTML = "<strong>Błąd sieci:</strong> " + err.message;
+          errBox.style.display = "block";
+          submitBtn.disabled = false;
+          submitBtn.textContent = SUBMIT_LABEL;
+        }
+      });
+    </script>
+  </body>
+</html>

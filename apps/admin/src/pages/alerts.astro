@@ -1,64 +1,170 @@
 ---
+import { env } from "cloudflare:workers";
 import AdminLayout from "../layouts/AdminLayout.astro";
 import Icon from "../components/Icon.astro";
 
-import { listOpenAlerts } from "../lib/db.ts";
+import { listAlerts } from "../lib/db.ts";
 
-const env = Astro.locals.runtime?.env;
 if (!env?.DB) return new Response("Runtime not available", { status: 500 });
 
-const alerts = await listOpenAlerts(env.DB, 200);
+const url = new URL(Astro.request.url);
+const statusFilter = url.searchParams.get("status") ?? "open";
+
+const alerts = await listAlerts(env.DB, {
+  status: statusFilter,
+  limit: 200,
+});
+
+const statusOptions = ["open", "acked", "resolved", "all"];
 
 const formatRelative = (iso: string): string => {
   const date = new Date(iso);
   const ms = Date.now() - date.getTime();
   const min = Math.floor(ms / 60000);
+  if (min < 1) return "przed chwilą";
   if (min < 60) return `${min} min temu`;
   const hr = Math.floor(min / 60);
   if (hr < 24) return `${hr} h temu`;
   return `${Math.floor(hr / 24)} d temu`;
 };
+
+const sevBadge: Record<string, string> = {
+  P1: "badge-error",
+  P2: "badge-warning",
+  P3: "badge-warning",
+  P4: "",
+};
+
+const counts = {
+  P1: alerts.filter((a) => a.severity === "P1" && a.status === "open").length,
+  P2: alerts.filter((a) => a.severity === "P2" && a.status === "open").length,
+  total_open: alerts.filter((a) => a.status === "open").length,
+};
 ---
 
 <AdminLayout title="Alerty">
   <header style="margin-bottom: 2rem;">
-    <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.6rem;"><Icon name="bell" size={28} /> Alerty</h1>
+    <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.6rem;">
+      <Icon name="bell" size={28} /> Alerty
+    </h1>
     <p style="color: var(--c-text-muted); margin: 0;">
-      Otwarte alerty wymagające uwagi. {alerts.length} wpisów.
+      Otwartych: <strong>{counts.total_open}</strong>
+      {counts.P1 > 0 && <span> · <span style="color: #dc2626; font-weight: 700;">P1: {counts.P1}</span></span>}
+      {counts.P2 > 0 && <span> · <span style="color: #ea580c;">P2: {counts.P2}</span></span>}
     </p>
   </header>
+
+  <nav aria-label="Filtr statusu" style="margin-bottom: 1.25rem; display: flex; flex-wrap: wrap; gap: 0.4rem;">
+    {statusOptions.map((s) => (
+      <a
+        href={`/alerts?status=${s}`}
+        class={`badge ${statusFilter === s ? "badge-success" : ""}`}
+        style="text-decoration: none;"
+      >
+        {s}
+      </a>
+    ))}
+  </nav>
 
   {alerts.length === 0 ? (
     <div class="card" style="text-align: center; padding: 3rem;">
       <p style="margin: 0 0 1rem 0; color: var(--c-success);"><Icon name="check-circle-2" size={48} /></p>
-      <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 0.5rem 0; color: var(--c-success);">Wszystko OK</h2>
-      <p style="color: var(--c-text-muted); margin: 0;">Brak otwartych alertów.</p>
+      <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 0.5rem 0; color: var(--c-success);">
+        {statusFilter === "open" ? "Brak otwartych alertów" : "Brak alertów"}
+      </h2>
+      <p style="color: var(--c-text-muted); margin: 0;">
+        {statusFilter === "open" ? "Wszystko działa." : "Spróbuj zmienić filtr powyżej."}
+      </p>
     </div>
   ) : (
-    <div style="display: grid; gap: 0.75rem;">
+    <div style="display: grid; gap: 0.6rem;">
       {alerts.map((alert) => (
-        <article class="card" style="display: grid; grid-template-columns: max-content 1fr max-content; gap: 1rem; align-items: center;">
-          <span class={`badge ${alert.severity === "P1" ? "badge-danger" : alert.severity === "P2" ? "badge-warning" : ""}`} style="font-size: 0.9rem; padding: 0.3rem 0.7rem;">
+        <article class="card" data-alert-id={alert.id} style="display: grid; grid-template-columns: max-content 1fr max-content; gap: 1rem; align-items: center;">
+          <span class={`badge ${sevBadge[alert.severity]}`} style="font-size: 0.9rem; padding: 0.3rem 0.7rem; min-width: 32px; text-align: center;">
             {alert.severity}
           </span>
           <div style="min-width: 0;">
-            <p style="margin: 0; font-weight: 600;">{alert.title}</p>
-            <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">
-              {alert.alert_type} · {alert.client_id ? <a href={`/clients/${alert.client_id}`} style="color: var(--c-brand); text-decoration: none;">{alert.client_id}</a> : "platform-wide"}
-              · status: <span class={`badge ${alert.status === "acked" ? "badge-warning" : "badge-danger"}`}>{alert.status}</span>
-              · {formatRelative(alert.fired_at)}
+            <p style="margin: 0; font-weight: 600;">
+              {alert.title}
+              {alert.dedup_count > 1 && <span class="badge" style="margin-left: 0.5rem; background: #fef3c7; color: #78350f;">×{alert.dedup_count}</span>}
             </p>
-            {alert.description && <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem;">{alert.description}</p>}
+            <p style="margin: 0.25rem 0 0 0; font-size: 0.82rem; color: var(--c-text-muted);">
+              <span style="font-family: ui-monospace, monospace;">{alert.alert_type}</span>
+              {alert.client_id && <> · <a href={`/clients/${alert.client_id}`} style="color: var(--c-brand); text-decoration: none;">{alert.client_id}</a></>}
+              {alert.resource_id && !alert.client_id && <> · <span style="font-family: ui-monospace, monospace;">{alert.resource_id}</span></>}
+              {" · "}
+              <span class={`badge ${alert.status === "open" ? "badge-error" : alert.status === "acked" ? "badge-warning" : "badge-success"}`}>{alert.status}</span>
+              {" · "}{formatRelative(alert.fired_at)}
+            </p>
+            {alert.description && <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; word-break: break-word;">{alert.description}</p>}
+            {alert.resolved_at && (
+              <p style="margin: 0.4rem 0 0 0; font-size: 0.78rem; color: var(--c-success);">
+                ✓ Resolved {formatRelative(alert.resolved_at)} by {alert.resolved_by ?? "?"}
+              </p>
+            )}
           </div>
-          <div style="display: flex; gap: 0.5rem;">
+          <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end;">
             {alert.runbook_url && (
-              <a href={alert.runbook_url} target="_blank" rel="noopener" class="btn" style="font-size: 0.85rem; padding: 0.4rem 0.875rem; min-height: 32px;">
+              <a href={alert.runbook_url} target="_blank" rel="noopener" class="btn" style="font-size: 0.78rem; padding: 0.3rem 0.65rem; min-height: 28px;">
                 Runbook ↗
               </a>
+            )}
+            {alert.status === "open" && (
+              <button type="button" class="btn alert-ack-btn" data-id={alert.id} style="font-size: 0.78rem; padding: 0.3rem 0.65rem; min-height: 28px;" title="Ack: I saw it, working on it">
+                Ack
+              </button>
+            )}
+            {alert.status === "open" && (
+              <button type="button" class="btn alert-snooze-btn" data-id={alert.id} data-hours="24" style="font-size: 0.78rem; padding: 0.3rem 0.65rem; min-height: 28px;" title="Snooze 24h — alert ukrywa się na 24h, wraca jeśli problem trwa">
+                Wycisz 24h
+              </button>
+            )}
+            {(alert.status === "open" || alert.status === "acked") && (
+              <button type="button" class="btn alert-resolve-btn" data-id={alert.id} style="font-size: 0.78rem; padding: 0.3rem 0.65rem; min-height: 28px;">
+                Resolve
+              </button>
             )}
           </div>
         </article>
       ))}
     </div>
   )}
+
+  <script is:inline>
+    async function patchAlert(action, id) {
+      const res = await fetch(`/api/alerts/${id}/${action}`, { method: "POST" });
+      const json = await res.json();
+      if (json.ok && json.changed) {
+        const row = document.querySelector(`[data-alert-id="${id}"]`);
+        if (row) row.style.opacity = "0.3";
+        setTimeout(() => location.reload(), 400);
+      } else {
+        alert("Nie udało się: " + (json.error ?? "no change"));
+      }
+    }
+    document.querySelectorAll(".alert-ack-btn").forEach((b) => {
+      b.addEventListener("click", () => patchAlert("ack", b.dataset.id));
+    });
+    document.querySelectorAll(".alert-resolve-btn").forEach((b) => {
+      b.addEventListener("click", () => patchAlert("resolve", b.dataset.id));
+    });
+    document.querySelectorAll(".alert-snooze-btn").forEach((b) => {
+      b.addEventListener("click", async () => {
+        const hours = b.dataset.hours ?? "24";
+        const res = await fetch(`/api/alerts/${b.dataset.id}/snooze`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hours: Number(hours) }),
+        });
+        const json = await res.json();
+        if (json.ok) {
+          const row = document.querySelector(`[data-alert-id="${b.dataset.id}"]`);
+          if (row) row.style.opacity = "0.3";
+          setTimeout(() => location.reload(), 400);
+        } else {
+          alert("Nie udało się: " + (json.error ?? "no change"));
+        }
+      });
+    });
+  </script>
 </AdminLayout>

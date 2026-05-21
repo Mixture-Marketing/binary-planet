@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockupy 4 motywów — MixtureMarketing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+  :root { --ink: #0a0a0a; --muted: #6b6b6b; --line: #e5e5e5; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; margin: 0; background: #fafafa; color: var(--ink); line-height: 1.5; }
+  .wrap { max-width: 64rem; margin: 0 auto; padding: 4rem 1.5rem; }
+  h1 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; letter-spacing: -0.025em; margin: 0 0 0.5rem; }
+  .lead { color: var(--muted); margin: 0 0 3rem; max-width: 42rem; font-size: 1.1rem; }
+  .grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+  @media (min-width: 768px) { .grid { grid-template-columns: 1fr 1fr; gap: 1.5rem; } }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 2rem; transition: transform 200ms, box-shadow 200ms; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 0.75rem; }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px -8px rgba(0,0,0,0.12); border-color: #d0d0d0; }
+  .card__label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); }
+  .card__name { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.015em; margin: 0; }
+  .card__mood { font-size: 0.95rem; color: var(--muted); margin: 0; }
+  .card__refs { font-size: 0.78rem; color: var(--muted); font-style: italic; margin-top: auto; padding-top: 0.5rem; border-top: 1px solid var(--line); }
+  .badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.6rem; border-radius: 999px; }
+  .badge--m { background: #eff6ff; color: #1d4ed8; }
+  .badge--e { background: #fdf2f8; color: #be185d; }
+  .badge--d { background: #fef2f2; color: #b91c1c; }
+  .badge--ed { background: #f0fdf4; color: #166534; }
+  .note { margin-top: 3rem; padding: 1.5rem; background: #fff7ed; border-left: 3px solid #f97316; border-radius: 4px; font-size: 0.95rem; color: #7c2d12; }
+  .note strong { color: #9a3412; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <p style="font-size:0.78rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin:0 0 1rem;font-weight:600">Proof-of-concept · Wizja przed implementacją</p>
+    <h1>4 motywy — kompletny redesign</h1>
+    <p class="lead">Każdy motyw to <strong>strukturalnie inny</strong> sposób prezentacji firmy. Mockupy poniżej pokazują hero + jedną sygnaturową sekcję. Otwórz po kolei, daj feedback przed implementacją w Astro.</p>
+
+    <div class="grid">
+      <a href="/mockups/minimalist.html" class="card">
+        <span class="badge badge--m">Czysty</span>
+        <h2 class="card__name">Minimalist</h2>
+        <p class="card__mood">Asymetryczny split 60/40 · monumentalna typografia · monospace numerals · zero stocku</p>
+        <p class="card__refs">Mood: Linear · Vercel · Stripe Docs</p>
+      </a>
+
+      <a href="/mockups/editorial.html" class="card">
+        <span class="badge badge--ed">Magazynowy</span>
+        <h2 class="card__name">Editorial</h2>
+        <p class="card__mood">Masthead jak gazeta · gigantic Fraunces serif · drop cap · pull quotes · 3-warstwowy brand</p>
+        <p class="card__refs">Mood: NYTimes · Substack · Aeon</p>
+      </a>
+
+      <a href="/mockups/elegant.html" class="card">
+        <span class="badge badge--e">Elegancki</span>
+        <h2 class="card__name">Elegant</h2>
+        <p class="card__mood">Full-bleed image · italic Cormorant · 2 kolory + tekst · gold-leaf dividers · menu-style list</p>
+        <p class="card__refs">Mood: Aman Resorts · Aesop · Le Labo</p>
+      </a>
+
+      <a href="/mockups/dynamic.html" class="card">
+        <span class="badge badge--d">Dynamiczny</span>
+        <h2 class="card__name">Dynamic</h2>
+        <p class="card__mood">Bento grid 4 tiles · BIG phone CTA · pulsing 24/7 · gradient mesh splash · spring physics</p>
+        <p class="card__refs">Mood: Stripe Apps · Notion launch · 21st.dev</p>
+      </a>
+    </div>
+
+    <div class="note">
+      <strong>Co to NIE są:</strong> to mockupy hero + jednej sekcji, bez interakcji, bez full content. <strong>Po co:</strong> żeby zobaczyć kierunek wizualny zanim zainwestujemy 4-5h w pełną implementację w Astro. Po Twoim greenlight robię prawdziwe komponenty z WCAG/CSP/perf.
+    </div>
+  </div>
+</body>
+</html>

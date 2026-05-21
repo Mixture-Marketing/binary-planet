@@ -120,6 +120,29 @@ Aktualnie endpoint checkout nie weryfikuje tego header'a — Jakub może w przys
 
 ---
 
+## ⚠️ FEEDBACK z E2E testów 2026-05-19
+
+**Rate limit 5/h per IP jest za agresywny.** Podczas integracji testowej (Mixture stronę):
+- Mixture agent zrobił 3-4 test calls przez curl + puppeteer
+- Jakub spróbował 1× w przeglądarce — dostał 429 "Za dużo prób"
+- Total ~5 prób z dwóch (potencjalnie tej samej) sieci → bucket pełny
+
+Realny scenariusz produkcyjny: klient ma literówkę w NIP, próbuje 2-3 razy. Klient na zmiennym IP firmowym może odpadać normalnie.
+
+**Rekomendacja:**
+- Podnieść preonboard rate limit z **5/h → 10-15/h** per IP
+- Lub dodać exponential backoff zamiast hard limit
+- Lub osobny wyższy limit dla CORS-origin'd requests z `mixturemarketing.pl` (real klient) vs server-to-server bez Origin (potencjalny bot)
+
+**Reset manualny (dla testów):**
+```bash
+cd D:\KOD\binary-planet\apps\control-plane
+pnpm exec wrangler kv key list --binding=<RATE_LIMIT_KV_BINDING> --remote | grep preonboard
+pnpm exec wrangler kv key delete "rate_limit:preonboard:<IP>" --binding=<...> --remote
+```
+
+---
+
 ## 🚀 Faza 2 (po launchu — nice-to-have)
 
 - [ ] Support dla `referral_code` w preonboard payload (gdy dojdzie program partnerski Faza 5 L.4)

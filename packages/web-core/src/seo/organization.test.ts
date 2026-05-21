@@ -7,7 +7,7 @@ describe("organizationSchema", () => {
     const out = organizationSchema({ url: "https://x.pl", name: "MM" });
     expect(out["@type"]).toBe("Organization");
     expect(out.name).toBe("MM");
-    expect(out["@id"]).toBe("https://x.pl");
+    expect(out["@id"]).toBe("https://x.pl/#organization");
   });
 
   it("includes logo with dimensions", () => {

@@ -30,17 +30,92 @@ export function canonicalUrl(path = "/"): string {
   return `${baseUrl}${normalized === "/" ? "" : normalized}`;
 }
 
+/**
+ * Default OG share image — every page MUST have one or social shares blank-out.
+ * Per-klient `og-default.jpg` lives in the repo's `public/` (1200×630). Until uploaded,
+ * we fall back to a hosted Unsplash card matched to the theme preset.
+ */
+const OG_FALLBACK_BY_PRESET: Record<string, string> = {
+  editorial: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=1200&h=630&fit=crop&q=80",
+  elegant: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1200&h=630&fit=crop&q=80",
+  dynamic: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&h=630&fit=crop&q=80",
+  minimalist: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&h=630&fit=crop&q=80",
+};
+
+function defaultOgImage(): { url: string; width: 1200; height: 630; alt: string } {
+  const preset = clientConfig.theme.preset;
+  const url = OG_FALLBACK_BY_PRESET[preset] ?? OG_FALLBACK_BY_PRESET.editorial!;
+  return {
+    url,
+    width: 1200,
+    height: 630,
+    alt: `${clientConfig.business.name} — ${clientConfig.business.tagline}`,
+  };
+}
+
+/**
+ * Construct keyword-targeted home title. For restaurants: lead with intent keyword
+ * ("Włoska restauracja Kraków") not brand. For services: industry + city + brand.
+ */
+/** Map LocalBusinessSubtype → friendly PL service noun for title keyword-targeting. */
+const SUBTYPE_PL_TITLE: Record<string, string> = {
+  Locksmith: "Ślusarz",
+  AutoRepair: "Mechanik samochodowy",
+  Plumber: "Hydraulik",
+  Electrician: "Elektryk",
+  HVACBusiness: "Klimatyzacja i ogrzewanie",
+  RoofingContractor: "Dekarz",
+  HousePainter: "Malarz",
+  GeneralContractor: "Usługi remontowe",
+  MovingCompany: "Firma przeprowadzkowa",
+  BeautySalon: "Salon urody",
+  HairSalon: "Salon fryzjerski",
+  DaySpa: "Salon SPA",
+  HealthClub: "Klub fitness",
+  Dentist: "Dentysta",
+  Physician: "Lekarz",
+  MedicalClinic: "Klinika",
+  Notary: "Notariusz",
+  Attorney: "Adwokat",
+  AccountingService: "Biuro rachunkowe",
+  RealEstateAgent: "Pośrednik nieruchomości",
+  ChildCare: "Żłobek i przedszkole",
+};
+
+function homeTitle(): string {
+  const name = clientConfig.business.name;
+  const city = clientConfig.location.address.city;
+  const tagline = clientConfig.business.tagline;
+  const subtype = clientConfig.business.schemaType;
+  if (subtype === "Restaurant") {
+    const cuisine = /włosk|toskan|neapol/i.test(clientConfig.business.description)
+      ? "Włoska restauracja"
+      : "Restauracja";
+    return `${cuisine} ${city} — ${name} | ${tagline}`;
+  }
+  const noun = SUBTYPE_PL_TITLE[subtype];
+  if (noun) {
+    return `${noun} ${city} — ${name} | ${tagline}`;
+  }
+  return `${name} ${city} | ${tagline}`;
+}
+
 /** Shared meta defaults — pages override what's relevant. */
 function baseMetaInput(overrides: Partial<MetaInput> & { path: string }): MetaInput {
   return {
-    title: clientConfig.business.name,
+    title: homeTitle(),
     description: clientConfig.business.description,
     canonicalUrl: canonicalUrl(overrides.path),
     locale: "pl_PL",
     og: {
       type: "website",
       siteName,
+      image: defaultOgImage(),
       ...overrides.og,
+    },
+    twitter: {
+      card: "summary_large_image",
+      ...overrides.twitter,
     },
     icons: { svg: "/favicon.svg" },
     themeColor: "var(--color-brand)",
@@ -97,20 +172,30 @@ export interface PageSeoBundle {
 export function homeSeo(): PageSeoBundle {
   const meta = baseMetaInput({
     path: "/",
-    title: `${siteName} — ${clientConfig.location.address.city} | ${clientConfig.business.tagline}`,
+    // Title built via homeTitle() in baseMetaInput defaults — restaurant gets
+    // "Włoska restauracja Kraków — Trattoria Bocca | tagline" (keyword-first).
     description: clientConfig.business.description,
   });
   return {
     meta,
     jsonLd: [buildLocalBusinessJsonLd(), buildWebSite(), buildOrganization()],
+    // NOTE: BreadcrumbList intentionally OMITTED on home — web-core lib rejects
+    // 1-item breadcrumbs (correct behavior). BreadcrumbList exists on subpages only.
   };
 }
 
 /** Oferta page — LocalBusiness + Breadcrumb. */
 export function ofertaSeo(): PageSeoBundle {
+  const city = clientConfig.location.address.city;
+  const subtype = clientConfig.business.schemaType;
+  const isRestaurant = subtype === "Restaurant";
+  const noun = SUBTYPE_PL_TITLE[subtype] ?? clientConfig.business.industry;
+  const title = isRestaurant
+    ? `Menu — Karta dań ${siteName}, ${city}`
+    : `Oferta — ${noun} ${city} | ${siteName}`;
   const meta = baseMetaInput({
     path: "/oferta",
-    title: `Oferta — ${siteName}`,
+    title,
     description: `Pełna oferta usług: ${clientConfig.services
       .map((s) => s.name)
       .join(", ")}. ${clientConfig.business.tagline}.`,
@@ -121,7 +206,7 @@ export function ofertaSeo(): PageSeoBundle {
       buildLocalBusinessJsonLd(),
       breadcrumbSchema([
         { name: "Strona główna", url: canonicalUrl("/") },
-        { name: "Oferta" },
+        { name: "Oferta", url: canonicalUrl("/oferta") },
       ]),
     ],
   };
@@ -130,9 +215,10 @@ export function ofertaSeo(): PageSeoBundle {
 /** O firmie page — LocalBusiness + WebPage + Breadcrumb. */
 export function oFirmieSeo(): PageSeoBundle {
   const path = "/o-firmie";
+  const city = clientConfig.location.address.city;
   const meta = baseMetaInput({
     path,
-    title: `O firmie — ${siteName}`,
+    title: `O nas — historia ${siteName} (${city})`,
     description:
       clientConfig.business.longDescription.slice(0, 155).trim() + "...",
   });
@@ -148,7 +234,7 @@ export function oFirmieSeo(): PageSeoBundle {
     }),
     breadcrumbSchema([
       { name: "Strona główna", url: canonicalUrl("/") },
-      { name: "O firmie" },
+      { name: "O firmie", url: canonicalUrl("/o-firmie") },
     ]),
   ];
 
@@ -158,17 +244,22 @@ export function oFirmieSeo(): PageSeoBundle {
 /** Kontakt page — LocalBusiness + Breadcrumb + FAQPage. */
 export function kontaktSeo(faqs: ReadonlyArray<FaqItem> = []): PageSeoBundle {
   const path = "/kontakt";
+  const city = clientConfig.location.address.city;
+  const isRestaurant = clientConfig.business.schemaType === "Restaurant";
+  const title = isRestaurant
+    ? `Rezerwacja stolika — ${siteName}, ${city}`
+    : `Kontakt — ${siteName}, ${city}`;
   const meta = baseMetaInput({
     path,
-    title: `Kontakt — ${siteName}`,
-    description: `Skontaktuj się z ${siteName}. Telefon: ${clientConfig.contact.primaryPhone}. ${clientConfig.location.address.streetAddress}, ${clientConfig.location.address.city}.`,
+    title,
+    description: `Skontaktuj się z ${siteName}. Telefon: ${clientConfig.contact.primaryPhone}. ${clientConfig.location.address.streetAddress}, ${city}.`,
   });
 
   const jsonLd: unknown[] = [
     buildLocalBusinessJsonLd(),
     breadcrumbSchema([
       { name: "Strona główna", url: canonicalUrl("/") },
-      { name: "Kontakt" },
+      { name: "Kontakt", url: canonicalUrl("/kontakt") },
     ]),
   ];
   if (faqs.length > 0) {
@@ -199,7 +290,7 @@ export function aktualnosciSeo(): PageSeoBundle {
       }),
       breadcrumbSchema([
         { name: "Strona główna", url: canonicalUrl("/") },
-        { name: "Aktualności" },
+        { name: "Aktualności", url: canonicalUrl("/aktualnosci") },
       ]),
     ],
   };
@@ -275,7 +366,7 @@ export function faqSeo(faqs: ReadonlyArray<FaqItem>): PageSeoBundle {
     buildLocalBusinessJsonLd(),
     breadcrumbSchema([
       { name: "Strona główna", url: canonicalUrl("/") },
-      { name: "FAQ" },
+      { name: "FAQ", url: canonicalUrl("/faq") },
     ]),
   ];
   if (faqs.length > 0) {
@@ -347,7 +438,7 @@ export function uslugiHubSeo(): PageSeoBundle {
       }),
       breadcrumbSchema([
         { name: "Strona główna", url: canonicalUrl("/") },
-        { name: "Usługi" },
+        { name: "Usługi", url: canonicalUrl("/uslugi") },
       ]),
     ],
   };

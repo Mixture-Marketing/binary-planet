@@ -102,6 +102,79 @@ collections:
       - { label: Podpis, name: caption, widget: string, required: false }
       - { label: Kolejność, name: order, widget: number, value_type: int, min: 0, default: 99 }
 
+  # ---- ZESPÓŁ -------------------------------------------------------------
+  - name: team
+    label: Zespół
+    label_singular: Osoba
+    folder: apps/starter/content/team
+    create: true
+    delete: true
+    slug: "{{slug}}"
+    summary: "{{name}} — {{role}}"
+    sortable_fields: [order, name]
+    fields:
+      - { label: Imię i nazwisko, name: name, widget: string, hint: "np. adw. Krzysztof Wiśniewski" }
+      - { label: Rola / funkcja, name: role, widget: string, hint: "np. Partner zarządzający, Stylistka, Szef kuchni" }
+      - { label: Krótkie bio, name: bio, widget: text, required: false, hint: "Max 800 znaków — 2-3 zdania o doświadczeniu/specjalizacji" }
+      - { label: Zdjęcie, name: photo, widget: image, required: false, hint: "Kwadratowe, min 400×400 px. Brak = inicjały na brand color." }
+      - { label: Kolejność wyświetlania, name: order, widget: number, value_type: int, min: 0, default: 99 }
+      - { label: Opublikowany, name: published, widget: boolean, default: true }
+
+  # ---- PUBLIKACJE (Professional tier) -------------------------------------
+  - name: publications
+    label: Publikacje
+    label_singular: Publikacja
+    folder: apps/starter/content/publications
+    create: true
+    delete: true
+    slug: "{{slug}}"
+    summary: "{{date}} · {{title}}"
+    sortable_fields: [date, title, order]
+    fields:
+      - { label: Tytuł, name: title, widget: string, hint: "Max 220 znaków" }
+      - { label: Źródło (gazeta/wydawnictwo/konferencja), name: source, widget: string, hint: "np. Rzeczpospolita, Wydawnictwo C.H. Beck, VII Kongres Prawa Gospodarczego" }
+      - { label: Data, name: date, widget: string, hint: "Format: 2026-03, 2026, lub 2026-03-15" }
+      - { label: URL (opcjonalne), name: url, widget: string, required: false }
+      - label: Typ publikacji
+        name: type
+        widget: select
+        required: false
+        options:
+          - { label: Artykuł, value: article }
+          - { label: Książka, value: book }
+          - { label: Wywiad, value: interview }
+          - { label: Wystąpienie, value: speech }
+          - { label: Podcast, value: podcast }
+      - { label: Kolejność, name: order, widget: number, value_type: int, min: 0, default: 99 }
+      - { label: Opublikowane, name: published, widget: boolean, default: true }
+
+  # ---- HISTORIA FIRMY (singleton) -----------------------------------------
+  - name: history
+    label: Historia firmy
+    files:
+      - label: Treść historii
+        name: main
+        file: apps/starter/content/history/main.md
+        fields:
+          - { label: Nagłówek, name: heading, widget: string, required: false, hint: "Domyślnie: 'Nasza historia'" }
+          - { label: Cytat wyróżniony (pull quote), name: pullQuote, widget: text, required: false, hint: "Krótki, mocny cytat — pokazany dużą czcionką italic" }
+          - { label: Podpis autora, name: authorByline, widget: string, required: false, hint: "np. Marco Bocca, szef kuchni" }
+          - { label: Włącz drop cap (duża 1. litera), name: dropCap, widget: boolean, default: false, hint: "Tylko dla Magazynowego — wygląda magazynowo" }
+          - { label: Zdjęcie nagłówkowe, name: imageUrl, widget: image, required: false }
+          - { label: Podpis pod zdjęciem, name: imageCaption, widget: string, required: false }
+          - label: Ornament rozdzielający
+            name: ornament
+            widget: select
+            default: none
+            options:
+              - { label: "— brak —", value: none }
+              - { label: "Trzy kropki", value: divider-3-dots }
+              - { label: "Diament + linia", value: divider-diamond }
+              - { label: "Fleuron (klasyczny)", value: divider-fleuron }
+              - { label: "Asteryzm ⁂", value: divider-asterism }
+              - { label: "Hairline (cienka linia)", value: divider-hairline }
+          - { label: Treść (markdown), name: body, widget: markdown, hint: "Długi tekst, można używać **bold**, *italic*, ## nagłówki" }
+
   # ---- OVERRIDES (singleton — promo banner, hero override) ----------------
   - name: site
     label: Ustawienia strony

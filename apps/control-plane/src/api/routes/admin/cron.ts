@@ -17,6 +17,7 @@ import { Hono } from "hono";
 import type { HonoEnv } from "../../../env.js";
 import { generateAiBlogDrafts } from "../../../scheduled/ai-blog-draft.js";
 import { backupDaily } from "../../../scheduled/backup.js";
+import { competitorCheckWeekly } from "../../../scheduled/competitor-check.js";
 import { healthCheck } from "../../../scheduled/health-check.js";
 import { provisionPending } from "../../../scheduled/provision-client.js";
 import { err, ok } from "../../lib/responses.js";
@@ -28,6 +29,7 @@ const ALLOWED_JOBS = [
   "provision_pending_2min",
   "ai_blog_weekly",
   "backup_daily",
+  "dataforseo_weekly",
 ] as const;
 
 type AllowedJob = (typeof ALLOWED_JOBS)[number];
@@ -89,6 +91,13 @@ adminCronRouter.post("/", async (c) => {
       case "backup_daily": {
         await backupDaily(env, log ?? (console as unknown as Parameters<typeof backupDaily>[1]));
         processed = 1;
+        break;
+      }
+      case "dataforseo_weekly": {
+        const r = await competitorCheckWeekly(env, log ?? (console as unknown as Parameters<typeof competitorCheckWeekly>[1]));
+        processed = r.processed;
+        failed = r.failed;
+        extra = { queries: r.queries, cost_grosze_total: r.cost_grosze_total };
         break;
       }
     }

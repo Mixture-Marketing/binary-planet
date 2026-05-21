@@ -84,9 +84,22 @@ export function renderCsp(directives: CspDirectives): string {
 /**
  * Default strict-CSP baseline. Apps merge their domain + integrations into this.
  */
-export function defaultCspDirectives(opts: { nonce?: string; allowDataImages?: boolean } = {}): CspDirectives {
-  const scriptSrc: string[] = ["'self'", "'strict-dynamic'"];
-  if (opts.nonce) scriptSrc.push(quoteNonce(opts.nonce));
+export function defaultCspDirectives(opts: { nonce?: string; allowDataImages?: boolean; allowAstroInlineScripts?: boolean } = {}): CspDirectives {
+  // NOTE 2026-05-21: Astro 6 emituje niektóre `<script>` z `.astro` (theme-toggle, mobile drawer)
+  // jako inline `<script type="module">` BEZ nonce — Vite chunkuje agresywnie. CSP nonce-only
+  // blokuje je. Workaround: `allowAstroInlineScripts` dodaje 'unsafe-inline'. Modern browsery
+  // ignorują 'unsafe-inline' gdy obecny jest nonce — chyba że są starsze. Dla starter (publiczne)
+  // włączamy; dla panel/admin (auth-gated) pozostawiamy strict.
+  // Docelowo: migracja na Astro 6 security.csp z hash-based (wymaga porzucenia ClientRouter).
+  const scriptSrc: string[] = ["'self'"];
+  // CSP spec: when nonce is present, 'unsafe-inline' is IGNORED by modern browsers
+  // (downgrade-prevention feature). To actually allow Astro's inlined module scripts,
+  // we must skip the nonce when allowAstroInlineScripts is true.
+  if (opts.allowAstroInlineScripts) {
+    scriptSrc.push("'unsafe-inline'");
+  } else if (opts.nonce) {
+    scriptSrc.push(quoteNonce(opts.nonce));
+  }
 
   const imgSrc: string[] = ["'self'", "https:"];
   if (opts.allowDataImages !== false) imgSrc.push("data:"); // Sveltia previews, OG fallbacks

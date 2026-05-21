@@ -1,0 +1,157 @@
+---
+/**
+ * History section — narracja o powstaniu firmy.
+ * Config: { heading?, body, dropCap?, pullQuote?, authorByline?, imageUrl?, imageCaption?, ornament? }
+ *
+ * Editorial: drop cap + ornament + pull quote = magazine feel
+ * Inne style: prosty rich text bez ornamentów
+ */
+import clientConfig from "../../client.config.ts";
+import { ORNAMENT_PATHS, type OrnamentName } from "@mixturemarketing/web-core/ornaments";
+import { getCollection } from "astro:content";
+
+interface Props {
+  config?: {
+    heading?: string;
+    body?: string;
+    dropCap?: boolean;
+    pullQuote?: string;
+    authorByline?: string;
+    imageUrl?: string;
+    imageCaption?: string;
+    ornament?: OrnamentName | "none";
+  };
+}
+const { config = {} } = Astro.props;
+const isEditorial = clientConfig.theme.preset === "editorial";
+
+// Try CMS singleton first (Sveltia → content/history/main.md)
+let cmsBody: string | undefined;
+let cmsData: Record<string, unknown> = {};
+try {
+  const entries = await getCollection("history" as any);
+  const main = (entries as any[])[0];
+  if (main) {
+    cmsData = main.data;
+    cmsBody = main.body;
+  }
+} catch { /* collection may not exist */ }
+
+// Inline config wins over CMS, CMS wins over clientConfig.business.longDescription
+const heading = config.heading ?? (cmsData.heading as string | undefined) ?? "Nasza historia";
+const body = config.body ?? cmsBody ?? clientConfig.business.longDescription ?? "";
+const dropCap = config.dropCap ?? (cmsData.dropCap as boolean | undefined) ?? isEditorial;
+const ornament = config.ornament ?? (cmsData.ornament as OrnamentName | "none" | undefined) ?? (isEditorial ? "divider-fleuron" : "none");
+const pullQuote = config.pullQuote ?? (cmsData.pullQuote as string | undefined);
+const authorByline = config.authorByline ?? (cmsData.authorByline as string | undefined);
+const imageUrl = config.imageUrl ?? (cmsData.imageUrl as string | undefined);
+const imageCaption = config.imageCaption ?? (cmsData.imageCaption as string | undefined);
+const paragraphs = body.split(/\n\s*\n/).filter(Boolean);
+---
+
+{body && (
+  <section aria-labelledby="history-heading" class="sec-history">
+    <div class="container-px sec-history__inner">
+      {imageUrl && (
+        <figure class="sec-history__figure">
+          <img src={imageUrl} alt={imageCaption ?? ""} loading="lazy" />
+          {imageCaption && <figcaption>{imageCaption}</figcaption>}
+        </figure>
+      )}
+
+      <h2 id="history-heading" class="sec-history__title">{heading}</h2>
+
+      {pullQuote && (
+        <blockquote class="sec-history__pullquote">{pullQuote}</blockquote>
+      )}
+
+      <div class={`sec-history__body ${dropCap ? "has-dropcap" : ""}`}>
+        {paragraphs.map((p) => <p>{p}</p>)}
+      </div>
+
+      {authorByline && (
+        <p class="sec-history__byline">— {authorByline}</p>
+      )}
+
+      {ornament !== "none" && ORNAMENT_PATHS[ornament as OrnamentName] && (
+        <div class="sec-history__ornament" aria-hidden="true">
+          <svg viewBox="0 0 100 24" width="140" height="20" set:html={ORNAMENT_PATHS[ornament as OrnamentName]}></svg>
+        </div>
+      )}
+    </div>
+  </section>
+)}
+
+<style>
+  .sec-history { padding-block: 5rem; background: var(--color-surface); }
+  .sec-history__inner { max-width: 48rem; margin: 0 auto; }
+  .sec-history__figure {
+    margin: 0 0 2rem 0;
+  }
+  .sec-history__figure img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 4px;
+  }
+  .sec-history__figure figcaption {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    text-align: center;
+  }
+  .sec-history__title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 600;
+    margin: 0 0 2rem 0;
+    color: var(--color-text);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  .sec-history__pullquote {
+    font-family: var(--font-display);
+    font-size: clamp(1.25rem, 2vw, 1.75rem);
+    font-style: italic;
+    font-weight: 500;
+    color: var(--color-text);
+    border-left: 3px solid var(--color-brand);
+    padding: 0.5rem 0 0.5rem 1.5rem;
+    margin: 0 0 2rem 0;
+    line-height: 1.4;
+  }
+  .sec-history__body p {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--color-text);
+    margin: 0 0 1.25rem 0;
+  }
+  .sec-history__body.has-dropcap > p:first-child::first-letter {
+    font-family: var(--font-display);
+    font-size: 4em;
+    font-weight: 700;
+    float: left;
+    line-height: 0.85;
+    margin: 0.1em 0.12em 0 0;
+    color: var(--color-brand);
+  }
+  @media (max-width: 640px) {
+    .sec-history__body.has-dropcap > p:first-child::first-letter {
+      font-size: 3em;
+    }
+  }
+  .sec-history__byline {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--color-text-muted);
+    margin: 1rem 0 0 0;
+    font-size: 0.95rem;
+  }
+  .sec-history__ornament {
+    text-align: center;
+    margin-top: 2rem;
+    color: var(--color-accent);
+  }
+</style>

@@ -41,15 +41,20 @@ describe("renderCsp", () => {
 });
 
 describe("defaultCspDirectives", () => {
-  it("strict baseline with nonce + strict-dynamic", () => {
+  it("strict baseline with nonce (Astro 6: strict-dynamic removed — see csp.ts comment)", () => {
     const d = defaultCspDirectives({ nonce: "abc" });
     expect(d["script-src"]).toContain("'self'");
-    expect(d["script-src"]).toContain("'strict-dynamic'");
     expect(d["script-src"]).toContain("'nonce-abc'");
     expect(d["object-src"]).toEqual(["'none'"]);
     expect(d["frame-ancestors"]).toEqual(["'none'"]);
     expect(d["base-uri"]).toEqual(["'self'"]);
     expect(d["upgrade-insecure-requests"]).toBe(true);
+  });
+
+  it("allowAstroInlineScripts adds 'unsafe-inline' instead of nonce", () => {
+    const d = defaultCspDirectives({ nonce: "abc", allowAstroInlineScripts: true });
+    expect(d["script-src"]).toContain("'unsafe-inline'");
+    expect(d["script-src"]).not.toContain("'nonce-abc'");
   });
 
   it("script-src-attr 'none' (no inline event handlers)", () => {

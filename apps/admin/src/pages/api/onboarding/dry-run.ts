@@ -1,11 +1,11 @@
 import type { APIRoute } from "astro";
 
 import { triggerDryRunProvisioning } from "../../../lib/provisioning.ts";
+import { env } from "cloudflare:workers";
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const env = locals.runtime?.env;
   if (!env?.DB) return json({ ok: false, error: "Runtime not ready" }, 500);
   if (!locals.user) return json({ ok: false, error: "Unauthorized" }, 401);
 

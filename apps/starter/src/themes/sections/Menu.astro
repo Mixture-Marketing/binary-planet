@@ -1,0 +1,126 @@
+---
+/**
+ * Menu section — karta dań / lista produktów.
+ * Config: { heading?, categories: Array<{ name, items: Array<{ name, description?, price, badge? }> }> }
+ */
+interface Props {
+  config?: {
+    heading?: string;
+    categories?: Array<{
+      name: string;
+      items: Array<{ name: string; description?: string; price: string; badge?: string }>;
+    }>;
+  };
+}
+const { config = {} } = Astro.props;
+const heading = config.heading ?? "Karta";
+const categories = config.categories ?? [];
+---
+
+{categories.length > 0 && (
+  <section aria-labelledby="menu-heading" class="sec-menu">
+    <div class="container-px sec-menu__inner">
+      <header class="sec-menu__head">
+        <h2 id="menu-heading">{heading}</h2>
+      </header>
+
+      {categories.map((cat) => (
+        <div class="sec-menu__category">
+          <h3 class="sec-menu__cat-name">{cat.name}</h3>
+          <ul class="sec-menu__items">
+            {cat.items.map((item) => (
+              <li class="sec-menu__item">
+                <div class="sec-menu__item-main">
+                  <div class="sec-menu__item-name">
+                    <strong>{item.name}</strong>
+                    {item.badge && <span class="sec-menu__badge">{item.badge}</span>}
+                  </div>
+                  {item.description && <p class="sec-menu__item-desc">{item.description}</p>}
+                </div>
+                <div class="sec-menu__item-price">{item.price}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+
+<style>
+  .sec-menu { padding-block: 5rem; background: var(--color-surface); }
+  .sec-menu__inner { max-width: 48rem; margin: 0 auto; }
+  .sec-menu__head { text-align: center; margin-bottom: 3rem; }
+  .sec-menu__head h2 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    margin: 0;
+    color: var(--color-text);
+    letter-spacing: -0.02em;
+  }
+  .sec-menu__category { margin-bottom: 2.5rem; }
+  .sec-menu__cat-name {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 600;
+    font-style: italic;
+    color: var(--color-accent);
+    margin: 0 0 1.25rem 0;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.5rem;
+  }
+  .sec-menu__items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .sec-menu__item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1.5rem;
+    padding: 0.85rem 0;
+    border-bottom: 1px dotted var(--color-border);
+  }
+  .sec-menu__item:last-child { border-bottom: 0; }
+  .sec-menu__item-main { flex: 1; }
+  .sec-menu__item-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.2rem;
+  }
+  .sec-menu__item-name strong {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--color-text);
+    font-size: 1.05rem;
+  }
+  .sec-menu__badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--color-accent);
+    color: var(--color-text);
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+  }
+  .sec-menu__item-desc {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--color-text-muted);
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  .sec-menu__item-price {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-weight: 600;
+    color: var(--color-brand);
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+</style>

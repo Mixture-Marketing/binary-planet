@@ -207,3 +207,134 @@ export interface StripeSubscription {
 export async function getStripeSubscription(cfg: StripeClientConfig, subscriptionId: string): Promise<StripeSubscription> {
   return await stripeRequest<StripeSubscription>(cfg, `/subscriptions/${subscriptionId}`);
 }
+
+// ---------------------------------------------------------------------------
+// Track 24 — addon billing (Products / Prices / Subscription Items / Invoice Items)
+// ---------------------------------------------------------------------------
+
+export interface StripeProduct {
+  id: string;
+  name: string;
+  active: boolean;
+  metadata?: Record<string, string>;
+}
+
+export async function createStripeProduct(
+  cfg: StripeClientConfig,
+  input: { name: string; description?: string; metadata: Record<string, string>; idempotencyKey?: string },
+): Promise<StripeProduct> {
+  return await stripeRequest<StripeProduct>(cfg, "/products", {
+    method: "POST",
+    body: {
+      name: input.name,
+      ...(input.description && { description: input.description }),
+      metadata: input.metadata,
+    },
+    ...(input.idempotencyKey && { idempotencyKey: input.idempotencyKey }),
+  });
+}
+
+export async function createStripePrice(
+  cfg: StripeClientConfig,
+  input: {
+    productId: string;
+    unitAmountGrosze: number;
+    currency: string;
+    recurring?: { interval: "month" | "year"; interval_count?: number };
+    metadata?: Record<string, string>;
+    idempotencyKey?: string;
+  },
+): Promise<StripePrice> {
+  return await stripeRequest<StripePrice>(cfg, "/prices", {
+    method: "POST",
+    body: {
+      product: input.productId,
+      unit_amount: input.unitAmountGrosze,
+      currency: input.currency.toLowerCase(),
+      ...(input.recurring && { recurring: input.recurring }),
+      ...(input.metadata && { metadata: input.metadata }),
+    },
+    ...(input.idempotencyKey && { idempotencyKey: input.idempotencyKey }),
+  });
+}
+
+export interface StripeSubscriptionItem {
+  id: string;
+  subscription: string;
+  price: { id: string; unit_amount: number; currency: string };
+  quantity: number;
+  metadata?: Record<string, string>;
+}
+
+export async function createSubscriptionItem(
+  cfg: StripeClientConfig,
+  input: {
+    subscriptionId: string;
+    priceId: string;
+    quantity?: number;
+    /** "create_prorations" (default) | "none" — none = klient nie płaci proraty teraz, dorzucone do następnej faktury. */
+    proration_behavior?: "create_prorations" | "none" | "always_invoice";
+    metadata?: Record<string, string>;
+    idempotencyKey?: string;
+  },
+): Promise<StripeSubscriptionItem> {
+  return await stripeRequest<StripeSubscriptionItem>(cfg, "/subscription_items", {
+    method: "POST",
+    body: {
+      subscription: input.subscriptionId,
+      price: input.priceId,
+      quantity: input.quantity ?? 1,
+      proration_behavior: input.proration_behavior ?? "none",
+      ...(input.metadata && { metadata: input.metadata }),
+    },
+    ...(input.idempotencyKey && { idempotencyKey: input.idempotencyKey }),
+  });
+}
+
+export async function deleteSubscriptionItem(
+  cfg: StripeClientConfig,
+  subscriptionItemId: string,
+  proration_behavior: "create_prorations" | "none" = "none",
+): Promise<{ id: string; deleted: boolean }> {
+  return await stripeRequest<{ id: string; deleted: boolean }>(
+    cfg,
+    `/subscription_items/${subscriptionItemId}`,
+    { method: "DELETE", body: { proration_behavior } },
+  );
+}
+
+export interface StripeInvoiceItem {
+  id: string;
+  customer: string;
+  amount: number;
+  currency: string;
+  description?: string;
+}
+
+/**
+ * Create a one-off invoice item that attaches to the customer's next invoice
+ * (or stand-alone invoice if no subscription).
+ */
+export async function createInvoiceItem(
+  cfg: StripeClientConfig,
+  input: {
+    customerId: string;
+    unitAmountGrosze: number;
+    currency: string;
+    description: string;
+    metadata?: Record<string, string>;
+    idempotencyKey?: string;
+  },
+): Promise<StripeInvoiceItem> {
+  return await stripeRequest<StripeInvoiceItem>(cfg, "/invoiceitems", {
+    method: "POST",
+    body: {
+      customer: input.customerId,
+      amount: input.unitAmountGrosze,
+      currency: input.currency.toLowerCase(),
+      description: input.description,
+      ...(input.metadata && { metadata: input.metadata }),
+    },
+    ...(input.idempotencyKey && { idempotencyKey: input.idempotencyKey }),
+  });
+}

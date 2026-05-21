@@ -1,0 +1,413 @@
+---
+/**
+ * Editorial History — magazine long-form artykuł.
+ *
+ * Features (z ui-patterns-2026 + wcag-2.2):
+ *   - Reading progress bar fixed top (4px brand color)
+ *   - TOC sidebar desktop (scroll-spy active section)
+ *   - Drop cap pierwsza litera (responsywny: 5em desktop, 4em mobile)
+ *   - Pull quote z shape-outside text wrap (inline w treści)
+ *   - Scroll-triggered reveal paragraphs
+ *   - Magazine metadata "Czas czytania: X min"
+ *   - Ornament SVG dividers
+ *   - Author byline jako serif italic
+ */
+import clientConfig from "../../../client.config.ts";
+import { ORNAMENT_PATHS, type OrnamentName } from "@mixturemarketing/web-core/ornaments";
+import { getCollection } from "astro:content";
+
+interface Props {
+  config?: {
+    heading?: string;
+    body?: string;
+    dropCap?: boolean;
+    pullQuote?: string;
+    authorByline?: string;
+    imageUrl?: string;
+    imageCaption?: string;
+    ornament?: OrnamentName | "none";
+  };
+}
+const { config = {} } = Astro.props;
+
+// CMS fallback
+let cmsBody: string | undefined;
+let cmsData: Record<string, unknown> = {};
+try {
+  const entries = await getCollection("history" as never);
+  const main = (entries as Array<{ data: Record<string, unknown>; body?: string }>)[0];
+  if (main) {
+    cmsData = main.data;
+    cmsBody = main.body;
+  }
+} catch { /* empty */ }
+
+const heading = config.heading ?? (cmsData.heading as string | undefined) ?? "Nasza historia";
+const body = config.body ?? cmsBody ?? clientConfig.business.longDescription ?? "";
+const dropCap = config.dropCap ?? (cmsData.dropCap as boolean | undefined) ?? true;
+const ornament = config.ornament ?? (cmsData.ornament as OrnamentName | "none" | undefined) ?? "divider-fleuron";
+const pullQuote = config.pullQuote ?? (cmsData.pullQuote as string | undefined);
+const authorByline = config.authorByline ?? (cmsData.authorByline as string | undefined);
+const imageUrl = config.imageUrl ?? (cmsData.imageUrl as string | undefined);
+const imageCaption = config.imageCaption ?? (cmsData.imageCaption as string | undefined);
+const paragraphs = body.split(/\n\s*\n/).filter(Boolean);
+
+// Reading time: ~200 słów/min PL
+const wordCount = body.split(/\s+/).filter(Boolean).length;
+const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
+
+// TOC: paragraphs jako sections. Jeśli paragraf zaczyna się od **bold** lub ##, traktuj jako heading.
+const sections = paragraphs.map((p, i) => {
+  const hMatch = p.match(/^##\s+(.+)$/);
+  if (hMatch) return { idx: i, label: hMatch[1]!, isHeading: true };
+  const boldMatch = p.match(/^\*\*(.+?)\*\*/);
+  if (boldMatch) return { idx: i, label: boldMatch[1]!, isHeading: true };
+  // Default: first 50 chars
+  return { idx: i, label: p.slice(0, 50).trim() + "…", isHeading: false };
+});
+const tocItems = sections.filter((s) => s.isHeading).slice(0, 5);
+
+// Position pull quote — wstaw ~ w 1/3 textu jeśli mamy 3+ paragrafy
+const pullQuoteAfterIdx = paragraphs.length >= 3 ? Math.floor(paragraphs.length / 3) : -1;
+---
+
+{body && (
+  <section aria-labelledby="history-heading" class="ed-hist">
+    {/* Reading progress bar */}
+    <div data-reading-progress class="ed-hist__progress" aria-hidden="true"></div>
+
+    <div class="container-px ed-hist__container">
+      <article class="ed-hist__article" id="history-article">
+        <header class="ed-hist__head" data-reveal>
+          <p class="ed-hist__overline">Z magazynu</p>
+          <h2 id="history-heading" class="ed-hist__title">{heading}</h2>
+          <div class="ed-hist__meta">
+            <span>Czas czytania: <strong>{readingMinutes} min</strong></span>
+            <span class="ed-hist__sep" aria-hidden="true">·</span>
+            <span>{wordCount} słów</span>
+          </div>
+        </header>
+
+        {imageUrl && (
+          <figure class="ed-hist__figure" data-reveal>
+            <img src={imageUrl} alt={imageCaption ?? heading} loading="lazy" />
+            {imageCaption && <figcaption>{imageCaption}</figcaption>}
+          </figure>
+        )}
+
+        <div class={`ed-hist__body ${dropCap ? "has-dropcap" : ""}`}>
+          {paragraphs.map((p, i) => (
+            <>
+              <p data-reveal id={sections[i]?.isHeading ? `sec-${i}` : undefined}>
+                {p.replace(/^##\s+/, "").replace(/^\*\*(.+?)\*\*\s*/, "$1 ")}
+              </p>
+
+              {/* Inline pull quote — float w 1/3 textu (desktop), full-width na mobile */}
+              {i === pullQuoteAfterIdx && pullQuote && (
+                <aside class="ed-hist__pullquote" data-reveal aria-label="Cytat wyróżniony">
+                  <svg viewBox="0 0 32 24" class="ed-hist__pq-mark" aria-hidden="true">
+                    <text x="0" y="22" font-family="serif" font-size="32" font-style="italic">"</text>
+                  </svg>
+                  <blockquote>{pullQuote}</blockquote>
+                </aside>
+              )}
+            </>
+          ))}
+        </div>
+
+        {authorByline && (
+          <p class="ed-hist__byline" data-reveal>— {authorByline}</p>
+        )}
+
+        {ornament !== "none" && ORNAMENT_PATHS[ornament as OrnamentName] && (
+          <div class="ed-hist__ornament" aria-hidden="true" data-reveal>
+            <svg viewBox="0 0 100 24" width="160" height="22" set:html={ORNAMENT_PATHS[ornament as OrnamentName]}></svg>
+          </div>
+        )}
+      </article>
+
+      {/* TOC sidebar — tylko desktop, tylko gdy mamy headings */}
+      {tocItems.length >= 2 && (
+        <aside class="ed-hist__toc" aria-label="Spis treści">
+          <p class="ed-hist__toc-label">W tym artykule</p>
+          <nav>
+            <ol>
+              {tocItems.map((s) => (
+                <li><a href={`#sec-${s.idx}`} data-toc-link>{s.label}</a></li>
+              ))}
+            </ol>
+          </nav>
+        </aside>
+      )}
+    </div>
+  </section>
+)}
+
+<style>
+  .ed-hist {
+    padding-block: 5rem 6rem;
+    background: var(--color-surface);
+    position: relative;
+  }
+  .ed-hist__progress {
+    height: 3px;
+    background: var(--color-brand);
+    /* JS sets width % */
+  }
+  .ed-hist__container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+  @media (min-width: 1024px) {
+    .ed-hist__container {
+      grid-template-columns: minmax(0, 1fr) 220px;
+      gap: 4rem;
+      align-items: start;
+    }
+  }
+
+  .ed-hist__article {
+    max-width: 48rem;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .ed-hist__head {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .ed-hist__overline {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin: 0 0 0.75rem 0;
+  }
+  .ed-hist__title {
+    font-family: var(--font-display);
+    font-size: clamp(2.25rem, 5vw, 3.75rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 0 0 1.25rem 0;
+    color: var(--color-text);
+    font-optical-sizing: auto;
+    font-feature-settings: "liga", "dlig", "ss01";
+  }
+  .ed-hist__meta {
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    color: var(--color-text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .ed-hist__meta strong {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+  .ed-hist__sep { color: var(--color-accent); }
+
+  .ed-hist__figure {
+    margin: 0 0 2.5rem 0;
+  }
+  .ed-hist__figure img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 2px;
+  }
+  .ed-hist__figure figcaption {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-top: 0.6rem;
+    text-align: center;
+  }
+
+  .ed-hist__body {
+    font-family: var(--font-body);
+    font-size: 1.0625rem;
+    line-height: 1.75;
+    color: var(--color-text);
+    font-feature-settings: "liga", "dlig";
+  }
+  .ed-hist__body p {
+    margin: 0 0 1.5rem 0;
+    max-width: 65ch;
+  }
+
+  /* Drop cap — pierwsza litera pierwszego paragrafu */
+  .ed-hist__body.has-dropcap > p:first-of-type::first-letter {
+    font-family: var(--font-display);
+    font-size: 5em;
+    font-weight: 700;
+    float: left;
+    line-height: 0.85;
+    margin: 0.08em 0.12em 0 0;
+    color: var(--color-brand);
+    font-feature-settings: "liga", "dlig", "ss01", "swsh";
+  }
+  @media (max-width: 640px) {
+    .ed-hist__body.has-dropcap > p:first-of-type::first-letter {
+      font-size: 4em;
+    }
+  }
+
+  /* Pull quote inline — float right desktop */
+  .ed-hist__pullquote {
+    margin: 1.5rem 0 1.5rem 0;
+    padding: 1.25rem 1.5rem 1.25rem 1.5rem;
+    border-left: 3px solid var(--color-brand);
+    background: var(--color-surface-muted);
+    position: relative;
+  }
+  .ed-hist__pq-mark {
+    position: absolute;
+    top: -0.4em;
+    left: 0.4rem;
+    width: 32px;
+    height: 24px;
+    color: var(--color-brand);
+    opacity: 0.5;
+  }
+  .ed-hist__pullquote blockquote {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(1.2rem, 1.6vw, 1.5rem);
+    line-height: 1.4;
+    color: var(--color-text);
+    margin: 0;
+    quotes: "\201E" "\201D";
+    font-feature-settings: "liga", "dlig";
+  }
+  @media (min-width: 768px) {
+    .ed-hist__pullquote {
+      float: right;
+      width: 45%;
+      margin: 0.4em 0 1rem 2rem;
+      shape-outside: inset(0);
+    }
+  }
+
+  .ed-hist__byline {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--color-text-muted);
+    margin: 2rem 0 0 0;
+    font-size: 1.05rem;
+    text-align: right;
+    max-width: 65ch;
+  }
+
+  .ed-hist__ornament {
+    text-align: center;
+    margin-top: 3rem;
+    color: var(--color-accent);
+  }
+
+  /* TOC sidebar */
+  .ed-hist__toc {
+    display: none;
+  }
+  @media (min-width: 1024px) {
+    .ed-hist__toc {
+      display: block;
+      position: sticky;
+      top: 6rem;
+      align-self: start;
+      padding-left: 1.5rem;
+      border-left: 1px solid var(--color-border);
+    }
+  }
+  .ed-hist__toc-label {
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin: 0 0 1rem 0;
+  }
+  .ed-hist__toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: toc;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .ed-hist__toc li {
+    counter-increment: toc;
+    position: relative;
+    padding-left: 1.75rem;
+  }
+  .ed-hist__toc li::before {
+    content: counter(toc, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 0.15rem;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--color-accent);
+  }
+  .ed-hist__toc a {
+    font-family: var(--font-display);
+    font-size: 0.88rem;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    line-height: 1.4;
+    display: block;
+    transition: color 200ms;
+  }
+  .ed-hist__toc a:hover,
+  .ed-hist__toc a.is-active {
+    color: var(--color-brand);
+  }
+</style>
+
+<script>
+  // Scroll-spy: aktywny TOC link gdy section jest w viewport
+  function initTocSpy(): void {
+    const links = document.querySelectorAll<HTMLAnchorElement>("[data-toc-link]");
+    if (links.length === 0) return;
+
+    const sections = Array.from(links)
+      .map((link) => {
+        const href = link.getAttribute("href");
+        if (!href || !href.startsWith("#")) return null;
+        const el = document.querySelector(href);
+        return el ? { link, el } : null;
+      })
+      .filter((x): x is { link: HTMLAnchorElement; el: Element } => x !== null);
+
+    if (sections.length === 0 || !("IntersectionObserver" in window)) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const match = sections.find((s) => s.el === entry.target);
+          if (!match) return;
+          if (entry.isIntersecting) {
+            links.forEach((l) => l.classList.remove("is-active"));
+            match.link.classList.add("is-active");
+          }
+        });
+      },
+      { rootMargin: "-30% 0px -60% 0px" },
+    );
+
+    sections.forEach((s) => observer.observe(s.el));
+  }
+
+  initTocSpy();
+  document.addEventListener("astro:after-swap", initTocSpy);
+</script>

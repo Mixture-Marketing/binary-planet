@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editorial mockup — Trattoria Bocca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,500;1,9..144,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+<style>
+  :root {
+    --ink: #1a1410;
+    --paper: #fdf9f0;
+    --paper-2: #f5efe0;
+    --forest: #1f3a2a;
+    --amber: #c9a166;
+    --line: #d9d0bd;
+    --muted: #6b5c47;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Newsreader', Georgia, serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 1.05rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+
+  .ribbon { background: #fbbf24; color: #1a1a1a; padding: 0.5rem 1rem; text-align: center; font-size: 0.85rem; font-weight: 600; font-family: ui-sans-serif, system-ui, sans-serif; }
+  .ribbon a { color: #1a1a1a; text-decoration: underline; }
+
+  /* Newspaper masthead */
+  .masthead { border-bottom: 3px double var(--ink); padding: 2rem 1.5rem 1.5rem; }
+  .masthead__inner { max-width: 76rem; margin: 0 auto; }
+  .masthead__top { display: flex; justify-content: space-between; align-items: baseline; font-family: 'Newsreader'; font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+  .masthead__top em { font-style: italic; font-family: 'Fraunces'; color: var(--forest); }
+  .masthead__brand {
+    font-family: 'Fraunces';
+    font-weight: 500;
+    font-style: italic;
+    font-size: clamp(2.5rem, 7vw, 5.5rem);
+    text-align: center;
+    line-height: 1;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .masthead__bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; font-family: 'Newsreader'; font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .masthead__nav { display: flex; gap: 1.5rem; }
+  .masthead__nav a { text-decoration: none; }
+  .masthead__nav a.is-current { color: var(--forest); border-bottom: 2px solid var(--amber); padding-bottom: 2px; }
+
+  /* Hero — magazine open spread */
+  .hero { padding: 4rem 1.5rem 5rem; max-width: 76rem; margin: 0 auto; }
+  .hero__byline {
+    font-family: 'Fraunces';
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--amber);
+    margin: 0 0 2rem;
+    letter-spacing: 0.04em;
+  }
+  .hero__byline strong { color: var(--ink); font-style: normal; font-weight: 500; }
+  .hero__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+  @media (min-width: 960px) { .hero__grid { grid-template-columns: 1.3fr 1fr; gap: 4rem; align-items: start; } }
+
+  .hero__h1 {
+    font-family: 'Fraunces';
+    font-weight: 400;
+    font-size: clamp(3rem, 9vw, 7.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.025em;
+    margin: 0 0 2rem;
+    font-variation-settings: "opsz" 144;
+    color: var(--ink);
+  }
+  .hero__h1 em { font-style: italic; font-weight: 500; color: var(--forest); }
+
+  .hero__lead {
+    font-family: 'Fraunces';
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1.4rem;
+    line-height: 1.4;
+    color: var(--muted);
+    margin: 0 0 2rem;
+    max-width: 40ch;
+  }
+  /* Drop cap */
+  .hero__body { font-family: 'Newsreader'; font-size: 1.1rem; line-height: 1.7; color: var(--ink); margin: 0 0 2rem; max-width: 38rem; }
+  .hero__body::first-letter {
+    font-family: 'Fraunces';
+    font-weight: 700;
+    font-size: 5em;
+    float: left;
+    line-height: 0.85;
+    padding: 0.1em 0.12em 0 0;
+    color: var(--forest);
+  }
+
+  .hero__actions { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+  .btn-pill {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.9rem 1.75rem;
+    background: var(--forest); color: var(--paper);
+    text-decoration: none; font-family: 'Fraunces'; font-style: italic; font-weight: 500;
+    font-size: 1rem;
+    border-radius: 999px;
+    transition: transform 200ms, box-shadow 200ms;
+  }
+  .btn-pill:hover { transform: translateY(-1px) scale(1.02); box-shadow: 0 12px 30px -10px color-mix(in srgb, var(--forest) 50%, transparent); }
+  .btn-link {
+    font-family: 'Fraunces'; font-style: italic; color: var(--ink); font-size: 1rem;
+    text-decoration: underline; text-decoration-color: var(--amber); text-underline-offset: 6px; text-decoration-thickness: 2px;
+  }
+
+  /* Hero figure */
+  .hero__figure { margin: 0; }
+  .hero__figure img {
+    width: 100%; aspect-ratio: 4/5; object-fit: cover; display: block;
+    border-radius: 4px; box-shadow: 0 24px 48px -12px rgba(26,20,16,0.18);
+  }
+  .hero__figcaption {
+    font-family: 'Fraunces'; font-style: italic; font-size: 0.85rem; color: var(--muted);
+    margin-top: 0.75rem; text-align: center; letter-spacing: 0.02em;
+  }
+
+  /* Pull-quote signature element */
+  .pullquote-section { background: var(--paper-2); padding: 6rem 1.5rem; border-block: 1px solid var(--line); }
+  .pullquote-inner { max-width: 56rem; margin: 0 auto; text-align: center; }
+  .pullquote-orn { color: var(--amber); margin-bottom: 1.5rem; font-size: 1.5rem; letter-spacing: 0.5em; }
+  .pullquote-text {
+    font-family: 'Fraunces';
+    font-weight: 400;
+    font-size: clamp(1.5rem, 3.5vw, 2.5rem);
+    line-height: 1.25;
+    color: var(--ink);
+    margin: 0 0 1.5rem;
+    text-wrap: balance;
+  }
+  .pullquote-text em { color: var(--forest); font-style: italic; }
+  .pullquote-attr { font-family: 'Newsreader'; font-size: 0.95rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--amber); }
+
+  /* Z magazynu */
+  .articles { padding: 6rem 1.5rem; max-width: 76rem; margin: 0 auto; }
+  .articles__head { text-align: center; max-width: 36rem; margin: 0 auto 4rem; }
+  .articles__eyebrow { font-family: 'Fraunces'; font-style: italic; color: var(--amber); font-size: 1.05rem; margin-bottom: 0.5rem; }
+  .articles__h2 { font-family: 'Fraunces'; font-weight: 500; font-style: italic; font-size: clamp(2rem, 4vw, 3.5rem); margin: 0; line-height: 1.05; letter-spacing: -0.015em; }
+  .articles__grid { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+  @media (min-width: 768px) { .articles__grid { grid-template-columns: repeat(3, 1fr); } }
+  .article__date { font-family: 'Fraunces'; font-style: italic; font-size: 0.85rem; color: var(--amber); margin-bottom: 0.5rem; letter-spacing: 0.05em; }
+  .article__title { font-family: 'Fraunces'; font-weight: 500; font-size: 1.5rem; line-height: 1.2; margin: 0 0 0.5rem; }
+  .article__excerpt { font-family: 'Newsreader'; font-size: 0.98rem; color: var(--muted); margin: 0 0 0.75rem; }
+  .article__author { font-family: 'Fraunces'; font-style: italic; font-size: 0.85rem; color: var(--ink); letter-spacing: 0.02em; }
+
+  /* Karta — menu jak printed card */
+  .karta { background: var(--paper); padding: 6rem 1.5rem; border-top: 1px solid var(--line); }
+  .karta__inner { max-width: 56rem; margin: 0 auto; }
+  .karta__head { text-align: center; margin-bottom: 4rem; }
+  .karta__eyebrow { font-family: 'Fraunces'; font-style: italic; color: var(--amber); font-size: 1.05rem; margin: 0 0 0.5rem; }
+  .karta__h2 { font-family: 'Fraunces'; font-weight: 500; font-style: italic; font-size: clamp(2rem, 4.5vw, 3.5rem); margin: 0; line-height: 1; letter-spacing: -0.015em; }
+  .karta__group { margin-bottom: 3rem; }
+  .karta__group-title {
+    font-family: 'Fraunces'; font-weight: 500; font-size: 1.4rem; color: var(--forest);
+    margin: 0 0 1.25rem; padding-bottom: 0.4rem;
+    display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .karta__group-title small { font-family: 'Newsreader'; font-style: italic; font-size: 0.85rem; color: var(--amber); font-weight: 400; letter-spacing: 0.04em; }
+  .karta__item { padding: 0.8rem 0; display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: baseline; }
+  .karta__item-name { font-family: 'Fraunces'; font-weight: 500; font-size: 1.15rem; }
+  .karta__item-name em { font-style: italic; color: var(--forest); font-weight: 400; margin-left: 0.4rem; font-size: 0.85em; }
+  .karta__item-desc { font-family: 'Newsreader'; font-size: 0.95rem; color: var(--muted); margin: 0.15rem 0 0; }
+  .karta__item-price { font-family: 'Fraunces'; font-weight: 500; font-size: 1.1rem; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+  /* Gallery — magazine spread */
+  .gallery { padding: 5rem 1.5rem; max-width: 76rem; margin: 0 auto; }
+  .gallery__head { text-align: center; max-width: 30rem; margin: 0 auto 3rem; }
+  .gallery__h2 { font-family: 'Fraunces'; font-weight: 500; font-style: italic; font-size: clamp(1.75rem, 3.5vw, 2.5rem); margin: 0; line-height: 1.1; }
+  .gallery__grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 18rem); gap: 0.5rem; }
+  @media (min-width: 768px) { .gallery__grid { grid-template-columns: 2fr 1fr 1fr; grid-template-rows: repeat(2, 22rem); } }
+  .gallery__img { background-size: cover; background-position: center; border-radius: 2px; }
+  .gallery__img--hero { grid-row: span 2; }
+  .gallery__img-1 { background-image: url('https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=900&q=80'); }
+  .gallery__img-2 { background-image: url('https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80'); }
+  .gallery__img-3 { background-image: url('https://images.unsplash.com/photo-1576867757603-05b134ebc379?w=600&q=80'); }
+  .gallery__img-4 { background-image: url('https://images.unsplash.com/photo-1510626176961-4b57d4fbad03?w=600&q=80'); }
+  .gallery__img-5 { background-image: url('https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=600&q=80'); }
+
+  /* Reviews — quotes */
+  .reviews { background: var(--paper-2); padding: 5rem 1.5rem; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .reviews__inner { max-width: 76rem; margin: 0 auto; }
+  .reviews__head { text-align: center; margin-bottom: 3rem; }
+  .reviews__eyebrow { font-family: 'Fraunces'; font-style: italic; color: var(--amber); font-size: 0.95rem; margin: 0 0 0.5rem; }
+  .reviews__h2 { font-family: 'Fraunces'; font-weight: 500; font-style: italic; font-size: clamp(1.75rem, 3.5vw, 2.5rem); margin: 0; }
+  .reviews__grid { display: grid; grid-template-columns: 1fr; gap: 2rem; }
+  @media (min-width: 768px) { .reviews__grid { grid-template-columns: repeat(3, 1fr); } }
+  .review-q { font-family: 'Newsreader'; }
+  .review-q__quote { font-family: 'Fraunces'; font-style: italic; font-size: 1.15rem; line-height: 1.45; margin: 0 0 1rem; color: var(--ink); }
+  .review-q__quote::before { content: '"'; font-size: 2em; color: var(--amber); line-height: 0; vertical-align: -0.4em; margin-right: 0.1em; }
+  .review-q__stars { color: var(--amber); letter-spacing: 0.15em; margin-bottom: 0.5rem; }
+  .review-q__author { font-family: 'Fraunces'; font-size: 0.9rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+  /* Reservation form */
+  .reserve { padding: 5rem 1.5rem; max-width: 56rem; margin: 0 auto; }
+  .reserve__head { text-align: center; margin-bottom: 2.5rem; }
+  .reserve__h2 { font-family: 'Fraunces'; font-weight: 500; font-style: italic; font-size: clamp(2rem, 4vw, 3rem); margin: 0; line-height: 1.05; }
+  .reserve__sub { font-family: 'Newsreader'; font-size: 1.05rem; color: var(--muted); margin: 1rem 0 0; }
+  .reserve__form { display: grid; grid-template-columns: 1fr; gap: 1rem; background: var(--paper); border: 1px solid var(--line); padding: 2.5rem; border-radius: 4px; }
+  @media (min-width: 640px) { .reserve__form { grid-template-columns: repeat(3, 1fr); } }
+  .reserve__field { display: flex; flex-direction: column; gap: 0.4rem; }
+  .reserve__field--full { grid-column: 1 / -1; }
+  .reserve__label { font-family: 'Newsreader'; font-style: italic; font-size: 0.85rem; color: var(--muted); }
+  .reserve__input { padding: 0.85rem 1rem; border: 1px solid var(--line); background: var(--paper); font: inherit; font-family: 'Newsreader'; font-size: 1rem; border-radius: 2px; }
+  .reserve__input:focus { outline: none; border-color: var(--forest); }
+  .reserve__submit { grid-column: 1 / -1; padding: 1rem 2rem; background: var(--forest); color: var(--paper); border: 0; border-radius: 999px; font-family: 'Fraunces'; font-style: italic; font-weight: 500; font-size: 1.05rem; cursor: pointer; transition: transform 200ms; }
+  .reserve__submit:hover { transform: scale(1.02); }
+
+  /* Footer */
+  .ft { background: var(--ink); color: var(--paper); padding: 4rem 1.5rem 2rem; }
+  .ft__inner { max-width: 76rem; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 2rem; }
+  @media (min-width: 768px) { .ft__inner { grid-template-columns: 2fr 1fr 1fr 1fr; } }
+  .ft__brand { font-family: 'Fraunces'; font-style: italic; font-size: 1.75rem; margin: 0 0 0.5rem; }
+  .ft__addr { font-family: 'Newsreader'; font-style: italic; color: #c4a890; font-size: 0.95rem; margin: 0; line-height: 1.7; }
+  .ft__nav-h { font-family: 'Fraunces'; font-style: italic; color: var(--amber); margin: 0 0 0.5rem; font-size: 0.9rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500; }
+  .ft__nav { display: flex; flex-direction: column; gap: 0.4rem; }
+  .ft__nav a { color: #d4c5b0; text-decoration: none; font-family: 'Newsreader'; font-size: 0.95rem; }
+  .ft__nav a:hover { color: var(--paper); }
+  .ft__bottom { max-width: 76rem; margin: 2.5rem auto 0; padding-top: 1.5rem; border-top: 1px solid #3a2d20; font-family: 'Newsreader'; font-size: 0.85rem; font-style: italic; color: #8a7560; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; }
+
+  .footer-note { padding: 2rem 1.5rem; text-align: center; font-family: 'Newsreader'; font-size: 0.78rem; color: var(--muted); font-style: italic; background: var(--paper-2); }
+</style>
+</head>
+<body>
+  <div class="ribbon">MOCKUP EDITORIAL · proof-of-concept · <a href="/mockups/">wszystkie 4 motywy</a></div>
+
+  <header class="masthead">
+    <div class="masthead__inner">
+      <div class="masthead__top">
+        <span>Czwartek, 21 maja 2026 · <em>Wydanie wiosenne</em></span>
+        <span>№ 14 · Kraków</span>
+      </div>
+      <h1 class="masthead__brand">Trattoria Bocca</h1>
+      <div class="masthead__bottom">
+        <span>Est. <em>2015</em></span>
+        <nav class="masthead__nav">
+          <a href="#" class="is-current">Główna</a>
+          <a href="#">Karta</a>
+          <a href="#">Historia</a>
+          <a href="#">Magazyn</a>
+          <a href="#">Rezerwacja</a>
+        </nav>
+        <span>Otwarte do <em>23:00</em></span>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <p class="hero__byline">Marco &amp; Magda Bocca · <strong>Floriańska 18, Kraków</strong> · kuchnia toskańska · pizza neapolitańska</p>
+
+    <div class="hero__grid">
+      <div>
+        <h2 class="hero__h1">Smak <em>Toskanii</em><br/>w sercu Krakowa.</h2>
+        <p class="hero__lead">Domowa pasta wałkowana codziennie ręcznie. Pizza z pieca opalanego drewnem dębowym. 60 win z południa Włoch.</p>
+        <p class="hero__body">Od kiedy pamiętam, kuchnia była sercem domu rodzinnego. Babcia Lucia uczyła mnie ręcznie wałkować ciasto przy stole z drewna jodłowego — to samo, które dziś stoi w naszej krakowskiej kuchni. W 2015 roku przeniosłem się do Krakowa.</p>
+        <div class="hero__actions">
+          <a href="#" class="btn-pill">Zarezerwuj stolik →</a>
+          <a href="#" class="btn-link">Zobacz pełną kartę</a>
+        </div>
+      </div>
+
+      <figure class="hero__figure">
+        <img src="https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=900&h=1125&fit=crop&q=85" alt="Klasyczna carbonara — Trattoria Bocca" width="900" height="1125" loading="eager">
+        <figcaption class="hero__figcaption">Spaghetti carbonara · klasyk rzymski · bez śmietany</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="pullquote-section">
+    <div class="pullquote-inner">
+      <div class="pullquote-orn">❦ ❦ ❦</div>
+      <p class="pullquote-text">Trattoria to nie restauracja. <em>To zaproszenie do domu</em> rodziny.</p>
+      <p class="pullquote-attr">Marco Bocca, szef kuchni</p>
+    </div>
+  </section>
+
+  <section class="articles">
+    <header class="articles__head">
+      <p class="articles__eyebrow">z magazynu</p>
+      <h2 class="articles__h2">Co piszemy, kiedy nie gotujemy</h2>
+    </header>
+    <div class="articles__grid">
+      <article>
+        <p class="article__date">10 maja 2026</p>
+        <h3 class="article__title">Prawdziwa carbonara — dlaczego nie ma w niej śmietany</h3>
+        <p class="article__excerpt">Carbonara to klasyk rzymski. Cztery składniki, jedna technika. Wyjaśniamy dlaczego śmietana jest błędem i jak nie przegotować jajka.</p>
+        <p class="article__author">— Marco Bocca</p>
+      </article>
+      <article>
+        <p class="article__date">22 kwietnia 2026</p>
+        <h3 class="article__title">Pizza neapolitańska — 48 godzin fermentacji to nie luksus, to konieczność</h3>
+        <p class="article__excerpt">Długie fermentowanie ciasta to nie marketing. Wyjaśniamy proces enzymatyczny, który zmienia trudne ciasto w lekki bochenek.</p>
+        <p class="article__author">— Marco Bocca</p>
+      </article>
+      <article>
+        <p class="article__date">15 marca 2026</p>
+        <h3 class="article__title">Jak czytać kartę win — przewodnik dla niezdecydowanych</h3>
+        <p class="article__excerpt">DOCG, DOC, IGT — co znaczą te skróty? Jak dopasować wino do dania? Bez snobizmu, krótko i konkretnie.</p>
+        <p class="article__author">— Magda Bocca, sommelier</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="karta" id="karta">
+    <header class="karta__head">
+      <p class="karta__eyebrow">Karta dań · wiosna 2026</p>
+      <h2 class="karta__h2">Z naszej kuchni</h2>
+    </header>
+
+    <div class="karta__group">
+      <h3 class="karta__group-title">Pasta <small>wałkujemy codziennie ręcznie</small></h3>
+      <div class="karta__item">
+        <div>
+          <span class="karta__item-name">Spaghetti Carbonara<em>polecane</em></span>
+          <p class="karta__item-desc">guanciale stagionato, żółtko, Pecorino Romano DOP, czarny pieprz · klasyk rzymski</p>
+        </div>
+        <span class="karta__item-price">42 zł</span>
+      </div>
+      <div class="karta__item">
+        <div>
+          <span class="karta__item-name">Tagliatelle al Ragù</span>
+          <p class="karta__item-desc">sos mięsny gotowany 6 godzin · wołowina + boczek + tomato San Marzano</p>
+        </div>
+        <span class="karta__item-price">46 zł</span>
+      </div>
+      <div class="karta__item">
+        <div>
+          <span class="karta__item-name">Fettuccine Alfredo</span>
+          <p class="karta__item-desc">Parmigiano Reggiano 24mc, masło farmerskie, śmietana 36% · prosto i bogato</p>
+        </div>
+        <span class="karta__item-price">38 zł</span>
+      </div>
+    </div>
+
+    <div class="karta__group">
+      <h3 class="karta__group-title">Pizza <small>piec opalany drewnem · 485°C · 90s</small></h3>
+      <div class="karta__item">
+        <div>
+          <span class="karta__item-name">Margherita DOP</span>
+          <p class="karta__item-desc">San Marzano, mozzarella di bufala campana, bazylia, oliwa</p>
+        </div>
+        <span class="karta__item-price">35 zł</span>
+      </div>
+      <div class="karta__item">
+        <div>
+          <span class="karta__item-name">Prosciutto e Funghi</span>
+          <p class="karta__item-desc">mozzarella, prosciutto cotto, świeże pieczarki, oregano</p>
+        </div>
+        <span class="karta__item-price">42 zł</span>
+      </div>
+      <div class="karta__item">
+        <div>
+          <span class="karta__item-name">Diavola<em>pikantne</em></span>
+          <p class="karta__item-desc">salami picante calabrese, mozzarella, papryczki cherry, czosnek</p>
+        </div>
+        <span class="karta__item-price">44 zł</span>
+      </div>
+    </div>
+
+    <div class="karta__group">
+      <h3 class="karta__group-title">Wina · kieliszek <small>60 etykiet południa Włoch</small></h3>
+      <div class="karta__item">
+        <div>
+          <span class="karta__item-name">Chianti Classico DOCG</span>
+          <p class="karta__item-desc">Toskania · Sangiovese · Castello di Querceto · 2022</p>
+        </div>
+        <span class="karta__item-price">28 zł</span>
+      </div>
+      <div class="karta__item">
+        <div>
+          <span class="karta__item-name">Primitivo Puglia IGT</span>
+          <p class="karta__item-desc">Apulia · pełne, owocowe · Tormaresca · 2023</p>
+        </div>
+        <span class="karta__item-price">26 zł</span>
+      </div>
+      <div class="karta__item">
+        <div>
+          <span class="karta__item-name">Prosecco DOC<em>musujące</em></span>
+          <p class="karta__item-desc">Wenecja Euganejska · Bortolomiol · brut</p>
+        </div>
+        <span class="karta__item-price">24 zł</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="gallery">
+    <header class="gallery__head">
+      <h2 class="gallery__h2">Z naszej kuchni — w&nbsp;obiektywie</h2>
+    </header>
+    <div class="gallery__grid">
+      <div class="gallery__img gallery__img--hero gallery__img-1" role="img" aria-label="Margherita prosto z pieca"></div>
+      <div class="gallery__img gallery__img-2" role="img" aria-label="Wnętrze sali"></div>
+      <div class="gallery__img gallery__img-3" role="img" aria-label="Antipasti deska"></div>
+      <div class="gallery__img gallery__img-4" role="img" aria-label="Tiramisu"></div>
+      <div class="gallery__img gallery__img-5" role="img" aria-label="Carbonara klasyczna"></div>
+    </div>
+  </section>
+
+  <section class="reviews">
+    <div class="reviews__inner">
+      <header class="reviews__head">
+        <p class="reviews__eyebrow">opinie gości</p>
+        <h2 class="reviews__h2">Czytane przez przyjaciół, polecane dalej</h2>
+      </header>
+      <div class="reviews__grid">
+        <blockquote class="review-q">
+          <div class="review-q__stars">★★★★★</div>
+          <p class="review-q__quote">Najlepsza carbonara w Krakowie. Klasyk bez śmietany, prawdziwy guanciale. Wino świetnie dobrane.</p>
+          <footer class="review-q__author">Michał K. · Google</footer>
+        </blockquote>
+        <blockquote class="review-q">
+          <div class="review-q__stars">★★★★★</div>
+          <p class="review-q__quote">Pizza margherita jak w Neapolu. Ciasto przepyszne, mozzarella di bufala top.</p>
+          <footer class="review-q__author">Olga R. · Google</footer>
+        </blockquote>
+        <blockquote class="review-q">
+          <div class="review-q__stars">★★★★☆</div>
+          <p class="review-q__quote">Świetne jedzenie, czasem trzeba poczekać na stolik — warto zarezerwować z wyprzedzeniem.</p>
+          <footer class="review-q__author">Tomasz S. · Google</footer>
+        </blockquote>
+      </div>
+    </div>
+  </section>
+
+  <section class="reserve" id="rezerwacja">
+    <header class="reserve__head">
+      <h2 class="reserve__h2">Zarezerwuj stolik</h2>
+      <p class="reserve__sub">Odpowiadamy w ciągu 2 godzin. Większe grupy (8+) — proszę o kontakt mailowy z dwudniowym wyprzedzeniem.</p>
+    </header>
+    <form class="reserve__form" onsubmit="event.preventDefault()">
+      <div class="reserve__field">
+        <label class="reserve__label">Imię i nazwisko</label>
+        <input type="text" class="reserve__input" autocomplete="name">
+      </div>
+      <div class="reserve__field">
+        <label class="reserve__label">Telefon</label>
+        <input type="tel" class="reserve__input" autocomplete="tel">
+      </div>
+      <div class="reserve__field">
+        <label class="reserve__label">Liczba osób</label>
+        <input type="number" class="reserve__input" min="1" max="40" value="2">
+      </div>
+      <div class="reserve__field">
+        <label class="reserve__label">Data</label>
+        <input type="date" class="reserve__input">
+      </div>
+      <div class="reserve__field">
+        <label class="reserve__label">Godzina</label>
+        <input type="time" class="reserve__input" step="900" value="19:30">
+      </div>
+      <div class="reserve__field">
+        <label class="reserve__label">Email (opcjonalnie)</label>
+        <input type="email" class="reserve__input" autocomplete="email">
+      </div>
+      <div class="reserve__field reserve__field--full">
+        <label class="reserve__label">Uwagi (alergie, okazja, preferencje)</label>
+        <textarea class="reserve__input" rows="2"></textarea>
+      </div>
+      <button type="submit" class="reserve__submit">Zarezerwuj stolik →</button>
+    </form>
+  </section>
+
+  <footer class="ft">
+    <div class="ft__inner">
+      <div>
+        <p class="ft__brand">Trattoria Bocca</p>
+        <p class="ft__addr">ul. Floriańska 18<br/>31-019 Kraków<br/>+48 12 456 78 90<br/>rezerwacje@bocca-demo.pl</p>
+      </div>
+      <div>
+        <h4 class="ft__nav-h">Karta</h4>
+        <nav class="ft__nav">
+          <a href="#">Pasta</a>
+          <a href="#">Pizza</a>
+          <a href="#">Antipasti</a>
+          <a href="#">Wina</a>
+        </nav>
+      </div>
+      <div>
+        <h4 class="ft__nav-h">Trattoria</h4>
+        <nav class="ft__nav">
+          <a href="#">Historia</a>
+          <a href="#">Magazyn</a>
+          <a href="#">Galeria</a>
+          <a href="#">Eventy</a>
+        </nav>
+      </div>
+      <div>
+        <h4 class="ft__nav-h">Kontakt</h4>
+        <nav class="ft__nav">
+          <a href="#">Rezerwacja</a>
+          <a href="#">Eventy grupowe</a>
+          <a href="#">Catering</a>
+          <a href="#">Polityka prywatności</a>
+        </nav>
+      </div>
+    </div>
+    <div class="ft__bottom">
+      <span>© 2026 Bocca Restaurant Sp. z o.o.</span>
+      <span>NIP 6791234567 · est. 2015 · Kraków, Polska</span>
+    </div>
+  </footer>
+
+  <p class="footer-note">↑ Pełny Editorial: masthead + hero asymetryczny + pull-quote + 3 magazine articles + karta z dot-leaders + magazine gallery + 3 review quotes + reservation form + 4-col footer. Sygnatura: Fraunces 144pt + paperowe ink+amber+forest + drop cap + fleuron ornament.</p>
+</body>
+</html>

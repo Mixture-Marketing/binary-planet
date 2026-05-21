@@ -1,0 +1,168 @@
+---
+/**
+ * Minimalist ContactForm — dark CTA card (split: lead text + form).
+ * Split fields (name/phone/email/message) + a11y honeypot + status region.
+ */
+import clientConfig from "../../../client.config.ts";
+
+interface Props { heading?: string; }
+const { heading = "Pierwsza konsultacja — 15 min, bezpłatnie." } = Astro.props;
+const consentVersion = clientConfig.rodo.consentVersion;
+---
+
+<section aria-labelledby="contact-heading" class="m-contact">
+  <div class="container-px m-contact__inner">
+    <div class="m-contact__lead">
+      <h2 id="contact-heading" class="m-contact__h2">{heading}</h2>
+      <p class="m-contact__sub">Zostaw kontakt — oddzwonimy w ciągu 4 godzin roboczych. Wszystkie sprawy traktujemy poufnie (tajemnica zawodowa).</p>
+      <div class="m-contact__hints">
+        <p class="m-contact__hint">
+          <span class="m-contact__hint-k">Telefon</span>
+          <a href={`tel:${clientConfig.contact.primaryPhone}`}>{clientConfig.contact.primaryPhone}</a>
+        </p>
+        <p class="m-contact__hint">
+          <span class="m-contact__hint-k">Email</span>
+          <a href={`mailto:${clientConfig.contact.email}`}>{clientConfig.contact.email}</a>
+        </p>
+      </div>
+    </div>
+
+    <form id="contact-form" method="POST" action="/api/contact" class="m-contact__form" novalidate>
+      <input type="hidden" name="consent_text_version" value={consentVersion} />
+      <input type="hidden" name="source_page" value={Astro.url.pathname} />
+      <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">
+        <label><input type="text" name="honeypot" tabindex="-1" autocomplete="off" /></label>
+      </div>
+
+      <p id="contact-form__status" role="status" aria-live="polite" class="m-contact__status"></p>
+
+      <input type="text" name="name" required minlength="2" maxlength="100" autocomplete="name" placeholder="Imię i nazwisko" aria-required="true" class="m-contact__input" />
+      <div class="m-contact__row">
+        <input type="tel" name="phone" required minlength="6" maxlength="20" autocomplete="tel" inputmode="tel" placeholder="Telefon" aria-required="true" class="m-contact__input" />
+        <input type="email" name="email" maxlength="120" autocomplete="email" inputmode="email" placeholder="Email" class="m-contact__input" />
+      </div>
+      <textarea name="message" required minlength="10" maxlength="2000" rows="4" placeholder="Krótko o sprawie" aria-required="true" class="m-contact__input"></textarea>
+
+      <label class="m-contact__consent">
+        <input type="checkbox" name="consent" required aria-required="true" />
+        <span>Wyrażam zgodę na kontakt zwrotny. <a href={clientConfig.rodo.privacyPolicyUrl ?? "/polityka-prywatnosci"}>Polityka prywatności</a></span>
+      </label>
+
+      <button type="submit" class="m-contact__submit">Wyślij zgłoszenie →</button>
+    </form>
+  </div>
+</section>
+
+<style>
+  .m-contact {
+    background: var(--color-text);
+    color: var(--color-surface);
+    padding-block: clamp(4rem, 7vw, 6rem);
+  }
+  .m-contact__inner {
+    max-width: 72rem;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    align-items: start;
+  }
+  @media (min-width: 768px) {
+    .m-contact__inner { grid-template-columns: 1.2fr 1fr; gap: 4rem; }
+  }
+  .m-contact__h2 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4.5vw, 3.5rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin: 0 0 1rem;
+  }
+  .m-contact__sub {
+    color: color-mix(in srgb, var(--color-surface) 65%, transparent);
+    margin: 0 0 2rem;
+    font-size: 1.05rem;
+    line-height: 1.6;
+  }
+  .m-contact__hints { display: flex; flex-direction: column; gap: 0.75rem; }
+  .m-contact__hint {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-surface) 15%, transparent);
+  }
+  .m-contact__hint-k {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: color-mix(in srgb, var(--color-surface) 50%, transparent);
+  }
+  .m-contact__hint a {
+    color: var(--color-surface);
+    text-decoration: none;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.95rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .m-contact__hint a:hover { text-decoration: underline; }
+
+  .m-contact__form { display: flex; flex-direction: column; gap: 0.75rem; }
+  .m-contact__row { display: grid; grid-template-columns: 1fr; gap: 0.75rem; }
+  @media (min-width: 640px) { .m-contact__row { grid-template-columns: 1fr 1fr; } }
+  .m-contact__input {
+    width: 100%;
+    padding: 0.95rem 1.1rem;
+    background: color-mix(in srgb, var(--color-surface) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-surface) 18%, transparent);
+    color: var(--color-surface);
+    border-radius: 8px;
+    font: inherit;
+    font-size: 0.95rem;
+  }
+  .m-contact__input::placeholder { color: color-mix(in srgb, var(--color-surface) 45%, transparent); }
+  .m-contact__input:focus {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 1px;
+    border-color: var(--color-brand);
+  }
+  textarea.m-contact__input { resize: vertical; min-height: 120px; }
+  .m-contact__consent {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: color-mix(in srgb, var(--color-surface) 70%, transparent);
+    padding-top: 0.5rem;
+  }
+  .m-contact__consent a { color: var(--color-surface); text-decoration: underline; }
+
+  .m-contact__submit {
+    padding: 1.1rem 1.5rem;
+    background: var(--color-brand);
+    color: var(--color-brand-fg);
+    border: 0;
+    border-radius: 8px;
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background-color 200ms ease;
+    min-height: 52px;
+  }
+  .m-contact__submit:hover {
+    background: color-mix(in srgb, var(--color-brand) 80%, white 20%);
+  }
+
+  .m-contact__status:not(:empty) {
+    padding: 0.75rem 1rem;
+    background: color-mix(in srgb, var(--color-brand) 15%, transparent);
+    border: 1px solid var(--color-brand);
+    color: var(--color-surface);
+    border-radius: 6px;
+    font-size: 0.92rem;
+  }
+</style>

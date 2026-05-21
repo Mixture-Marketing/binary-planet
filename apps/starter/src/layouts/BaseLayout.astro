@@ -1,6 +1,9 @@
 ---
 import "../styles/globals.css";
 
+// Astro 6 security.csp is incompatible with ClientRouter. Migrated to native
+// CSS View Transitions API via `@view-transition { navigation: auto; }` in
+// globals.css (Chrome 126+, Edge 126+, Firefox graceful fallback).
 import {
   consentBannerCss,
   consentBannerHtml,
@@ -23,7 +26,7 @@ import { buildNewsletterHtml } from "@mixturemarketing/web-core/newsletter";
 import { buildDeliveryHtml } from "@mixturemarketing/web-core/delivery";
 
 import clientConfig from "../client.config.ts";
-import { tokensCss } from "../themes/craftsman/tokens.ts";
+import { dualTokensCss, fontsCss, fontsHref, type ThemePresetSlug } from "../themes/registry.ts";
 
 interface Props {
   meta: MetaInput;
@@ -32,16 +35,31 @@ interface Props {
 
 const { meta, jsonLd = [] } = Astro.props;
 const nonce = Astro.locals.nonce ?? "";
-const tokens = tokensCss(clientConfig.theme.variant);
+const themePreset = (clientConfig.theme.preset ?? "minimalist") as ThemePresetSlug;
+const themeMode = clientConfig.theme.mode ?? "auto";
+const fontPairIdx = clientConfig.theme.fontPairIdx ?? 0;
+const tokens = dualTokensCss(themePreset, clientConfig.theme.variant, {
+  ...(clientConfig.theme.brandColor && { brandColor: clientConfig.theme.brandColor }),
+  ...(clientConfig.theme.accentColor && { accentColor: clientConfig.theme.accentColor }),
+});
+const fonts = fontsCss(themePreset, fontPairIdx);
+const fontsUrl = fontsHref(themePreset, fontPairIdx);
 const plausibleEnabled = clientConfig.integrations.plausible;
 
 // Track 24f / 24f-2 / Faza A — feature flag toggles
-const runtimeEnv = Astro.locals.runtime?.env as {
+// Astro 6: Astro.locals.runtime.env removed → use cloudflare:workers env
+let runtimeEnv: {
   CHATBOT_ENABLED?: string;
   LEADPOP_ENABLED?: string;
   FOMO_COUNTER_ENABLED?: string;
   BOOKSY_URL?: string;
 } | undefined;
+try {
+  const mod = await import("cloudflare:workers");
+  runtimeEnv = mod.env as typeof runtimeEnv;
+} catch {
+  runtimeEnv = undefined;
+}
 
 const isOn = (v?: string): boolean => String(v ?? "").toLowerCase() === "true";
 
@@ -69,7 +87,7 @@ const leadpopHtml = leadpopEnabled
 
 // FOMO counter (Faza A)
 const fomoEnabled = isOn(runtimeEnv?.FOMO_COUNTER_ENABLED);
-const cityName = clientConfig.address?.city ?? "okolicy";
+const cityName = clientConfig.location?.address?.city ?? "okolicy";
 const fomoHtml = fomoEnabled
   ? buildFomoHtml({
       messages: [
@@ -150,7 +168,7 @@ const globalCss = [
 ---
 
 <!doctype html>
-<html lang="pl">
+<html lang="pl" data-theme={themeMode}>
   <head>
     {/* MUST be first — browsers need charset within the first 1024 bytes of <head> */}
     <meta charset="UTF-8" />
@@ -166,17 +184,27 @@ const globalCss = [
       return <meta name={tag.name} property={tag.property} content={tag.content} />;
     })}
 
-    {/* Theme tokens (per-variant) */}
-    <style set:html={`:root{${tokens}}`} nonce={nonce}></style>
+    {/* Theme tokens (light + dark via data-theme) + fonts (per preset + font pair) */}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    {/* Unsplash CDN — every theme uses photos. Preconnect saves ~150ms LCP. */}
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
+    <link rel="stylesheet" href={fontsUrl} />
+    <style set:html={`${tokens}:root{${fonts}}body{font-family:var(--font-body);font-feature-settings:var(--font-features,"liga");font-variant-ligatures:common-ligatures}h1,h2,h3,h4{font-family:var(--font-display)}`} nonce={nonce}></style>
 
     {/* Global a11y + consent CSS */}
     <style is:global set:html={globalCss}></style>
+
+    {/* View Transitions via native CSS @view-transition rule (globals.css).
+        Cross-document navigation animacje w Chrome 126+/Edge 126+. Firefox/Safari
+        bez animacji ale bez błędów — graceful degradation. Brak JS = brak CSP issue. */}
 
     {/* Plausible (cookieless — always loads, no consent needed) */}
     {plausibleEnabled && (
       <script
         is:inline
         defer
+        nonce={nonce}
         data-domain={clientConfig.domain.primary}
         src="https://plausible.io/js/script.js"
       ></script>
@@ -189,6 +217,17 @@ const globalCss = [
   </head>
   <body>
     <Fragment set:html={sl.html} />
+    {/* WCAG 4.1.3 — announce route changes for AT users on Astro ClientRouter navigation */}
+    <div id="route-announcer" role="status" aria-live="polite" class="visually-hidden"></div>
+    {themePreset === "editorial" && (
+      <div data-reading-progress aria-hidden="true"></div>
+    )}
+    {clientConfig.clientId.startsWith("clk_demo_") && (
+      <div style="position: sticky; top: 0; z-index: 9999; background: #fbbf24; color: #1a1a1a; text-align: center; padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600;">
+        🎨 STRONA DEMO — przykład realizacji MixtureMarketing.pl ·
+        <a href="https://mixturemarketing.pl/abonament" style="color: #1a1a1a; text-decoration: underline; margin-left: 0.5rem;">Zamów swoją od 179 zł/mc →</a>
+      </div>
+    )}
     <slot />
 
     {/* Consent banner + preferences modal (hidden until runtime decides) */}
@@ -226,5 +265,37 @@ const globalCss = [
         <iframe src={igEmbedUrl} width="100%" height="600" loading="lazy" style="border:0;border-radius:12px;display:block;" title="Instagram"></iframe>
       </section>
     )}
+
+    {/* Mobile sticky CTA bar — branch by business type.
+       Restaurant: Zadzwoń + Zarezerwuj stolik.
+       Service businesses (Locksmith, AutoRepair, Beauty, Medical, etc.): Zadzwoń (emphasized) + Wycena/Formularz. */}
+    {(() => {
+      const stype = clientConfig.business.schemaType;
+      if (stype === "Restaurant") {
+        return (
+          <nav class="mobile-cta-bar" aria-label="Szybki kontakt">
+            <a href={`tel:${clientConfig.contact.primaryPhone}`} class="mobile-cta-bar__btn mobile-cta-bar__btn--ghost" data-track-event="phone_click" data-track-position="sticky-mobile">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>
+              Zadzwoń
+            </a>
+            <a href="/kontakt" class="mobile-cta-bar__btn mobile-cta-bar__btn--primary" data-track-event="reservation_click" data-track-position="sticky-mobile">
+              Zarezerwuj stolik
+            </a>
+          </nav>
+        );
+      }
+      // Services / craftsmen / local services — phone-first (most calls = revenue)
+      return (
+        <nav class="mobile-cta-bar" aria-label="Szybki kontakt">
+          <a href={`tel:${clientConfig.contact.primaryPhone}`} class="mobile-cta-bar__btn mobile-cta-bar__btn--primary mobile-cta-bar__btn--wide" data-track-event="phone_click" data-track-position="sticky-mobile">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>
+            Zadzwoń teraz
+          </a>
+          <a href="/kontakt" class="mobile-cta-bar__btn mobile-cta-bar__btn--ghost" data-track-event="quote_click" data-track-position="sticky-mobile">
+            Wycena
+          </a>
+        </nav>
+      );
+    })()}
   </body>
 </html>

@@ -1,0 +1,120 @@
+---
+/**
+ * Gallery section — grid zdjęć z opcjonalnym lightbox.
+ * Source priority: 1) config.images (inline), 2) Sveltia CMS collection "gallery".
+ */
+import { getCollection } from "astro:content";
+
+interface Props {
+  config?: {
+    heading?: string;
+    images?: Array<{ url: string; alt: string; caption?: string }>;
+    columns?: 2 | 3 | 4;
+    aspectRatio?: "4:3" | "1:1" | "3:4";
+  };
+}
+const { config = {} } = Astro.props;
+const heading = config.heading ?? "Galeria";
+let images = config.images ?? [];
+
+if (images.length === 0) {
+  try {
+    const entries = await getCollection("gallery" as any);
+    images = (entries as any[])
+      .sort((a, b) => (a.data.order ?? 99) - (b.data.order ?? 99))
+      .map((e: any) => ({
+        url: e.data.image,
+        alt: e.data.caption ?? "",
+        ...(e.data.caption && { caption: e.data.caption }),
+      }));
+  } catch { /* collection may not exist */ }
+}
+const cols = config.columns ?? 3;
+const aspect = config.aspectRatio ?? "4:3";
+const dims = aspect === "1:1" ? { w: 800, h: 800 } : aspect === "3:4" ? { w: 600, h: 800 } : { w: 800, h: 600 };
+---
+
+{images.length > 0 && (
+  <section aria-labelledby="gallery-heading" class="sec-gallery" data-cols={cols}>
+    <div class="container-px">
+      <header class="sec-gallery__head">
+        <h2 id="gallery-heading">{heading}</h2>
+      </header>
+
+      <ul class="sec-gallery__grid" data-aspect={aspect}>
+        {images.map((img) => (
+          <li class="sec-gallery__item">
+            <figure>
+              <img src={img.url} alt={img.alt} width={dims.w} height={dims.h} loading="lazy" decoding="async" />
+              {img.caption && <figcaption>{img.caption}</figcaption>}
+            </figure>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+)}
+
+<style>
+  .sec-gallery { padding-block: 4rem; background: var(--color-surface); }
+  .sec-gallery__head { margin-bottom: 2rem; text-align: center; }
+  .sec-gallery__head h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+    font-weight: 700;
+    margin: 0;
+    color: var(--color-text);
+    letter-spacing: -0.02em;
+  }
+  .sec-gallery__grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  @media (min-width: 640px) {
+    .sec-gallery[data-cols="2"] .sec-gallery__grid,
+    .sec-gallery[data-cols="3"] .sec-gallery__grid,
+    .sec-gallery[data-cols="4"] .sec-gallery__grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  @media (min-width: 1024px) {
+    .sec-gallery[data-cols="3"] .sec-gallery__grid { grid-template-columns: repeat(3, 1fr); }
+    .sec-gallery[data-cols="4"] .sec-gallery__grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  .sec-gallery__item figure {
+    margin: 0;
+    overflow: hidden;
+    border-radius: 4px;
+    position: relative;
+  }
+  .sec-gallery__grid[data-aspect="4:3"] .sec-gallery__item figure { aspect-ratio: 4 / 3; }
+  .sec-gallery__grid[data-aspect="1:1"] .sec-gallery__item figure { aspect-ratio: 1 / 1; }
+  .sec-gallery__grid[data-aspect="3:4"] .sec-gallery__item figure { aspect-ratio: 3 / 4; }
+  .sec-gallery__item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 500ms ease-out;
+  }
+  .sec-gallery__item figure:hover img { transform: scale(1.05); }
+  .sec-gallery__item figcaption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    color: #fff;
+    padding: 1.5rem 0.75rem 0.75rem 0.75rem;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 0.85rem;
+    opacity: 0;
+    transition: opacity 200ms;
+  }
+  .sec-gallery__item figure:hover figcaption { opacity: 1; }
+</style>

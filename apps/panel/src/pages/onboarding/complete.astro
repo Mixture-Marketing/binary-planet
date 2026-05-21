@@ -1,0 +1,98 @@
+---
+import { env } from "cloudflare:workers";
+import "../../styles/panel.css";
+import Icon from "../../components/Icon.astro";
+
+const client = Astro.locals.client;
+if (!client) return Astro.redirect("/login");
+
+// Get domain from clients table (set during wizard submit)
+let domain: string | null = null;
+let status: string | null = null;
+if (env?.DB) {
+  const row = await env.DB
+    .prepare(`SELECT c.primary_domain, p.provisioning_status FROM clients c
+                LEFT JOIN client_provisioning_configs p ON p.client_id = c.id
+                WHERE c.id = ? LIMIT 1`)
+    .bind(client.id)
+    .first<{ primary_domain: string | null; provisioning_status: string | null }>();
+  domain = row?.primary_domain ?? null;
+  status = row?.provisioning_status ?? null;
+}
+
+const statusLabels: Record<string, string> = {
+  pending: "W kolejce",
+  running: "W trakcie budowy",
+  done: "Gotowa",
+  failed: "Wystąpił błąd — skontaktujemy się",
+};
+const statusLabel = status ? (statusLabels[status] ?? status) : "W kolejce";
+---
+
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Konfiguracja zakończona — {client.businessName}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body style="min-height: 100vh; display: grid; place-items: center; padding: 2rem; background: var(--c-bg);">
+    <div style="max-width: 32rem; width: 100%;">
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <div style="color: var(--c-brand); margin-bottom: 1rem;">
+          <Icon name="check-circle-2" size={64} />
+        </div>
+        <h1 style="font-size: 1.5rem; font-weight: 800; margin: 0 0 0.5rem 0;">Konfiguracja zatwierdzona!</h1>
+        <p style="color: var(--c-text-muted); margin: 0;">
+          Twoja strona <strong>{domain ?? client.businessName}</strong> jest w realizacji.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size: 1rem; font-weight: 700; margin: 0 0 1rem 0;">Co dalej</h2>
+
+        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
+          <li style="display: flex; gap: 0.75rem; align-items: start;">
+            <span style="color: var(--c-success); flex-shrink: 0;"><Icon name="check" size={20} /></span>
+            <div>
+              <strong>Krok 1: Rejestracja domeny</strong>
+              <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: var(--c-text-muted);">
+                Rejestrujemy {domain ?? "Twoją domenę"} w OVH (jeśli nie była Twoja) i konfigurujemy DNS.
+              </p>
+            </div>
+          </li>
+          <li style="display: flex; gap: 0.75rem; align-items: start;">
+            <span style="color: var(--c-warning); flex-shrink: 0;"><Icon name="settings" size={20} /></span>
+            <div>
+              <strong>Krok 2: Budowa strony</strong>
+              <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: var(--c-text-muted);">
+                Generujemy szablon na bazie Twoich danych, theme {statusLabel.toLowerCase()}. Status: <strong>{statusLabel}</strong>.
+              </p>
+            </div>
+          </li>
+          <li style="display: flex; gap: 0.75rem; align-items: start;">
+            <span style="color: var(--c-text-muted); flex-shrink: 0;"><Icon name="mail" size={20} /></span>
+            <div>
+              <strong>Krok 3: Powiadomienie</strong>
+              <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem; color: var(--c-text-muted);">
+                W ciągu 24h wyślemy email z adresem Twojej strony + linkiem do panelu klienta.
+              </p>
+            </div>
+          </li>
+        </ul>
+
+        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--c-border); text-align: center;">
+          <a href="/" class="btn btn-primary" style="text-decoration: none;">
+            Przejdź do panelu klienta
+          </a>
+        </div>
+      </div>
+
+      <p style="text-align: center; margin-top: 2rem; color: var(--c-text-muted); font-size: 0.85rem;">
+        Pytania? Napisz na <a href="mailto:info@mixturemarketing.pl" style="color: var(--c-brand);">info@mixturemarketing.pl</a>
+      </p>
+    </div>
+  </body>
+</html>

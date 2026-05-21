@@ -62,7 +62,7 @@ export async function findClientByEmail(
          FROM client_contacts cc
          JOIN clients c ON c.id = cc.client_id
         WHERE cc.contact_email_hash = ?
-          AND c.status = 'active'
+          AND c.status IN ('active', 'provisioning')
         LIMIT 1`,
     )
     .bind(emailHash)
@@ -115,7 +115,7 @@ export async function verifyMagicLink(
           AND s.magic_link_consumed_at IS NULL
           AND s.revoked_at IS NULL
           AND datetime(s.expires_at) > datetime('now')
-          AND c.status = 'active'
+          AND c.status IN ('active', 'provisioning')
         LIMIT 1`,
     )
     .bind(sessionId, tokenHash)
@@ -157,7 +157,7 @@ export async function validateSession(
           AND s.revoked_at IS NULL
           AND s.magic_link_consumed_at IS NOT NULL
           AND datetime(s.expires_at) > datetime('now')
-          AND c.status = 'active'
+          AND c.status IN ('active', 'provisioning')
         LIMIT 1`,
     )
     .bind(sessionId)

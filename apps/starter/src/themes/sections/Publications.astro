@@ -1,0 +1,165 @@
+---
+/**
+ * Publications section — lista publikacji prasowych / książek / wystąpień (Professional tier).
+ * Source priority: 1) config.items (inline), 2) Sveltia CMS collection "publications".
+ *
+ * Config: { heading?, items: Array<{ title, source, date, url?, type? }> }
+ */
+import Icon from "../dynamic/components/Icon.astro";
+import { getCollection } from "astro:content";
+
+interface Props {
+  config?: {
+    heading?: string;
+    items?: Array<{
+      title: string;
+      source: string;
+      date: string;
+      url?: string;
+      type?: "article" | "book" | "interview" | "speech" | "podcast";
+    }>;
+  };
+}
+const { config = {} } = Astro.props;
+const heading = config.heading ?? "Publikacje i wystąpienia";
+
+let items = config.items ?? [];
+
+if (items.length === 0) {
+  try {
+    const entries = await getCollection("publications" as any, (e: any) => e.data.published !== false);
+    items = (entries as any[])
+      .sort((a, b) => (b.data.date as string).localeCompare(a.data.date as string))
+      .map((e: any) => ({
+        title: e.data.title,
+        source: e.data.source,
+        date: e.data.date,
+        ...(e.data.url && { url: e.data.url }),
+        ...(e.data.type && { type: e.data.type }),
+      }));
+  } catch { /* collection may not exist */ }
+}
+
+const TYPE_LABEL: Record<string, string> = {
+  article: "Artykuł",
+  book: "Książka",
+  interview: "Wywiad",
+  speech: "Wystąpienie",
+  podcast: "Podcast",
+};
+---
+
+{items.length > 0 && (
+  <section aria-labelledby="publications-heading" class="sec-pubs">
+    <div class="container-px">
+      <header class="sec-pubs__head">
+        <p class="sec-pubs__overline">W mediach</p>
+        <h2 id="publications-heading">{heading}</h2>
+      </header>
+
+      <ul class="sec-pubs__list">
+        {items.map((it) => (
+          <li class="sec-pubs__item">
+            <div class="sec-pubs__date" aria-hidden="true">{it.date}</div>
+            <div class="sec-pubs__main">
+              {it.type && <span class="sec-pubs__type">{TYPE_LABEL[it.type] ?? it.type}</span>}
+              <h3 class="sec-pubs__title">
+                {it.url ? (
+                  <a href={it.url} target="_blank" rel="noopener noreferrer">
+                    {it.title}
+                    <Icon name="external-link" size={14} />
+                  </a>
+                ) : (
+                  it.title
+                )}
+              </h3>
+              <p class="sec-pubs__source">{it.source}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+)}
+
+<style>
+  .sec-pubs { padding-block: 5rem; background: var(--color-surface); }
+  .sec-pubs__head { margin-bottom: 3rem; }
+  .sec-pubs__overline {
+    font-family: var(--font-body);
+    font-size: 0.75rem; font-weight: 600;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--color-accent); margin: 0 0 0.5rem 0;
+  }
+  .sec-pubs__head h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+    font-weight: 600;
+    margin: 0;
+    color: var(--color-text);
+    letter-spacing: -0.02em;
+  }
+  .sec-pubs__list {
+    list-style: none; margin: 0; padding: 0;
+    border-top: 1px solid var(--color-border);
+  }
+  .sec-pubs__item {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  @media (min-width: 640px) {
+    .sec-pubs__item {
+      grid-template-columns: 120px 1fr;
+      gap: 2rem;
+    }
+  }
+  .sec-pubs__date {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    letter-spacing: 0.05em;
+    padding-top: 0.4rem;
+  }
+  .sec-pubs__type {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 0.7rem; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    margin-bottom: 0.4rem;
+  }
+  .sec-pubs__title {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 500;
+    margin: 0 0 0.35rem 0;
+    color: var(--color-text);
+    line-height: 1.4;
+  }
+  .sec-pubs__title a {
+    color: var(--color-text);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    transition: color 200ms;
+  }
+  .sec-pubs__title a:hover {
+    color: var(--color-brand);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  .sec-pubs__source {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--color-text-muted);
+    margin: 0;
+    font-size: 0.95rem;
+  }
+</style>

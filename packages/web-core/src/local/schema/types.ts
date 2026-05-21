@@ -283,8 +283,8 @@ export interface SubtypeSpecificInput {
   servesCuisine?: readonly string[];
   /** Restaurant: menu URL. */
   menu?: string;
-  /** Restaurant: accepts reservations boolean. */
-  acceptsReservations?: boolean;
+  /** Restaurant: accepts reservations — schema.org expects Text or URL. Google accepts "True"/"False" string or a booking URL. */
+  acceptsReservations?: boolean | string;
   /** MedicalBusiness: specialty list. */
   medicalSpecialty?: readonly string[];
   /** AutoRepair: brands serviced. */
@@ -330,7 +330,7 @@ export interface LocalBusinessJsonLd {
   // Subtype-specific (only present when relevant):
   servesCuisine?: string[];
   menu?: string;
-  acceptsReservations?: boolean;
+  acceptsReservations?: boolean | string;
   medicalSpecialty?: string[];
   brand?: string[];
   hasCredential?: string[];

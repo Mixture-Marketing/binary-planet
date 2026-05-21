@@ -1,0 +1,186 @@
+---
+import { env } from "cloudflare:workers";
+import AdminLayout from "../layouts/AdminLayout.astro";
+import Icon from "../components/Icon.astro";
+
+import { listProvisioning } from "../lib/db.ts";
+
+if (!env?.DB) return new Response("Runtime not available", { status: 500 });
+
+const url = new URL(Astro.request.url);
+const statusFilter = url.searchParams.get("status") ?? undefined;
+
+const rows = await listProvisioning(env.DB, {
+  ...(statusFilter && { status: statusFilter }),
+  limit: 100,
+});
+
+const statusOptions = ["all", "pending", "running", "waiting_domain", "done", "failed"];
+
+const badgeClass: Record<string, string> = {
+  done: "badge-success",
+  running: "badge-warning",
+  pending: "badge-warning",
+  waiting_domain: "badge-warning",
+  failed: "badge-error",
+};
+
+const fmtDate = (iso: string | null): string => {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
+};
+const fmtDuration = (start: string | null, end: string | null): string => {
+  if (!start || !end) return "—";
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${Math.floor(ms / 60_000)}m ${Math.round((ms % 60_000) / 1000)}s`;
+};
+
+const counts = {
+  pending: rows.filter((r) => r.provisioning_status === "pending").length,
+  running: rows.filter((r) => r.provisioning_status === "running").length,
+  waiting_domain: rows.filter((r) => r.provisioning_status === "waiting_domain").length,
+  done: rows.filter((r) => r.provisioning_status === "done").length,
+  failed: rows.filter((r) => r.provisioning_status === "failed").length,
+};
+---
+
+<AdminLayout title="Provisioning">
+  <header style="margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.6rem;">
+      <Icon name="settings" size={28} /> Provisioning
+    </h1>
+    <p style="color: var(--c-text-muted); margin: 0;">
+      Stan kolejki provisioningu klient‑stron. Track 14/17/18 pipeline.
+    </p>
+  </header>
+
+  <section aria-label="Liczniki" style="display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 2rem;">
+    <a href="/provisioning?status=pending" class="card" style="text-decoration: none; color: inherit; padding: 1rem;">
+      <div style="color: var(--c-text-muted); font-size: 0.85rem;">Pending</div>
+      <div style="font-size: 1.75rem; font-weight: 700;">{counts.pending}</div>
+    </a>
+    <a href="/provisioning?status=running" class="card" style="text-decoration: none; color: inherit; padding: 1rem;">
+      <div style="color: var(--c-text-muted); font-size: 0.85rem;">Running</div>
+      <div style="font-size: 1.75rem; font-weight: 700;">{counts.running}</div>
+    </a>
+    <a href="/provisioning?status=waiting_domain" class="card" style="text-decoration: none; color: inherit; padding: 1rem;">
+      <div style="color: var(--c-text-muted); font-size: 0.85rem;">Czeka na domenę (OVH)</div>
+      <div style="font-size: 1.75rem; font-weight: 700; color: #f59e0b;">{counts.waiting_domain}</div>
+    </a>
+    <a href="/provisioning?status=done" class="card" style="text-decoration: none; color: inherit; padding: 1rem;">
+      <div style="color: var(--c-text-muted); font-size: 0.85rem;">Done</div>
+      <div style="font-size: 1.75rem; font-weight: 700; color: #16a34a;">{counts.done}</div>
+    </a>
+    <a href="/provisioning?status=failed" class="card" style="text-decoration: none; color: inherit; padding: 1rem;">
+      <div style="color: var(--c-text-muted); font-size: 0.85rem;">Failed</div>
+      <div style="font-size: 1.75rem; font-weight: 700; color: #dc2626;">{counts.failed}</div>
+    </a>
+  </section>
+
+  <nav aria-label="Filtr statusu" style="margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 0.4rem;">
+    {statusOptions.map((s) => (
+      <a
+        href={s === "all" ? "/provisioning" : `/provisioning?status=${s}`}
+        class={`badge ${(statusFilter ?? "all") === s ? "badge-success" : ""}`}
+        style="text-decoration: none;"
+      >
+        {s}
+      </a>
+    ))}
+  </nav>
+
+  {rows.length === 0 ? (
+    <div class="card" style="padding: 2rem; text-align: center; color: var(--c-text-muted);">
+      Brak rekordów provisioningu dla wybranego statusu.
+    </div>
+  ) : (
+    <div class="card" style="padding: 0;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Klient</th>
+            <th>Status</th>
+            <th>Worker</th>
+            <th>Domena</th>
+            <th>Start</th>
+            <th>Finish</th>
+            <th>Duration</th>
+            <th>Akcje</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr>
+              <td>
+                <a href={`/clients/${r.client_id}`} style="color: var(--c-brand); text-decoration: none; font-weight: 600;">{r.business_name}</a>
+                <br />
+                <span style="font-family: ui-monospace, monospace; font-size: 0.7rem; color: var(--c-text-muted);">{r.client_id}</span>
+              </td>
+              <td><span class={`badge ${badgeClass[r.provisioning_status] ?? "badge-warning"}`}>{r.provisioning_status}</span></td>
+              <td style="font-family: ui-monospace, monospace; font-size: 0.78rem;">{r.cf_worker_name ?? "—"}</td>
+              <td style="font-size: 0.85rem;">{r.primary_domain ?? "—"}</td>
+              <td style="font-size: 0.78rem; color: var(--c-text-muted);">{fmtDate(r.provisioning_started_at)}</td>
+              <td style="font-size: 0.78rem; color: var(--c-text-muted);">{fmtDate(r.provisioning_finished_at)}</td>
+              <td style="font-family: ui-monospace, monospace; font-size: 0.78rem;">{fmtDuration(r.provisioning_started_at, r.provisioning_finished_at)}</td>
+              <td style="white-space: nowrap;">
+                <a href={`/clients/${r.client_id}`} class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.55rem; min-height: 26px;">Otwórz</a>
+                {r.provisioning_status === "failed" && (
+                  <button
+                    type="button"
+                    class="btn retry-prov-inline"
+                    data-client-id={r.client_id}
+                    style="font-size: 0.75rem; padding: 0.25rem 0.55rem; min-height: 26px; margin-left: 0.25rem;"
+                  >
+                    <Icon name="play" size={12} /> Retry
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+
+  <script is:inline>
+    document.querySelectorAll(".retry-prov-inline").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.clientId;
+        if (!id) return;
+        const ok = window.mmConfirm
+          ? await window.mmConfirm("Zresetować provisioning i odpalić cron?", { confirmLabel: "Retry" })
+          : confirm("Zresetować provisioning i odpalić cron?");
+        if (!ok) return;
+        btn.disabled = true;
+        const orig = btn.innerHTML;
+        btn.textContent = "...";
+        try {
+          const res = await fetch(`/api/clients/${id}/retry-provisioning`, { method: "POST" });
+          const json = await res.json();
+          if (json.ok) {
+            btn.textContent = "OK ✓";
+            setTimeout(() => location.reload(), 600);
+          } else {
+            alert("Błąd: " + (json.error ?? "unknown"));
+            btn.disabled = false;
+            btn.innerHTML = orig;
+          }
+        } catch (e) {
+          alert("Network: " + e);
+          btn.disabled = false;
+          btn.innerHTML = orig;
+        }
+      });
+    });
+  </script>
+
+  {counts.failed > 0 && (
+    <div class="card" style="margin-top: 1.5rem; padding: 1rem; border-left: 3px solid #dc2626;">
+      <p style="margin: 0; font-size: 0.9rem;">
+        <Icon name="alert-triangle" size={16} /> Masz <strong>{counts.failed}</strong> failed provisioning. Kliknij klienta → "Retry provisioning" żeby zresetować + odpalić cron.
+      </p>
+    </div>
+  )}
+</AdminLayout>

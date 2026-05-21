@@ -1,4 +1,5 @@
 ---
+import { env } from "cloudflare:workers";
 import LoginLayout from "../../layouts/LoginLayout.astro";
 
 import { buildSessionCookie, verifyMagicLink } from "../../lib/auth.ts";
@@ -11,7 +12,6 @@ if (!token) {
   return Astro.redirect("/login?error=invalid_token");
 }
 
-const env = Astro.locals.runtime?.env;
 if (!env?.DB) {
   return new Response("Runtime not available", { status: 500 });
 }

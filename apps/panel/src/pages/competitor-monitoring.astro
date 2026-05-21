@@ -1,0 +1,194 @@
+---
+import { env } from "cloudflare:workers";
+import "../styles/panel.css";
+
+const client = Astro.locals.client;
+if (!client) return Astro.redirect("/login?next=%2Fcompetitor-monitoring");
+
+if (!env?.DB) return new Response("Runtime not available", { status: 500 });
+
+// Check if addon active
+const addonRow = await env.DB
+  .prepare(`SELECT status FROM client_addons WHERE client_id = ? AND addon_slug = 'competitor_monitoring' AND status IN ('trial','active') LIMIT 1`)
+  .bind(client.id)
+  .first<{ status: string }>();
+
+// Fetch existing config
+const cfg = await env.DB
+  .prepare(`SELECT competitor_domains_json, keywords_json, location_name, location_code, last_run_at FROM competitor_monitoring_config WHERE client_id = ? LIMIT 1`)
+  .bind(client.id)
+  .first<{
+    competitor_domains_json: string;
+    keywords_json: string;
+    location_name: string | null;
+    location_code: number | null;
+    last_run_at: string | null;
+  }>();
+
+// Klient row for default city
+const klientRow = await env.DB
+  .prepare(`SELECT city, primary_domain FROM clients WHERE id = ? LIMIT 1`)
+  .bind(client.id)
+  .first<{ city: string; primary_domain: string | null }>();
+
+const competitors = cfg ? JSON.parse(cfg.competitor_domains_json) as string[] : [];
+const keywords = cfg ? JSON.parse(cfg.keywords_json) as string[] : [];
+
+// Latest week's snapshots for table
+const latest = addonRow
+  ? await env.DB
+      .prepare(
+        `SELECT keyword, positions_json, taken_at, week_id FROM competitor_snapshots
+          WHERE client_id = ?
+          ORDER BY id DESC LIMIT 30`,
+      )
+      .bind(client.id)
+      .all<{ keyword: string; positions_json: string; taken_at: string; week_id: string }>()
+  : { results: [] };
+
+// Pre-compute rows (parse JSON outside JSX — Astro's parser confuses TS generics with JSX tags)
+interface SnapshotPositions { [domain: string]: number | null }
+interface PreparedRow { keyword: string; week_id: string; ourPos: number | null; competitorPositions: (number | null)[] }
+const ourDomain = klientRow?.primary_domain ?? "";
+const preparedRows: PreparedRow[] = (latest.results ?? []).map((row) => {
+  let positions: SnapshotPositions = {};
+  try { positions = JSON.parse(row.positions_json); } catch { /* empty */ }
+  return {
+    keyword: row.keyword,
+    week_id: row.week_id,
+    ourPos: ourDomain ? (positions[ourDomain] ?? null) : null,
+    competitorPositions: competitors.map((c) => positions[c] ?? null),
+  };
+});
+---
+
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Monitoring konkurencji — {client.businessName}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body style="padding: 2rem; background: var(--c-bg); min-height: 100vh;">
+    <main style="max-width: 900px; margin: 0 auto;">
+      <header style="margin-bottom: 1.5rem;">
+        <a href="/addons" style="color: var(--c-brand); text-decoration: none; font-size: 0.85rem;">← Dodatki</a>
+        <h1 style="font-size: 1.75rem; font-weight: 800; margin: 0.5rem 0;">📊 Monitoring konkurencji</h1>
+        <p style="color: var(--c-text-muted); margin: 0;">
+          Cotygodniowy raport pozycji Twojej strony i 3 konkurentów na Google.
+        </p>
+      </header>
+
+      {!addonRow && (
+        <div class="card" style="background: #fef3c7; border-left: 3px solid #f59e0b;">
+          <p style="margin: 0; font-weight: 600;">⚠️ Dodatek nieaktywny</p>
+          <p style="margin: 0.4rem 0 0 0; font-size: 0.9rem;">Aktywuj <strong>Monitoring konkurencji</strong> w sekcji <a href="/addons" style="color: var(--c-brand);">Dodatki</a> (30 zł/mc). Po aktywacji wróć tutaj żeby skonfigurować konkurentów i słowa kluczowe.</p>
+        </div>
+      )}
+
+      {addonRow && (
+        <>
+          <section class="card" style="margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem 0;">Konfiguracja</h2>
+            <form id="cfg-form" style="display: flex; flex-direction: column; gap: 1rem;">
+              <div>
+                <label style="font-size: 0.9rem; font-weight: 600;">Konkurenci (max 3 domeny, bez https://)</label>
+                <p style="margin: 0.2rem 0 0.5rem 0; font-size: 0.78rem; color: var(--c-text-muted);">Np. konkurent1.pl, konkurent2.pl</p>
+                <input type="text" name="competitor_0" placeholder="np. konkurent1.pl" value={competitors[0] ?? ""} style="width: 100%; padding: 0.5rem; border: 1px solid var(--c-border); border-radius: 6px; margin-bottom: 0.4rem;">
+                <input type="text" name="competitor_1" placeholder="np. konkurent2.pl" value={competitors[1] ?? ""} style="width: 100%; padding: 0.5rem; border: 1px solid var(--c-border); border-radius: 6px; margin-bottom: 0.4rem;">
+                <input type="text" name="competitor_2" placeholder="np. konkurent3.pl" value={competitors[2] ?? ""} style="width: 100%; padding: 0.5rem; border: 1px solid var(--c-border); border-radius: 6px;">
+              </div>
+
+              <div>
+                <label style="font-size: 0.9rem; font-weight: 600;">Słowa kluczowe (max 10, po jednym na linię)</label>
+                <p style="margin: 0.2rem 0 0.5rem 0; font-size: 0.78rem; color: var(--c-text-muted);">
+                  Sugestia dla {klientRow?.city || "Twojej branży"}: "ślusarz {klientRow?.city ?? ""}", "awaryjne otwieranie zamków {klientRow?.city ?? ""}", "wymiana zamków {klientRow?.city ?? ""}"
+                </p>
+                <textarea name="keywords" rows="6" placeholder="słowo kluczowe 1&#10;słowo kluczowe 2&#10;..." style="width: 100%; padding: 0.5rem; border: 1px solid var(--c-border); border-radius: 6px; font-family: ui-monospace, monospace; font-size: 0.85rem;">{keywords.join("\n")}</textarea>
+              </div>
+
+              <div>
+                <label style="font-size: 0.9rem; font-weight: 600;">Lokalizacja w Google</label>
+                <p style="margin: 0.2rem 0 0.5rem 0; font-size: 0.78rem; color: var(--c-text-muted);">Domyślnie używamy lokalizacji Twojej firmy. Zostaw puste żeby użyć domyślnej (Warszawa)</p>
+                <input type="text" name="location_name" placeholder="np. Warszawa, Mazowieckie, Poland" value={cfg?.location_name ?? `${klientRow?.city ?? "Warszawa"}, Poland`} style="width: 100%; padding: 0.5rem; border: 1px solid var(--c-border); border-radius: 6px;">
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="align-self: flex-start;">Zapisz konfigurację</button>
+            </form>
+          </section>
+
+          {(latest.results?.length ?? 0) > 0 && (
+            <section style="margin-bottom: 1.5rem;">
+              <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 0.75rem 0;">Ostatnie pozycje</h2>
+              <div class="card" style="padding: 0; overflow-x: auto;">
+                <table class="table" style="width: 100%;">
+                  <thead>
+                    <tr>
+                      <th>Słowo kluczowe</th>
+                      <th>Twoja</th>
+                      {competitors.map((c) => <th>{c}</th>)}
+                      <th>Tydzień</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preparedRows.map((row) => (
+                      <tr>
+                        <td>{row.keyword}</td>
+                        <td style={`text-align: center; ${row.ourPos && row.ourPos <= 3 ? "background: #dcfce7; font-weight: 700;" : ""}`}>{row.ourPos ?? "—"}</td>
+                        {row.competitorPositions.map((p) => <td style="text-align: center; color: var(--c-text-muted);">{p ?? "—"}</td>)}
+                        <td style="font-size: 0.78rem; color: var(--c-text-muted);">{row.week_id}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {cfg?.last_run_at && (
+                <p style="margin: 0.5rem 0 0 0; font-size: 0.78rem; color: var(--c-text-muted);">Ostatnie sprawdzenie: {cfg.last_run_at}</p>
+              )}
+            </section>
+          )}
+        </>
+      )}
+
+      <p style="text-align: center; color: var(--c-text-muted); font-size: 0.82rem; margin-top: 2rem;">
+        Pytania? <a href="mailto:info@mixturemarketing.pl" style="color: var(--c-brand);">info@mixturemarketing.pl</a>
+      </p>
+    </main>
+
+    <script is:inline>
+      const form = document.getElementById('cfg-form');
+      if (form) form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector('button[type=submit]');
+        btn.disabled = true;
+        btn.textContent = 'Zapisuję…';
+        const data = new FormData(form);
+        const competitors = ['competitor_0','competitor_1','competitor_2'].map(k => String(data.get(k) || '').trim()).filter(Boolean);
+        const keywords = String(data.get('keywords') || '').split('\n').map(k => k.trim()).filter(Boolean);
+        const location_name = String(data.get('location_name') || '').trim() || null;
+        try {
+          const res = await fetch('/api/competitor-monitoring/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ competitors, keywords, location_name }),
+          });
+          const json = await res.json();
+          if (json.ok) {
+            btn.textContent = 'Zapisane ✓';
+            setTimeout(() => { btn.disabled = false; btn.textContent = 'Zapisz konfigurację'; }, 1500);
+          } else {
+            alert('Błąd: ' + (json.error || 'unknown'));
+            btn.disabled = false;
+            btn.textContent = 'Zapisz konfigurację';
+          }
+        } catch (e) {
+          alert('Network: ' + e);
+          btn.disabled = false;
+          btn.textContent = 'Zapisz konfigurację';
+        }
+      });
+    </script>
+  </body>
+</html>

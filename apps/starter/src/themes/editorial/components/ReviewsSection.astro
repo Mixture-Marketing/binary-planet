@@ -1,0 +1,97 @@
+---
+/**
+ * Editorial ReviewsSection — magazine-style quote cards on cream-paper bg.
+ * Italic Fraunces quote, amber stars, uppercase byline.
+ */
+import clientConfig from "../../../client.config.ts";
+
+interface Props { heading?: string; }
+const { heading = "Czytane przez przyjaciół, polecane dalej" } = Astro.props;
+const reviews = clientConfig.reviews ?? [];
+---
+
+{reviews.length > 0 && (
+  <section aria-labelledby="reviews-heading" class="ed-reviews">
+    <div class="container-px ed-reviews__inner">
+      <header class="ed-reviews__head">
+        <p class="ed-reviews__eyebrow">opinie gości</p>
+        <h2 id="reviews-heading" class="ed-reviews__h2">{heading}</h2>
+      </header>
+
+      <div class="ed-reviews__grid">
+        {reviews.map((r) => (
+          <blockquote class="ed-review">
+            <div class="ed-review__stars" aria-label={`Ocena ${r.rating} na 5`}>{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</div>
+            <p class="ed-review__quote">{r.text}</p>
+            <footer class="ed-review__author">{r.author} · {r.source === "gbp" ? "Google" : r.source}</footer>
+          </blockquote>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .ed-reviews {
+    background: var(--color-surface-muted);
+    padding-block: clamp(4rem, 7vw, 6rem);
+    border-block: 1px solid var(--color-border);
+  }
+  .ed-reviews__inner { max-width: 76rem; margin: 0 auto; }
+  .ed-reviews__head { text-align: center; margin-bottom: 3rem; }
+  .ed-reviews__eyebrow {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--color-accent);
+    font-size: 0.95rem;
+    margin: 0 0 0.5rem;
+  }
+  .ed-reviews__h2 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-style: italic;
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+    margin: 0;
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    color: var(--color-text);
+  }
+
+  .ed-reviews__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  @media (min-width: 768px) {
+    .ed-reviews__grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  .ed-review { font-family: var(--font-body); margin: 0; }
+  .ed-review__stars {
+    color: var(--color-accent);
+    letter-spacing: 0.15em;
+    margin-bottom: 0.5rem;
+  }
+  .ed-review__quote {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.15rem;
+    line-height: 1.45;
+    margin: 0 0 1rem;
+    color: var(--color-text);
+  }
+  .ed-review__quote::before {
+    content: '"';
+    font-size: 2em;
+    color: var(--color-accent);
+    line-height: 0;
+    vertical-align: -0.4em;
+    margin-right: 0.1em;
+  }
+  .ed-review__author {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+</style>

@@ -14,21 +14,17 @@ import {
 import { z } from "zod";
 
 // ---------------------------------------------------------------------------
-// Theme presets (Track I v0.1 only ships 'craftsman'; others = TODO)
+// Theme presets — Hybrid (Opcja C) STYLOWE (NIE branżowe). Track 26 round 3.
+// Single source of truth for preset slugs + variants lives in themes/registry.ts.
+//
+// PL labels (UI klienta):
+//   minimalist → Czysty
+//   elegant    → Elegancki
+//   dynamic    → Dynamiczny
+//   editorial  → Magazynowy
 // ---------------------------------------------------------------------------
-export const THEME_PRESETS = [
-  "craftsman",
-  "professional",
-  "medical",
-  "beauty",
-  "local-services",
-  "food",
-  "generic",
-] as const;
+export const THEME_PRESETS = ["minimalist", "elegant", "dynamic", "editorial"] as const;
 export type ThemePresetSlug = (typeof THEME_PRESETS)[number];
-
-export const CRAFTSMAN_VARIANTS = ["red-bold", "blue-trust", "green-ground"] as const;
-export type CraftsmanVariant = (typeof CRAFTSMAN_VARIANTS)[number];
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -100,7 +96,7 @@ export const clientConfigSchema = z.object({
     industry: z.string().min(1).max(64),
     /** schema.org @type — must match a LocalBusinessSubtype. */
     schemaType: z.custom<LocalBusinessSubtype>((v) => typeof v === "string"),
-    foundedYear: z.number().int().min(1900).max(new Date().getFullYear()).optional(),
+    foundedYear: z.number().int().min(1900).max(2100).optional(),
     employeeCount: z.number().int().positive().max(10000).optional(),
     description: z.string().max(500),
     /** Long-form "o firmie" paragraph (markdown allowed). */
@@ -141,10 +137,24 @@ export const clientConfigSchema = z.object({
   // Opening hours
   hours: openingHoursSchema,
 
-  // Theme
+  // Theme (Hybrid stylowe — preset + variant + optional overrides) Track 26 round 3
   theme: z.object({
     preset: z.enum(THEME_PRESETS),
     variant: z.string().min(1).max(40),
+    /** Optional override for hero layout (defaults to theme's defaultHero). */
+    heroVariant: z.enum(["centered", "split", "image-bg", "asymmetric"]).optional(),
+    /** Optional override for accent style (defaults to theme's defaultAccent). */
+    accent: z.enum(["bold", "soft", "outline"]).optional(),
+    /** Optional logo URL (uploaded to R2 by wizard, served via CDN). */
+    logoUrl: z.string().url().optional(),
+    /** Optional brand color override (HEX). Auto-generates accent via Material Color Utilities. */
+    brandColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Brand color must be hex like #c0392b").optional(),
+    /** Optional accent color override (HEX). */
+    accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Accent color must be hex like #f39c12").optional(),
+    /** Font pair index from registry (0 = default). */
+    fontPairIdx: z.number().int().min(0).max(5).default(0),
+    /** Dark mode preference: auto = follow prefers-color-scheme, light/dark = forced. */
+    mode: z.enum(["auto", "light", "dark"]).default("auto"),
   }),
 
   // Domain + SEO
@@ -166,6 +176,18 @@ export const clientConfigSchema = z.object({
     termsUrl: z.string().url().optional(),
     dpaSigned: z.boolean().default(false),
   }),
+
+  // Optional sections — page builder (Track 26 X.3)
+  // Order in array = render order on /. Klient controls toggle + reorder via /ustawienia.
+  // Professional tier kinds: publications, trust-badges, consultation (X.5)
+  sections: z.array(z.object({
+    kind: z.enum([
+      "pricing", "team", "history", "video", "gallery", "menu",
+      "publications", "trust-badges", "consultation",
+    ]),
+    enabled: z.boolean().default(true),
+    config: z.record(z.unknown()).optional(),
+  })).max(15).optional(),
 });
 
 export type ClientConfig = z.infer<typeof clientConfigSchema>;
@@ -174,5 +196,11 @@ export type ClientConfig = z.infer<typeof clientConfigSchema>;
  * Validate a config object — throws on invalid. Used in build step.
  */
 export function validateClientConfig(input: unknown): ClientConfig {
-  return clientConfigSchema.parse(input);
+  const result = clientConfigSchema.safeParse(input);
+  if (!result.success) {
+    const issues = result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(" | ");
+    console.error("[client.config] Validation failed:", issues);
+    throw new Error(`Invalid client.config: ${issues}`);
+  }
+  return result.data;
 }

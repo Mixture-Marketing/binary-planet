@@ -12,6 +12,7 @@ vi.mock("astro:middleware", () => ({
 
 import { buildSessionCookie, createMagicLink, verifyMagicLink } from "../src/lib/auth.ts";
 import { setupTestDb, type TestSetup } from "./helpers.js";
+import { setMockEnv } from "./mocks/cloudflare-workers.ts";
 
 interface FakeLocals {
   runtime?: { env: { DB: D1Database } };
@@ -50,6 +51,8 @@ describe("middleware auth gate", () => {
 
   beforeEach(async () => {
     setup = await setupTestDb();
+    // Inject DB into cloudflare:workers mock — middleware now reads env from there.
+    setMockEnv({ DB: setup.db });
     // Dynamic import AFTER vi.mock is in place
     const mod = await import("../src/middleware.ts");
     onRequest = mod.onRequest as unknown as typeof onRequest;

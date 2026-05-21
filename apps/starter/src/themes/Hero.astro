@@ -1,0 +1,24 @@
+---
+/**
+ * Hero dispatcher — picks the right Hero component based on theme preset.
+ *
+ * 4 stylów (Track 26 round 3, design-briefs/01-04):
+ *   - minimalist (Czysty)    → centered, single CTA outline
+ *   - elegant (Elegancki)    → image-bg, serif heading, pill CTA
+ *   - dynamic (Dynamiczny)   → split, multi-CTA, prominent phone
+ *   - editorial (Magazynowy) → asymmetric, big serif typo, byline strip
+ */
+
+import clientConfig from "../client.config.ts";
+import MinimalistHero from "./minimalist/components/Hero.astro";
+import ElegantHero from "./elegant/components/Hero.astro";
+import DynamicHero from "./dynamic/components/Hero.astro";
+import EditorialHero from "./editorial/components/Hero.astro";
+
+const preset = clientConfig.theme.preset;
+---
+
+{preset === "minimalist" && <MinimalistHero />}
+{preset === "elegant" && <ElegantHero />}
+{preset === "dynamic" && <DynamicHero />}
+{preset === "editorial" && <EditorialHero />}

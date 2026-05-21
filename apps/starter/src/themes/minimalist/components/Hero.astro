@@ -1,0 +1,224 @@
+---
+/**
+ * Minimalist Hero — Linear/Vercel-style asymmetric split 60/40.
+ * Type-first, data-driven (no stock photography). Monospace numerals as signature.
+ * Multi-weight H1 builds emotional cadence; right-side data card = trust signals.
+ */
+import { formatPolishPhone, phoneAriaLabel as buildPhoneAriaLabel } from "@mixturemarketing/web-core/local";
+import clientConfig from "../../../client.config.ts";
+import Icon from "../../dynamic/components/Icon.astro";
+
+const { business, contact, location } = clientConfig;
+const cityName = location.address.city;
+const yearsActive = business.foundedYear ? new Date().getFullYear() - business.foundedYear : null;
+const phoneDisplay = formatPolishPhone(contact.primaryPhone);
+const phoneAria = buildPhoneAriaLabel(contact.primaryPhone);
+const reviewsCount = clientConfig.reviews?.length ?? 0;
+const reviewsAvg = reviewsCount > 0
+  ? (clientConfig.reviews!.reduce((s, r) => s + r.rating, 0) / reviewsCount).toFixed(1)
+  : null;
+---
+
+<section aria-labelledby="hero-heading" class="m-hero">
+  <div class="container-px m-hero__inner">
+    <p class="m-hero__eyebrow">
+      <span>{business.industry || "Firma"}</span>
+      <span aria-hidden="true">/</span>
+      <span>{cityName}</span>
+      {yearsActive && (
+        <>
+          <span aria-hidden="true">/</span>
+          <span>{yearsActive} lat praktyki</span>
+        </>
+      )}
+    </p>
+
+    <div class="m-hero__grid">
+      <div class="m-hero__main" data-reveal>
+        <h1 id="hero-heading" class="m-hero__h1">
+          <span class="m-hero__h1-strong">{business.name}</span>
+        </h1>
+        <p class="m-hero__lead">{business.tagline}</p>
+
+        <div class="m-hero__actions">
+          <a
+            href="/kontakt"
+            class="m-hero__cta-primary"
+            data-track-event="consultation_intent"
+            data-track-position="hero"
+          >
+            Umów konsultację
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a
+            href={`tel:${contact.primaryPhone}`}
+            class="m-hero__cta-phone"
+            aria-label={phoneAria}
+            data-track-event="phone_click"
+            data-track-position="hero"
+          >
+            <Icon name="phone" size={14} />
+            <span>{phoneDisplay}</span>
+          </a>
+        </div>
+      </div>
+
+      <aside class="m-hero__data" aria-label="Dane firmy">
+        {yearsActive && (
+          <div class="m-hero__row">
+            <span class="m-hero__row-key">Praktyka</span>
+            <span class="m-hero__row-val">{yearsActive}<small>lat</small></span>
+          </div>
+        )}
+        {business.employeeCount && (
+          <div class="m-hero__row">
+            <span class="m-hero__row-key">Zespół</span>
+            <span class="m-hero__row-val">{business.employeeCount}<small>osób</small></span>
+          </div>
+        )}
+        {reviewsAvg && (
+          <div class="m-hero__row">
+            <span class="m-hero__row-key">Opinie Google</span>
+            <span class="m-hero__row-val">{reviewsAvg}<small>/ 5 · {reviewsCount} opinii</small></span>
+          </div>
+        )}
+        <div class="m-hero__row">
+          <span class="m-hero__row-key">Lokalizacja</span>
+          <span class="m-hero__row-val m-hero__row-val--text">{cityName}</span>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<style>
+  .m-hero {
+    padding-block: clamp(4rem, 8vw, 7rem);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .m-hero__inner { max-width: 80rem; margin: 0 auto; }
+
+  .m-hero__eyebrow {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    margin: 0 0 2.5rem 0;
+  }
+  .m-hero__eyebrow span[aria-hidden="true"] { color: var(--color-accent); }
+
+  .m-hero__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+  @media (min-width: 900px) {
+    .m-hero__grid {
+      grid-template-columns: 1.7fr 1fr;
+      gap: 4rem;
+      align-items: end;
+    }
+  }
+
+  .m-hero__h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 6.5vw, 5.5rem);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    margin: 0 0 1.5rem;
+    text-wrap: balance;
+    color: var(--color-text);
+  }
+  .m-hero__h1-strong { display: block; }
+
+  .m-hero__lead {
+    font-size: 1.15rem;
+    line-height: 1.55;
+    color: var(--color-text-muted);
+    max-width: 32rem;
+    margin: 0 0 2.5rem;
+  }
+
+  .m-hero__actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+  .m-hero__cta-primary {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.95rem 1.5rem;
+    background: var(--color-text);
+    color: var(--color-surface);
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    min-height: 48px;
+    transition: background-color 200ms ease;
+  }
+  .m-hero__cta-primary:hover { background: var(--color-brand); }
+  .m-hero__cta-primary svg { transition: transform 200ms ease; }
+  .m-hero__cta-primary:hover svg { transform: translateX(2px); }
+
+  .m-hero__cta-phone {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.95rem 1.25rem;
+    color: var(--color-text);
+    text-decoration: none;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-weight: 500;
+    font-size: 0.92rem;
+    font-variant-numeric: tabular-nums;
+    border-radius: 6px;
+    min-height: 48px;
+    border-bottom: 1px solid transparent;
+    transition: border-color 200ms ease;
+  }
+  .m-hero__cta-phone:hover { border-bottom-color: var(--color-text); }
+
+  /* Data card */
+  .m-hero__data {
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--color-border);
+    padding-left: 2rem;
+  }
+  .m-hero__row {
+    display: flex;
+    flex-direction: column;
+    padding: 1.25rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .m-hero__row:last-child { border-bottom: 0; }
+  .m-hero__row-key {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+  }
+  .m-hero__row-val {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin-top: 0.1rem;
+    line-height: 1;
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+  }
+  .m-hero__row-val--text {
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  .m-hero__row-val small {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    letter-spacing: 0;
+    margin-left: 0.4rem;
+  }
+</style>

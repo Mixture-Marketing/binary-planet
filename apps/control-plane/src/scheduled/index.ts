@@ -14,6 +14,7 @@ import { Logger } from "@mixturemarketing/logger";
 import type { Env } from "../env.js";
 import { generateAiBlogDrafts } from "./ai-blog-draft.js";
 import { backupDaily } from "./backup.js";
+import { competitorCheckWeekly } from "./competitor-check.js";
 import { healthCheck } from "./health-check.js";
 import { provisionPending } from "./provision-client.js";
 
@@ -103,11 +104,18 @@ export async function runScheduled(event: ScheduledEventLike, env: Env): Promise
         log.info("ai_blog.complete", { processed: result.processed, successful: result.successful, skipped: result.skipped, failed: result.failed });
         break;
       }
+      case "dataforseo_weekly": {
+        // Track 24f-3 — Monitoring konkurencji addon (recurring SERP positions check)
+        const r = await competitorCheckWeekly(env, log);
+        processed = r.processed;
+        failed = r.failed;
+        if (failed > 0 && failed < processed) status = "partial_success";
+        break;
+      }
       // v0.1 stubs — implementations in Faza 5
       case "gsc_daily_pull":
       case "ga4_daily_pull":
       case "gbp_daily_pull":
-      case "dataforseo_weekly":
       case "daily_digest":
       case "monthly_reports":
         log.info("cron.stub", { job: jobName, note: "not yet implemented" });

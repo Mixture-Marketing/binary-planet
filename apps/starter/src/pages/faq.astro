@@ -1,8 +1,8 @@
 ---
 import { getCollection, render } from "astro:content";
 
-import CraftsmanLayout from "../themes/craftsman/layouts/CraftsmanLayout.astro";
-import BreadcrumbNav from "../themes/craftsman/components/BreadcrumbNav.astro";
+import CraftsmanLayout from "../themes/dynamic/layouts/CraftsmanLayout.astro";
+import BreadcrumbNav from "../themes/dynamic/components/BreadcrumbNav.astro";
 import { faqSeo } from "../lib/seo.ts";
 
 const entries = (await getCollection("faq"))
@@ -49,10 +49,10 @@ const { meta, jsonLd } = faqSeo(faqItems);
               style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; padding: 0;"
             >
               <summary
-                style="padding: 1rem 1.25rem; cursor: pointer; font-weight: 600; color: var(--color-text); list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 1rem;"
+                style="padding: 1rem 1.25rem; cursor: pointer; color: var(--color-text); list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 1rem; min-height: 56px;"
               >
-                <span>{entry.data.question}</span>
-                <span aria-hidden="true" style="color: var(--color-text-muted); font-size: 1.2rem;">+</span>
+                <h2 style="margin: 0; font-size: 1rem; font-weight: 600; line-height: 1.4;">{entry.data.question}</h2>
+                <span aria-hidden="true" class="faq-chevron" style="color: var(--color-text-muted); font-size: 1.5rem; line-height: 1; transition: transform 200ms ease;">+</span>
               </summary>
               <div
                 class="prose"
@@ -69,8 +69,12 @@ const { meta, jsonLd } = faqSeo(faqItems);
 </CraftsmanLayout>
 
 <style>
-  details[open] summary span[aria-hidden="true"] { transform: rotate(45deg); }
+  details[open] summary .faq-chevron { transform: rotate(45deg); }
   details summary::-webkit-details-marker { display: none; }
+  details summary::marker { content: ""; }
   .prose :global(p) { margin: 0.5rem 0; }
   .prose :global(a) { color: var(--color-brand); }
+  @media (prefers-reduced-motion: reduce) {
+    .faq-chevron { transition: none !important; }
+  }
 </style>

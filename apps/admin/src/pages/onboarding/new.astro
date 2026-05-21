@@ -13,6 +13,22 @@ import { INDUSTRIES, POLISH_VOIVODESHIPS } from "../../lib/onboarding.ts";
     </p>
   </header>
 
+  <div
+    id="onboarding-progress"
+    role="progressbar"
+    aria-valuemin="0"
+    aria-valuemax="10"
+    aria-valuenow="0"
+    aria-label="Postęp formularza onboarding"
+    style="position: sticky; top: 0; z-index: 10; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem;"
+  >
+    <strong id="onboarding-progress-label" style="font-size: 0.9rem; min-width: 6rem;">0 / 10 sekcji</strong>
+    <div style="flex: 1; height: 8px; background: var(--c-border); border-radius: 999px; overflow: hidden;">
+      <div id="onboarding-progress-bar" style="height: 100%; width: 0%; background: var(--c-brand); transition: width 200ms ease;"></div>
+    </div>
+    <span id="onboarding-progress-pct" style="font-size: 0.8rem; color: var(--c-text-muted); min-width: 3rem; text-align: right;">0%</span>
+  </div>
+
   <form id="onboarding-form" novalidate>
     <!-- ============ SEKCJA 1: FIRMA ============ -->
     <details open class="card" style="padding: 1.25rem; margin-bottom: 1rem;">
@@ -149,20 +165,61 @@ import { INDUSTRIES, POLISH_VOIVODESHIPS } from "../../lib/onboarding.ts";
     <details open class="card" style="padding: 1.25rem; margin-bottom: 1rem;">
       <summary style="font-weight: 700; font-size: 1.1rem; cursor: pointer;">6. Theme, domena, pakiet</summary>
       <div class="grid-2" style="margin-top: 1rem;">
-        <label>Theme preset *
-          <select name="theme_preset" required>
-            <option value="craftsman" selected>craftsman (rzemieślnik/usługi)</option>
-            <option value="professional">professional (biuro/usługi prof)</option>
-            <option value="medical">medical (lekarz/dentysta)</option>
-            <option value="beauty">beauty (salon)</option>
-            <option value="local-services">local-services</option>
-            <option value="food">food (restauracja/kawiarnia)</option>
-            <option value="generic">generic</option>
+        <label>Styl strony *
+          <select name="theme_preset" id="theme_preset" required>
+            <option value="minimalist" selected>Czysty (prawnik, lekarz, IT, doradca)</option>
+            <option value="elegant">Elegancki (SPA, fryzjer, fotograf, butik)</option>
+            <option value="dynamic">Dynamiczny (ślusarz, kurier, fast-food)</option>
+            <option value="editorial">Magazynowy (restauracja z historią, hotel, marka osobista)</option>
           </select>
         </label>
-        <label>Theme variant (opcjonalne)
-          <input type="text" name="theme_variant" placeholder="red-bold" />
+        <label>Wariant kolorystyczny *
+          <select name="theme_variant" id="theme_variant" required>
+            <option value="mono-blue">Granat + biel (Czysty)</option>
+            <option value="mono-black">Czerń + biel (Czysty)</option>
+            <option value="mono-emerald">Zieleń + krem (Czysty)</option>
+          </select>
         </label>
+        <label>Hero layout (opcjonalne)
+          <select name="theme_hero">
+            <option value="">— domyślny dla stylu —</option>
+            <option value="centered">Wyśrodkowany</option>
+            <option value="split">Split (tekst + zdjęcie)</option>
+            <option value="image-bg">Zdjęcie w tle</option>
+            <option value="asymmetric">Asymetryczny (magazyn)</option>
+          </select>
+        </label>
+        <label>Akcent buttonów (opcjonalne)
+          <select name="theme_accent">
+            <option value="">— domyślny dla stylu —</option>
+            <option value="bold">Bold (mocny)</option>
+            <option value="soft">Soft (pastelowy)</option>
+            <option value="outline">Outline (obramowany)</option>
+          </select>
+        </label>
+        <label>Tryb (jasny / ciemny)
+          <select name="theme_mode">
+            <option value="auto" selected>Auto (zgodnie z systemem)</option>
+            <option value="light">Tylko jasny</option>
+            <option value="dark">Tylko ciemny</option>
+          </select>
+        </label>
+        <script is:inline>
+          const VARIANTS = {
+            minimalist: [["mono-blue", "Granat + biel"], ["mono-black", "Czerń + biel"], ["mono-emerald", "Zieleń + krem"]],
+            elegant: [["rose-cream", "Pudrowy róż + krem"], ["sage-ivory", "Szałwia + kość słoniowa"], ["mocha-blush", "Mocha + bronze"]],
+            dynamic: [["red-action", "Czerwień + biel"], ["electric-blue", "Electric + magenta"], ["neon-noir", "Cyan + czerń (dark)"]],
+            editorial: [["forest-amber", "Las + bursztyn"], ["slate-rose", "Łupek + róż"], ["cream-cobalt", "Krem + kobalt"]],
+          };
+          const preset = document.getElementById("theme_preset");
+          const variant = document.getElementById("theme_variant");
+          if (preset && variant) {
+            preset.addEventListener("change", () => {
+              const opts = VARIANTS[preset.value] || [];
+              variant.innerHTML = opts.map(([v, label]) => `<option value="${v}">${label}</option>`).join("");
+            });
+          }
+        </script>
         <label>Domena * (bez https://)
           <input type="text" name="primary_domain" required placeholder="kowalski-slusarz.pl" />
         </label>
@@ -170,9 +227,10 @@ import { INDUSTRIES, POLISH_VOIVODESHIPS } from "../../lib/onboarding.ts";
         <label>Pakiet *
           <select name="tier" required>
             <option value="">— wybierz —</option>
-            <option value="starter">Starter — 149 zł/mc</option>
-            <option value="standard">Standard — 199 zł/mc</option>
-            <option value="premium">Premium — 299 zł/mc</option>
+            <option value="starter">Starter — 179 zł/mc</option>
+            <option value="standard">Standard — 249 zł/mc</option>
+            <option value="premium">Premium — 349 zł/mc</option>
+            <option value="professional">Professional — 549 zł/mc (B2B regulowane)</option>
           </select>
         </label>
       </div>
@@ -352,6 +410,37 @@ import { INDUSTRIES, POLISH_VOIVODESHIPS } from "../../lib/onboarding.ts";
   addReview.addEventListener("click", () => addReviewRow());
 
   // ----------------------------------------------------------------------
+  // Progress bar — count sections that have ANY required field filled.
+  // ----------------------------------------------------------------------
+  const sections = Array.from(document.querySelectorAll('#onboarding-form > details'));
+  const progressBar = document.getElementById('onboarding-progress-bar');
+  const progressLabel = document.getElementById('onboarding-progress-label');
+  const progressPct = document.getElementById('onboarding-progress-pct');
+  const progressWrap = document.getElementById('onboarding-progress');
+  const totalSections = sections.length;
+  if (progressWrap) progressWrap.setAttribute('aria-valuemax', String(totalSections));
+  function isSectionFilled(section) {
+    const requireds = section.querySelectorAll('input[required], select[required], textarea[required]');
+    if (requireds.length === 0) {
+      // Optional section — count as filled if ANY input has value
+      const anyInputs = section.querySelectorAll('input, select, textarea');
+      return Array.from(anyInputs).some((el) => el.type === 'checkbox' ? el.checked : String(el.value || '').trim().length > 0);
+    }
+    return Array.from(requireds).every((el) => String(el.value || '').trim().length > 0);
+  }
+  function updateProgress() {
+    const filled = sections.filter(isSectionFilled).length;
+    const pct = totalSections ? Math.round((filled / totalSections) * 100) : 0;
+    if (progressBar) progressBar.style.width = pct + '%';
+    if (progressLabel) progressLabel.textContent = filled + ' / ' + totalSections + ' sekcji';
+    if (progressPct) progressPct.textContent = pct + '%';
+    if (progressWrap) progressWrap.setAttribute('aria-valuenow', String(filled));
+  }
+  document.getElementById('onboarding-form').addEventListener('input', updateProgress);
+  document.getElementById('onboarding-form').addEventListener('change', updateProgress);
+  updateProgress();
+
+  // ----------------------------------------------------------------------
   // Industry → auto-fill schema_type hidden field
   // ----------------------------------------------------------------------
   const industrySelect = document.querySelector("[data-industry]");
@@ -521,6 +610,9 @@ import { INDUSTRIES, POLISH_VOIVODESHIPS } from "../../lib/onboarding.ts";
 
       theme_preset: get("theme_preset"),
       theme_variant: get("theme_variant") || undefined,
+      theme_hero: get("theme_hero") || undefined,
+      theme_accent: get("theme_accent") || undefined,
+      theme_mode: get("theme_mode") || "auto",
       primary_domain: get("primary_domain"),
       canonical_scheme: "https",
       tier: get("tier"),

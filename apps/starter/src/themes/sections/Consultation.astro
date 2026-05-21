@@ -1,0 +1,130 @@
+---
+/**
+ * Consultation booking section — Cal.com / Calendly embed (Professional tier).
+ * Config: { heading?, provider?, url, durationMinutes?, price?, note? }
+ *
+ * provider auto-detected from url:
+ *   - cal.com → Cal.com inline embed
+ *   - calendly.com → Calendly inline widget
+ *   - other → generic iframe
+ */
+import Icon from "../dynamic/components/Icon.astro";
+
+interface Props {
+  config?: {
+    heading?: string;
+    provider?: "cal" | "calendly" | "generic";
+    url?: string;
+    durationMinutes?: number;
+    price?: string;
+    note?: string;
+  };
+}
+const { config = {} } = Astro.props;
+const heading = config.heading ?? "Umów konsultację online";
+const url = config.url ?? "";
+
+function detectProvider(u: string): "cal" | "calendly" | "generic" | null {
+  if (!u) return null;
+  if (u.includes("cal.com")) return "cal";
+  if (u.includes("calendly.com")) return "calendly";
+  if (u.startsWith("https://")) return "generic";
+  return null;
+}
+
+const provider = config.provider ?? detectProvider(url);
+const valid = provider !== null && url.startsWith("https://");
+---
+
+{valid && (
+  <section aria-labelledby="consultation-heading" class="sec-consult">
+    <div class="container-px">
+      <header class="sec-consult__head">
+        <p class="sec-consult__overline">Rezerwacja</p>
+        <h2 id="consultation-heading">{heading}</h2>
+
+        <ul class="sec-consult__meta">
+          {config.durationMinutes && (
+            <li><Icon name="bell" size={16} /> {config.durationMinutes} min</li>
+          )}
+          {config.price && (
+            <li><Icon name="briefcase" size={16} /> {config.price}</li>
+          )}
+          <li><Icon name="shield-check" size={16} /> Bezpieczna rezerwacja przez {provider === "cal" ? "Cal.com" : provider === "calendly" ? "Calendly" : "system rezerwacji"}</li>
+        </ul>
+
+        {config.note && (
+          <p class="sec-consult__note">{config.note}</p>
+        )}
+      </header>
+
+      <div class="sec-consult__wrapper">
+        <iframe
+          src={url}
+          title="Rezerwacja konsultacji"
+          loading="lazy"
+          allow="camera; microphone; autoplay; encrypted-media; fullscreen"
+        ></iframe>
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .sec-consult { padding-block: 5rem; background: var(--color-surface); }
+  .sec-consult__head {
+    text-align: center;
+    max-width: 48rem;
+    margin: 0 auto 2.5rem auto;
+  }
+  .sec-consult__overline {
+    font-family: var(--font-body);
+    font-size: 0.75rem; font-weight: 600;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--color-accent); margin: 0 0 0.5rem 0;
+  }
+  .sec-consult__head h2 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 600;
+    margin: 0 0 1.25rem 0;
+    color: var(--color-text);
+    letter-spacing: -0.02em;
+  }
+  .sec-consult__meta {
+    list-style: none; margin: 0 0 1rem 0; padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+  .sec-consult__meta li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .sec-consult__note {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--color-text-muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .sec-consult__wrapper {
+    max-width: 64rem;
+    margin: 0 auto;
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    overflow: hidden;
+    min-height: 600px;
+  }
+  .sec-consult__wrapper iframe {
+    width: 100%;
+    min-height: 600px;
+    border: 0;
+    display: block;
+  }
+</style>

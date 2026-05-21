@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elegant mockup — Salon Lila</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter+Tight:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ink: #2a1d1f;
+    --paper: #faf7f2;
+    --paper-2: #f1ebe2;
+    --rose: #b85968;
+    --gold: #b08d57;
+    --muted: #7a6566;
+    --line: #ddd0c8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter Tight', sans-serif; background: var(--paper); color: var(--ink); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+
+  .ribbon { background: #fbbf24; color: #1a1a1a; padding: 0.5rem 1rem; text-align: center; font-size: 0.85rem; font-weight: 600; }
+  .ribbon a { color: #1a1a1a; text-decoration: underline; }
+
+  /* Hero full-bleed photo + product-label corner */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    overflow: hidden;
+    background: #2a1d1f;
+  }
+  .hero__img {
+    position: absolute; inset: 0;
+    background-image: url('https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1800&q=85');
+    background-size: cover;
+    background-position: center;
+    transform: scale(1.05);
+    animation: slow-zoom 18s ease-out forwards;
+  }
+  @keyframes slow-zoom { to { transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) { .hero__img { animation: none; transform: none; } }
+  .hero__veil {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 0%, transparent 50%, rgba(20,12,10,0.55) 100%);
+  }
+
+  /* Floating product label — bottom right */
+  .hero__label {
+    position: absolute;
+    bottom: 4rem; right: 4rem;
+    color: var(--paper);
+    text-align: right;
+    z-index: 2;
+    max-width: 28rem;
+  }
+  @media (max-width: 768px) {
+    .hero__label { right: 1.5rem; left: 1.5rem; bottom: 2rem; text-align: left; max-width: none; }
+  }
+  .hero__overline {
+    font-family: 'Inter Tight';
+    font-size: 0.7rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    font-weight: 500;
+    opacity: 0.85;
+    margin: 0 0 1.5rem;
+  }
+  .hero__h1 {
+    font-family: 'Cormorant Garamond';
+    font-weight: 400;
+    font-style: italic;
+    font-size: clamp(2.5rem, 7vw, 5.5rem);
+    line-height: 0.95;
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.01em;
+    color: #fff;
+  }
+  .hero__h1-brand {
+    display: block;
+    font-style: normal;
+    font-weight: 300;
+    font-size: 0.65em;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-top: 0.75rem;
+  }
+  .hero__meta { font-family: 'Inter Tight'; font-size: 0.85rem; letter-spacing: 0.12em; opacity: 0.7; margin: 1.25rem 0 2rem; }
+  .hero__cta {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    padding: 0.95rem 2rem;
+    background: transparent;
+    color: var(--paper);
+    text-decoration: none;
+    border: 1px solid rgba(255,255,255,0.5);
+    font-family: 'Cormorant Garamond'; font-style: italic; font-size: 1.15rem;
+    border-radius: 999px;
+    transition: background 250ms, border-color 250ms;
+  }
+  .hero__cta:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.85); }
+
+  /* Top corner — brand wordmark only */
+  .hero__brand {
+    position: absolute;
+    top: 2.5rem; left: 2.5rem;
+    color: var(--paper);
+    font-family: 'Cormorant Garamond';
+    font-style: italic;
+    font-size: 1.4rem;
+    letter-spacing: 0.05em;
+    z-index: 2;
+  }
+  .hero__brand small { font-style: normal; font-family: 'Inter Tight'; font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; display: block; margin-top: 0.25rem; opacity: 0.7; }
+
+  /* Top nav (subtle, top right) */
+  .hero__nav {
+    position: absolute;
+    top: 2.5rem; right: 2.5rem;
+    display: none; gap: 2rem;
+    z-index: 2;
+  }
+  @media (min-width: 768px) { .hero__nav { display: flex; } }
+  .hero__nav a {
+    color: var(--paper);
+    text-decoration: none;
+    font-family: 'Inter Tight';
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.85;
+    transition: opacity 200ms;
+  }
+  .hero__nav a:hover { opacity: 1; border-bottom: 1px solid var(--gold); padding-bottom: 2px; }
+
+  /* Gold-leaf divider */
+  .divider {
+    width: 100%; max-width: 320px;
+    margin: 0 auto;
+    text-align: center;
+    color: var(--gold);
+    font-size: 1.5rem;
+    letter-spacing: 0.5em;
+    padding: 5rem 0 4rem;
+    position: relative;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    position: absolute; top: 50%;
+    width: 80px; height: 1px; background: var(--gold); opacity: 0.5;
+  }
+  .divider::before { left: -90px; }
+  .divider::after { right: -10px; }
+
+  /* Menu-as-card-list (signature element) */
+  .menu { padding: 0 1.5rem 6rem; max-width: 56rem; margin: 0 auto; }
+  .menu__head { text-align: center; margin-bottom: 3rem; }
+  .menu__eyebrow { font-family: 'Inter Tight'; font-size: 0.72rem; letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold); }
+  .menu__h2 {
+    font-family: 'Cormorant Garamond';
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    line-height: 1;
+    margin: 0.5rem 0 0;
+    letter-spacing: -0.01em;
+  }
+
+  .menu__group { margin-bottom: 3rem; }
+  .menu__group-title {
+    font-family: 'Cormorant Garamond';
+    font-weight: 500;
+    font-style: italic;
+    font-size: 1.5rem;
+    color: var(--rose);
+    margin: 0 0 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .menu__item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.85rem 0;
+    position: relative;
+  }
+  .menu__item-content { display: flex; flex-direction: column; gap: 0.2rem; }
+  .menu__item-name { font-family: 'Cormorant Garamond'; font-weight: 500; font-size: 1.2rem; color: var(--ink); }
+  .menu__item-desc { font-family: 'Inter Tight'; font-size: 0.85rem; color: var(--muted); font-style: italic; }
+  .menu__item-price {
+    font-family: 'Cormorant Garamond'; font-weight: 500; font-size: 1.15rem;
+    color: var(--gold);
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+    position: relative;
+  }
+  /* Leader dots between name and price */
+  .menu__item-content::after {
+    content: '';
+    position: absolute;
+    bottom: 0.3rem;
+    left: 0; right: 0;
+    border-bottom: 1px dotted var(--line);
+    z-index: 0;
+    pointer-events: none;
+  }
+  .menu__item-name, .menu__item-price { background: var(--paper); position: relative; z-index: 1; padding-right: 0.4rem; }
+  .menu__item-name { padding-right: 0.6rem; }
+  .menu__item-price { padding-left: 0.6rem; }
+
+  /* Story section */
+  .story { padding: 5rem 1.5rem; max-width: 64rem; margin: 0 auto; }
+  .story__grid { display: grid; grid-template-columns: 1fr; gap: 3rem; align-items: center; }
+  @media (min-width: 768px) { .story__grid { grid-template-columns: 1fr 1.2fr; gap: 4rem; } }
+  .story__image { aspect-ratio: 4/5; background-image: url('https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=900&q=85'); background-size: cover; background-position: center; border-radius: 4px; }
+  .story__eyebrow { font-family: 'Inter Tight'; font-size: 0.72rem; letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold); margin: 0 0 0.5rem; }
+  .story__h2 { font-family: 'Cormorant Garamond'; font-weight: 400; font-style: italic; font-size: clamp(2rem, 4.5vw, 3.25rem); margin: 0 0 1.5rem; line-height: 1.05; letter-spacing: -0.01em; }
+  .story__body { font-family: 'Inter Tight'; color: var(--muted); font-size: 1.05rem; line-height: 1.65; margin: 0 0 1rem; }
+  .story__sign { font-family: 'Cormorant Garamond'; font-style: italic; font-size: 1.15rem; color: var(--rose); margin: 1.5rem 0 0; }
+
+  /* Gallery — refined grid */
+  .ng-gallery { background: var(--paper-2); padding: 5rem 1.5rem; border-block: 1px solid var(--line); }
+  .ng-gallery__inner { max-width: 76rem; margin: 0 auto; }
+  .ng-gallery__head { text-align: center; margin-bottom: 3rem; }
+  .ng-gallery__h2 { font-family: 'Cormorant Garamond'; font-weight: 400; font-style: italic; font-size: clamp(2rem, 4vw, 3rem); margin: 0; line-height: 1; }
+  .ng-gallery__grid { display: grid; grid-template-columns: 1fr; gap: 0.75rem; }
+  @media (min-width: 640px) { .ng-gallery__grid { grid-template-columns: repeat(3, 1fr); gap: 1rem; } }
+  .ng-gallery__img {
+    aspect-ratio: 1/1;
+    background-size: cover;
+    background-position: center;
+    border-radius: 2px;
+    transition: transform 600ms cubic-bezier(0.25, 1, 0.5, 1);
+    cursor: zoom-in;
+  }
+  .ng-gallery__img:hover { transform: scale(1.03); }
+  .ng-gallery__img-1 { background-image: url('https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&q=80'); }
+  .ng-gallery__img-2 { background-image: url('https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=600&q=80'); }
+  .ng-gallery__img-3 { background-image: url('https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=600&q=80'); }
+  .ng-gallery__img-4 { background-image: url('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=600&q=80'); }
+  .ng-gallery__img-5 { background-image: url('https://images.unsplash.com/photo-1562322140-8baeececf3df?w=600&q=80'); }
+  .ng-gallery__img-6 { background-image: url('https://images.unsplash.com/photo-1559599101-f09722fb4948?w=600&q=80'); }
+
+  /* Team */
+  .team { padding: 5rem 1.5rem; max-width: 76rem; margin: 0 auto; }
+  .team__head { text-align: center; margin-bottom: 3rem; }
+  .team__eyebrow { font-family: 'Inter Tight'; font-size: 0.72rem; letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold); margin: 0 0 0.5rem; }
+  .team__h2 { font-family: 'Cormorant Garamond'; font-weight: 400; font-style: italic; font-size: clamp(2rem, 4vw, 3rem); margin: 0; }
+  .team__grid { display: grid; grid-template-columns: 1fr; gap: 2.5rem; }
+  @media (min-width: 768px) { .team__grid { grid-template-columns: repeat(3, 1fr); } }
+  .e-person { text-align: center; }
+  .e-person__avatar { width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 1rem; background-size: cover; background-position: center; border: 2px solid var(--gold); }
+  .e-person__avatar-1 { background-image: url('https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=300&q=80'); }
+  .e-person__avatar-2 { background-image: url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&q=80'); }
+  .e-person__avatar-3 { background-image: url('https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&q=80'); }
+  .e-person__name { font-family: 'Cormorant Garamond'; font-style: italic; font-size: 1.35rem; font-weight: 500; margin: 0 0 0.25rem; }
+  .e-person__role { font-family: 'Inter Tight'; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin: 0 0 0.75rem; }
+  .e-person__bio { font-family: 'Inter Tight'; font-size: 0.92rem; color: var(--muted); margin: 0; line-height: 1.5; }
+
+  /* Single big testimonial */
+  .testimonial { background: var(--paper-2); padding: 6rem 1.5rem; border-block: 1px solid var(--line); }
+  .testimonial__inner { max-width: 48rem; margin: 0 auto; text-align: center; }
+  .testimonial__orn { color: var(--gold); margin-bottom: 1.5rem; font-size: 1.5rem; letter-spacing: 0.5em; }
+  .testimonial__quote {
+    font-family: 'Cormorant Garamond'; font-weight: 400; font-style: italic;
+    font-size: clamp(1.4rem, 3vw, 2rem); line-height: 1.35;
+    color: var(--ink); margin: 0 0 1.5rem;
+    text-wrap: balance;
+  }
+  .testimonial__author { font-family: 'Inter Tight'; font-size: 0.78rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+  .testimonial__stars { color: var(--gold); margin: 1rem 0 0; letter-spacing: 0.15em; font-size: 0.95rem; }
+
+  /* Booking */
+  .booking { padding: 5rem 1.5rem; max-width: 56rem; margin: 0 auto; }
+  .booking__head { text-align: center; margin-bottom: 2.5rem; }
+  .booking__h2 { font-family: 'Cormorant Garamond'; font-weight: 400; font-style: italic; font-size: clamp(2rem, 4vw, 3rem); margin: 0; line-height: 1; }
+  .booking__sub { font-family: 'Inter Tight'; color: var(--muted); margin: 1rem 0 0; font-size: 1rem; }
+  .booking__form { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+  @media (min-width: 640px) { .booking__form { grid-template-columns: 1fr 1fr; } }
+  .booking__field { position: relative; }
+  .booking__field--full { grid-column: 1 / -1; }
+  .booking__input {
+    width: 100%; padding: 1.25rem 1rem 0.5rem; border: 0;
+    border-bottom: 1px solid var(--line);
+    background: transparent; font: inherit; font-size: 1rem;
+    font-family: 'Inter Tight'; color: var(--ink);
+  }
+  .booking__input:focus { outline: none; border-bottom-color: var(--rose); }
+  .booking__label {
+    position: absolute; top: 1.25rem; left: 1rem;
+    font-family: 'Cormorant Garamond'; font-style: italic; color: var(--muted);
+    pointer-events: none; transition: all 250ms;
+  }
+  .booking__input:focus + .booking__label,
+  .booking__input:not(:placeholder-shown) + .booking__label {
+    top: 0.2rem; left: 1rem; font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); font-style: normal;
+  }
+  .booking__submit {
+    grid-column: 1 / -1; justify-self: center; margin-top: 1rem;
+    padding: 1rem 2.5rem; background: var(--rose); color: #fff; border: 0;
+    border-radius: 999px; font-family: 'Cormorant Garamond'; font-style: italic; font-size: 1.15rem; cursor: pointer;
+    transition: transform 200ms, box-shadow 200ms;
+  }
+  .booking__submit:hover { transform: scale(1.03); box-shadow: 0 10px 30px -8px color-mix(in srgb, var(--rose) 50%, transparent); }
+
+  /* Footer */
+  .ft { background: var(--ink); color: var(--paper); padding: 4rem 1.5rem 2rem; }
+  .ft__inner { max-width: 76rem; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 2rem; }
+  @media (min-width: 768px) { .ft__inner { grid-template-columns: 2fr 1fr 1fr 1fr; } }
+  .ft__brand { font-family: 'Cormorant Garamond'; font-style: italic; font-size: 1.75rem; margin: 0 0 0.5rem; }
+  .ft__brand small { display: block; font-style: normal; font-family: 'Inter Tight'; font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.6; margin-top: 0.25rem; }
+  .ft__addr { font-family: 'Inter Tight'; color: #c4a8b0; font-size: 0.92rem; margin: 1rem 0 0; line-height: 1.7; }
+  .ft__nav-h { font-family: 'Cormorant Garamond'; font-style: italic; color: var(--gold); margin: 0 0 0.5rem; font-size: 0.95rem; font-weight: 500; }
+  .ft__nav { display: flex; flex-direction: column; gap: 0.4rem; }
+  .ft__nav a { color: #d4c5b0; text-decoration: none; font-family: 'Inter Tight'; font-size: 0.9rem; }
+  .ft__nav a:hover { color: var(--paper); }
+  .ft__bottom { max-width: 76rem; margin: 2.5rem auto 0; padding-top: 1.5rem; border-top: 1px solid #3a2d2f; font-family: 'Inter Tight'; font-size: 0.82rem; color: #8a7560; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; }
+
+  .footer-note { padding: 2rem 1.5rem; text-align: center; font-family: 'Inter Tight'; font-size: 0.78rem; color: var(--muted); font-style: italic; background: var(--paper-2); }
+</style>
+</head>
+<body>
+  <div class="ribbon">MOCKUP ELEGANT · proof-of-concept · <a href="/mockups/">wszystkie 4 motywy</a></div>
+
+  <section class="hero" aria-labelledby="hero-heading">
+    <div class="hero__img" aria-hidden="true"></div>
+    <div class="hero__veil" aria-hidden="true"></div>
+
+    <a href="#" class="hero__brand">
+      Salon Lila
+      <small>Warszawa Mokotów · 2019</small>
+    </a>
+    <nav class="hero__nav" aria-label="Główna nawigacja">
+      <a href="#">Usługi</a>
+      <a href="#">Zespół</a>
+      <a href="#">Galeria</a>
+      <a href="#">Rezerwacja</a>
+    </nav>
+
+    <div class="hero__label">
+      <p class="hero__overline">Salon · butikowy · Warszawa</p>
+      <h1 id="hero-heading" class="hero__h1">
+        Twoje miejsce<br/>na chwilę dla&nbsp;siebie.
+        <span class="hero__h1-brand">Salon Lila · est. 2019</span>
+      </h1>
+      <p class="hero__meta">Strzyżenia · koloryzacja · manicure · pedicure SPA</p>
+      <a href="#" class="hero__cta">Umów wizytę →</a>
+    </div>
+  </section>
+
+  <div class="divider">❦</div>
+
+  <section class="menu">
+    <header class="menu__head">
+      <p class="menu__eyebrow">Karta usług</p>
+      <h2 class="menu__h2">Co dla Ciebie przygotujemy</h2>
+    </header>
+
+    <div class="menu__group">
+      <h3 class="menu__group-title">Włosy</h3>
+      <div class="menu__item">
+        <div class="menu__item-content">
+          <span class="menu__item-name">Strzyżenie damskie z modelowaniem</span>
+          <span class="menu__item-desc">analiza twarzy · konsultacja · 60 min</span>
+        </div>
+        <span class="menu__item-price">od 120 zł</span>
+      </div>
+      <div class="menu__item">
+        <div class="menu__item-content">
+          <span class="menu__item-name">Koloryzacja balayage</span>
+          <span class="menu__item-desc">technika malarska · Wella Master Colorist · 3 h</span>
+        </div>
+        <span class="menu__item-price">od 380 zł</span>
+      </div>
+      <div class="menu__item">
+        <div class="menu__item-content">
+          <span class="menu__item-name">Koloryzacja jednolita</span>
+          <span class="menu__item-desc">Wella Professionals · keratynowa odżywka · 2 h</span>
+        </div>
+        <span class="menu__item-price">od 250 zł</span>
+      </div>
+    </div>
+
+    <div class="menu__group">
+      <h3 class="menu__group-title">Dłonie i stopy</h3>
+      <div class="menu__item">
+        <div class="menu__item-content">
+          <span class="menu__item-name">Manicure hybrydowy</span>
+          <span class="menu__item-desc">OPI · 30 kolorów do wyboru · trwa 3 tygodnie</span>
+        </div>
+        <span class="menu__item-price">od 90 zł</span>
+      </div>
+      <div class="menu__item">
+        <div class="menu__item-content">
+          <span class="menu__item-name">Pedicure SPA</span>
+          <span class="menu__item-desc">peeling · maseczka · masaż · 90 min</span>
+        </div>
+        <span class="menu__item-price">od 130 zł</span>
+      </div>
+    </div>
+
+    <div class="menu__group">
+      <h3 class="menu__group-title">Twarz</h3>
+      <div class="menu__item">
+        <div class="menu__item-content">
+          <span class="menu__item-name">Oczyszczanie wodorowe</span>
+          <span class="menu__item-desc">hydratacja · gleboki peeling · 75 min</span>
+        </div>
+        <span class="menu__item-price">od 200 zł</span>
+      </div>
+      <div class="menu__item">
+        <div class="menu__item-content">
+          <span class="menu__item-name">Mezoterapia bezigłowa</span>
+          <span class="menu__item-desc">koktajl aktywny · sonoforeza · 60 min</span>
+        </div>
+        <span class="menu__item-price">od 280 zł</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="story">
+    <div class="story__grid">
+      <div class="story__image" role="img" aria-label="Wnętrze salonu"></div>
+      <div>
+        <p class="story__eyebrow">O salonie</p>
+        <h2 class="story__h2">Nie spieszymy się.<br/>To <em>90 minut</em>,<br/>kiedy świat się zatrzymuje.</h2>
+        <p class="story__body">Salon Lila otworzyłyśmy w 2019 roku — dwie stylistki, pasja do koloru, jeden mały gabinet na Mokotowie. Dziś jest nas pięć, a klientki wracają od ponad pięciu lat.</p>
+        <p class="story__body">Pracujemy wyłącznie na produktach <em>Wella Professionals</em> i <em>OPI</em> — bez kompromisów na materiałach. Każda wizyta to czas, w którym możesz spokojnie odsapnąć od dnia.</p>
+        <p class="story__sign">— Anna Lila, założycielka</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider">❦</div>
+
+  <section class="ng-gallery">
+    <div class="ng-gallery__inner">
+      <header class="ng-gallery__head">
+        <h2 class="ng-gallery__h2">Nasze prace</h2>
+      </header>
+      <div class="ng-gallery__grid">
+        <div class="ng-gallery__img ng-gallery__img-1" role="img" aria-label="Koloryzacja balayage"></div>
+        <div class="ng-gallery__img ng-gallery__img-2" role="img" aria-label="Manicure hybrydowy"></div>
+        <div class="ng-gallery__img ng-gallery__img-3" role="img" aria-label="Strzyżenie damskie"></div>
+        <div class="ng-gallery__img ng-gallery__img-4" role="img" aria-label="Pedicure SPA"></div>
+        <div class="ng-gallery__img ng-gallery__img-5" role="img" aria-label="Salon wnętrze"></div>
+        <div class="ng-gallery__img ng-gallery__img-6" role="img" aria-label="Zabiegi pielęgnacyjne"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="team">
+    <header class="team__head">
+      <p class="team__eyebrow">Zespół</p>
+      <h2 class="team__h2">Stylistki, które Cię pokochają</h2>
+    </header>
+    <div class="team__grid">
+      <article class="e-person">
+        <div class="e-person__avatar e-person__avatar-1" role="img" aria-label="Anna Lila"></div>
+        <h3 class="e-person__name">Anna Lila</h3>
+        <p class="e-person__role">Założycielka · Koloryzacja</p>
+        <p class="e-person__bio">16 lat doświadczenia. Certyfikat <em>Wella Master Colorist</em>. Specjalistka balayage i naturalnej koloryzacji.</p>
+      </article>
+      <article class="e-person">
+        <div class="e-person__avatar e-person__avatar-2" role="img" aria-label="Karolina Nowak"></div>
+        <h3 class="e-person__name">Karolina Nowak</h3>
+        <p class="e-person__role">Manicure · Pedicure</p>
+        <p class="e-person__bio">Specjalistka OPI, 8 lat w branży. Manicure hybrydowy, pedicure SPA, zdobnictwo.</p>
+      </article>
+      <article class="e-person">
+        <div class="e-person__avatar e-person__avatar-3" role="img" aria-label="Magdalena Krawczyk"></div>
+        <h3 class="e-person__name">Magdalena Krawczyk</h3>
+        <p class="e-person__role">Strzyżenia · Modelowanie</p>
+        <p class="e-person__bio">Strzyżenia precyzyjne, balayage, modelowanie. Ukończyła Vidal Sassoon Academy.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="testimonial">
+    <div class="testimonial__inner">
+      <div class="testimonial__orn">❦ ❦ ❦</div>
+      <blockquote class="testimonial__quote">"Najlepszy balayage w Warszawie. Stylistka słucha co lubię i nigdy mnie nie zawiodła. Wracam tu od 2 lat — i ciągle nie zamieniam na żaden inny salon."</blockquote>
+      <p class="testimonial__author">Karolina W. · klientka stała</p>
+      <p class="testimonial__stars">★★★★★</p>
+    </div>
+  </section>
+
+  <section class="booking" id="rezerwacja">
+    <header class="booking__head">
+      <h2 class="booking__h2">Umów wizytę</h2>
+      <p class="booking__sub">Odpowiadamy w ciągu 4 godzin. Lub zadzwoń: +48 22 123 45 67</p>
+    </header>
+    <form class="booking__form" onsubmit="event.preventDefault()">
+      <div class="booking__field">
+        <input type="text" class="booking__input" placeholder=" " autocomplete="name">
+        <label class="booking__label">Imię i nazwisko</label>
+      </div>
+      <div class="booking__field">
+        <input type="tel" class="booking__input" placeholder=" " autocomplete="tel">
+        <label class="booking__label">Telefon</label>
+      </div>
+      <div class="booking__field booking__field--full">
+        <input type="email" class="booking__input" placeholder=" " autocomplete="email">
+        <label class="booking__label">Email</label>
+      </div>
+      <div class="booking__field booking__field--full">
+        <input type="text" class="booking__input" placeholder=" ">
+        <label class="booking__label">Jaką usługę chciałaby Pani umówić?</label>
+      </div>
+      <button type="submit" class="booking__submit">Zarezerwuj wizytę →</button>
+    </form>
+  </section>
+
+  <footer class="ft">
+    <div class="ft__inner">
+      <div>
+        <p class="ft__brand">Salon Lila<small>est. 2019</small></p>
+        <p class="ft__addr">ul. Puławska 145<br/>02-715 Warszawa<br/>+48 22 123 45 67<br/>kontakt@salonlila-demo.pl</p>
+      </div>
+      <div>
+        <h4 class="ft__nav-h">Usługi</h4>
+        <nav class="ft__nav">
+          <a href="#">Włosy</a>
+          <a href="#">Manicure i pedicure</a>
+          <a href="#">Twarz</a>
+          <a href="#">Pakiety SPA</a>
+        </nav>
+      </div>
+      <div>
+        <h4 class="ft__nav-h">Salon</h4>
+        <nav class="ft__nav">
+          <a href="#">O nas</a>
+          <a href="#">Zespół</a>
+          <a href="#">Galeria</a>
+          <a href="#">Kalendarz</a>
+        </nav>
+      </div>
+      <div>
+        <h4 class="ft__nav-h">Kontakt</h4>
+        <nav class="ft__nav">
+          <a href="#">Rezerwacja</a>
+          <a href="#">Bony upominkowe</a>
+          <a href="#">Polityka prywatności</a>
+          <a href="#">Mapa strony</a>
+        </nav>
+      </div>
+    </div>
+    <div class="ft__bottom">
+      <span>© 2026 Lila Beauty Sp. z o.o.</span>
+      <span>NIP 1234567890 · Mokotów, Warszawa</span>
+    </div>
+  </footer>
+
+  <p class="footer-note">↑ Pełny Elegant: full-bleed hero + product-label corner + karta usług + story split + gold-leaf divider + masonry gallery + zespół z fotografiami + single big testimonial + booking floating-labels + 4-col footer. Sygnatura: Cormorant italic + rose + gold + zero ostrych krawędzi.</p>
+</body>
+</html>

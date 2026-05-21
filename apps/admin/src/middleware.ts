@@ -10,6 +10,7 @@ import { applySecurityHeaders, generateNonce } from "@mixturemarketing/web-core/
 import { defineMiddleware } from "astro:middleware";
 
 import { readSessionCookie, validateSession } from "./lib/auth.ts";
+import { env } from "cloudflare:workers";
 
 const PUBLIC_PATHS = ["/login", "/api/auth/send-link", "/api/auth/verify"];
 
@@ -26,7 +27,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
   context.locals.nonce = nonce;
 
   // Try to load user from session cookie regardless (public pages need to check too)
-  const env = context.locals.runtime?.env;
   const sessionId = readSessionCookie(context.request.headers.get("Cookie"));
   if (env?.DB && sessionId) {
     const user = await validateSession(env.DB, sessionId).catch(() => null);

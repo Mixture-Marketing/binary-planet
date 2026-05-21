@@ -35,13 +35,14 @@ export async function setupTestDb(): Promise<TestSetup> {
   await db
     .prepare(
       `INSERT INTO clients (
-         id, business_name, industry, subtype_schema, theme_preset, city, tier, status,
+         id, business_name, nip, industry, subtype_schema, theme_preset, city, tier, status,
          primary_domain, feature_flags_json, modules_json
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       clientId,
       "Ślusarz Test",
+      "8121234567",
       "locksmith",
       "Locksmith",
       "craftsman",

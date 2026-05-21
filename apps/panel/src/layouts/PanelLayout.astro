@@ -1,7 +1,9 @@
 ---
+import { env } from "cloudflare:workers";
 import "../styles/panel.css";
 
 import Sidebar from "../components/Sidebar.astro";
+import ConfirmDialog from "../components/ConfirmDialog.astro";
 
 interface Props {
   title: string;
@@ -12,6 +14,17 @@ const client = Astro.locals.client;
 const nonce = Astro.locals.nonce ?? "";
 if (!client) {
   return Astro.redirect("/login");
+}
+
+// Fetch active addon slugs once per request — Sidebar uses these to conditionally
+// show navigation entries for addon-gated pages (Integracje, Instagram, Konkurencja).
+let activeAddons: string[] = [];
+if (env?.DB) {
+  const rows = await env.DB
+    .prepare(`SELECT addon_slug FROM client_addons WHERE client_id = ? AND status IN ('trial','active')`)
+    .bind(client.id)
+    .all<{ addon_slug: string }>();
+  activeAddons = (rows.results ?? []).map((r) => r.addon_slug);
 }
 ---
 
@@ -26,10 +39,11 @@ if (!client) {
   </head>
   <body>
     <div style="display: grid; grid-template-columns: 260px 1fr; min-height: 100vh;">
-      <Sidebar client={client} />
+      <Sidebar client={client} activeAddons={activeAddons} />
       <main style="padding: 2rem 2.5rem; max-width: 1400px; width: 100%;" data-nonce={nonce}>
         <slot />
       </main>
     </div>
+    <ConfirmDialog />
   </body>
 </html>

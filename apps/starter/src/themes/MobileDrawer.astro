@@ -1,0 +1,252 @@
+---
+/**
+ * Universal mobile drawer — full-screen menu sliding from right.
+ * Wired via `data-menu-toggle` button + this drawer in DOM.
+ *
+ * A11y: trap focus when open, ESC close, aria-expanded sync.
+ * Style: dziedziczy z theme tokens (color-surface/text/border).
+ */
+import clientConfig from "../client.config.ts";
+
+interface Props {
+  navItems: Array<{ href: string; label: string }>;
+  /** Style preset name dla custom styling. */
+  style?: "minimalist" | "elegant" | "editorial";
+}
+const { navItems, style = "minimalist" } = Astro.props;
+const currentPath = Astro.url.pathname.replace(/\/+$/, "") || "/";
+---
+
+<div class={`mob-drawer mob-drawer--${style}`} data-mobile-drawer aria-hidden="true" inert>
+  <div class="mob-drawer__backdrop" data-drawer-close></div>
+  <aside class="mob-drawer__panel" role="dialog" aria-label="Menu mobilne" aria-modal="true">
+    <button type="button" class="mob-drawer__close" data-drawer-close aria-label="Zamknij menu">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+
+    <nav aria-label="Nawigacja mobilna">
+      <ul class="mob-drawer__nav">
+        {navItems.map((item) => {
+          const isCurrent = currentPath === item.href.replace(/\/+$/, "") || (item.href === "/" && currentPath === "/");
+          return (
+            <li>
+              <a href={item.href} aria-current={isCurrent ? "page" : undefined} class={isCurrent ? "is-current" : ""}>
+                {item.label}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+
+    <div class="mob-drawer__footer">
+      <a href={`tel:${clientConfig.contact.primaryPhone}`} class="mob-drawer__phone">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        {clientConfig.contact.primaryPhone}
+      </a>
+      <a href={`mailto:${clientConfig.contact.email}`} class="mob-drawer__email">
+        {clientConfig.contact.email}
+      </a>
+    </div>
+  </aside>
+</div>
+
+<script>
+  function initDrawer(): void {
+    const drawer = document.querySelector<HTMLElement>("[data-mobile-drawer]");
+    if (!drawer) return;
+
+    // Cache the trigger so focus returns to it on close (WCAG 2.4.3 Focus Order)
+    let lastTrigger: HTMLElement | null = null;
+
+    function open(): void {
+      drawer!.classList.add("is-open");
+      drawer!.setAttribute("aria-hidden", "false");
+      drawer!.removeAttribute("inert");
+      document.body.style.overflow = "hidden";
+      // Sync aria-expanded on all menu toggles
+      document.querySelectorAll<HTMLElement>("[data-menu-toggle]").forEach((b) => {
+        b.setAttribute("aria-expanded", "true");
+      });
+      // Focus first link
+      const firstLink = drawer!.querySelector<HTMLElement>(".mob-drawer__nav a");
+      firstLink?.focus();
+    }
+    function close(): void {
+      drawer!.classList.remove("is-open");
+      drawer!.setAttribute("aria-hidden", "true");
+      drawer!.setAttribute("inert", "");
+      document.body.style.overflow = "";
+      document.querySelectorAll<HTMLElement>("[data-menu-toggle]").forEach((b) => {
+        b.setAttribute("aria-expanded", "false");
+      });
+      // Return focus to the trigger that opened the drawer
+      lastTrigger?.focus();
+      lastTrigger = null;
+    }
+
+    document.addEventListener("click", (e) => {
+      const target = e.target as Element;
+      const toggleBtn = target.closest("[data-menu-toggle]");
+      if (toggleBtn) {
+        e.preventDefault();
+        if (drawer.classList.contains("is-open")) {
+          close();
+        } else {
+          lastTrigger = toggleBtn as HTMLElement;
+          open();
+        }
+      } else if (target.closest("[data-drawer-close]")) {
+        e.preventDefault();
+        close();
+      } else if (target.closest(".mob-drawer__nav a")) {
+        // Close on nav click (smooth UX po wyborze linka)
+        close();
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && drawer.classList.contains("is-open")) close();
+    });
+
+    // Auto-close on Astro VT navigation
+    document.addEventListener("astro:before-preparation", close);
+  }
+
+  initDrawer();
+  document.addEventListener("astro:after-swap", initDrawer);
+</script>
+
+<style is:global>
+  .mob-drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    pointer-events: none;
+  }
+  .mob-drawer.is-open { pointer-events: auto; }
+
+  .mob-drawer__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    transition: opacity 300ms ease-out;
+  }
+  .mob-drawer.is-open .mob-drawer__backdrop { opacity: 1; }
+
+  .mob-drawer__panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(85vw, 360px);
+    background: var(--color-surface);
+    color: var(--color-text);
+    border-left: 1px solid var(--color-border);
+    transform: translateX(100%);
+    transition: transform 350ms cubic-bezier(0.83, 0, 0.17, 1);
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 1.5rem 2rem 1.5rem;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.1);
+  }
+  .mob-drawer.is-open .mob-drawer__panel { transform: translateX(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mob-drawer__backdrop,
+    .mob-drawer__panel {
+      transition: none !important;
+    }
+  }
+
+  .mob-drawer__close {
+    background: transparent;
+    border: 0;
+    color: var(--color-text);
+    cursor: pointer;
+    padding: 0.5rem;
+    align-self: flex-end;
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+  }
+  .mob-drawer__close:hover { background: var(--color-surface-muted); }
+  .mob-drawer__close:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+
+  .mob-drawer__nav {
+    list-style: none;
+    margin: 2rem 0 auto 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .mob-drawer__nav a {
+    display: block;
+    padding: 0.85rem 0.5rem;
+    color: var(--color-text);
+    text-decoration: none;
+    font-size: 1.15rem;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: background-color 200ms, color 200ms;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .mob-drawer__nav a:hover { background: var(--color-surface-muted); }
+  .mob-drawer__nav a.is-current { color: var(--color-brand); font-weight: 600; }
+  .mob-drawer__nav a:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+
+  .mob-drawer__footer {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .mob-drawer__phone {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-brand);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.05rem;
+    padding: 0.75rem 0.5rem;
+    min-height: 44px;
+  }
+  .mob-drawer__email {
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: 0.95rem;
+    padding: 0.5rem;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Per-style overrides */
+  .mob-drawer--elegant .mob-drawer__nav a {
+    font-family: var(--font-display);
+    font-style: italic;
+    letter-spacing: 0.02em;
+  }
+  .mob-drawer--editorial .mob-drawer__nav a {
+    font-family: var(--font-display);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.95rem;
+    letter-spacing: 0.1em;
+  }
+</style>

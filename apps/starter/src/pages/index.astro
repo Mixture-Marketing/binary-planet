@@ -1,19 +1,31 @@
 ---
-import CraftsmanLayout from "../themes/craftsman/layouts/CraftsmanLayout.astro";
-import Hero from "../themes/craftsman/components/Hero.astro";
-import ServicesList from "../themes/craftsman/components/ServicesList.astro";
-import OpeningHours from "../themes/craftsman/components/OpeningHours.astro";
-import ReviewsSection from "../themes/craftsman/components/ReviewsSection.astro";
-import ContactForm from "../themes/craftsman/components/ContactForm.astro";
+import CraftsmanLayout from "../themes/dynamic/layouts/CraftsmanLayout.astro";
+import Hero from "../themes/Hero.astro";
+import ServicesList from "../themes/ServicesList.astro";
+import OpeningHours from "../themes/OpeningHours.astro";
+import ReviewsSection from "../themes/ReviewsSection.astro";
+import ContactForm from "../themes/ContactForm.astro";
+import Sections from "../themes/Sections.astro";
 import { homeSeo } from "../lib/seo.ts";
+import clientConfig from "../client.config.ts";
+import { THEME_REGISTRY, type HomeSectionKey } from "../themes/registry.ts";
 
 const { meta, jsonLd } = homeSeo();
+
+// Per-theme section ordering — each theme defines its own narrative flow
+// (dynamic = urgency, elegant = atmosphere, editorial = narrative, minimalist = trust).
+const preset = clientConfig.theme.preset;
+const order = THEME_REGISTRY[preset].homeSectionOrder;
 ---
 
 <CraftsmanLayout meta={meta} jsonLd={jsonLd}>
-  <Hero />
-  <ServicesList linkToDetails={false} />
-  <ReviewsSection />
-  <OpeningHours />
-  <ContactForm />
+  {order.map((key: HomeSectionKey) => {
+    if (key === "hero") return <Hero />;
+    if (key === "services") return <ServicesList linkToDetails={false} />;
+    if (key === "reviews") return <ReviewsSection />;
+    if (key === "sections") return <Sections />;
+    if (key === "hours") return <OpeningHours />;
+    if (key === "contact") return <ContactForm />;
+    return null;
+  })}
 </CraftsmanLayout>

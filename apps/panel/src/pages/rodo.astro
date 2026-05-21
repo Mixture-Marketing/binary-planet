@@ -1,9 +1,9 @@
 ---
+import { env } from "cloudflare:workers";
 import PanelLayout from "../layouts/PanelLayout.astro";
 import Icon from "../components/Icon.astro";
 import { getConsentSummary } from "../lib/db.ts";
 
-const env = Astro.locals.runtime?.env;
 const client = Astro.locals.client;
 if (!env?.DB || !client) return new Response("Runtime not ready", { status: 500 });
 
@@ -91,12 +91,24 @@ const consents = await getConsentSummary(env.DB, client.id);
         <textarea name="reason" rows="2" placeholder="np. żądanie usunięcia danych RODO Art. 17"
                   style="padding: 0.6rem 0.8rem; border: 1px solid var(--c-border); border-radius: 6px;"></textarea>
       </label>
-      <button type="submit" class="btn btn-primary" style="align-self: flex-start;" disabled>
-        <Icon name="x-circle" size={16} /> Zgłoś usunięcie (v0.2)
+      <button type="submit" class="btn btn-primary" style="align-self: flex-start;">
+        <Icon name="x-circle" size={16} /> Zgłoś usunięcie
       </button>
       <p style="margin: 0; color: var(--c-text-muted); font-size: 0.8rem;">
-        Funkcja aktywna w v0.2. Tymczasowo — wyślij prośbę na <a href="mailto:rodo@mixturemarketing.pl" style="color: var(--c-brand);">rodo@mixturemarketing.pl</a>.
+        Leady z tym adresem email zostaną zanonimizowane natychmiast (zachowany hash do dedup + log audytowy).
       </p>
+      {(() => {
+        const url = new URL(Astro.request.url);
+        const erased = url.searchParams.get("erased");
+        const error = url.searchParams.get("error");
+        if (erased !== null) {
+          return <p style="margin: 0.5rem 0 0 0; padding: 0.6rem 0.9rem; background: #dcfce7; color: #047857; border-radius: 6px; font-size: 0.85rem;">✅ Zanonimizowano {erased} lead{Number(erased) === 1 ? "" : "ów"}.</p>;
+        }
+        if (error) {
+          return <p style="margin: 0.5rem 0 0 0; padding: 0.6rem 0.9rem; background: #fee2e2; color: #b91c1c; border-radius: 6px; font-size: 0.85rem;">❌ Błąd: {error}</p>;
+        }
+        return null;
+      })()}
     </form>
   </section>
 </PanelLayout>

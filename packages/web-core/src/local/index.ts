@@ -86,6 +86,19 @@ export {
 } from "./schema/validators.js";
 export type { LocalBusinessInputValidated } from "./schema/validators.js";
 
+// PL phone formatting
+export { formatPolishPhone, phoneAriaLabel } from "./phone.js";
+
+// Open-status (is the business open NOW + next-open message)
+export {
+  computeOpenStatus,
+  isEmergency24h,
+  openStatusMessage,
+  type DayKey,
+  type OpenStatus,
+  type OpenStatusInput,
+} from "./open-status.js";
+
 // PL address helpers
 export {
   isValidPolishPostalCode,

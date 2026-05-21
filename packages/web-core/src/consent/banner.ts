@@ -102,11 +102,12 @@ export function consentBannerCss(options: { brandColor?: string } = {}): string 
   position: fixed;
   inset: auto 0 0 0;
   z-index: 9999;
-  padding: 1rem;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
+  padding: 0.5rem;
+  /* Mobile: tylko cienka linia tła (nie ściemniaj viewport), card sam w sobie nie blokuje hero */
+  background: transparent;
   display: flex;
   justify-content: center;
+  pointer-events: none; /* clicks pass through padding/bg */
 }
 #mm-consent-banner[hidden] {
   display: none !important;
@@ -115,10 +116,26 @@ export function consentBannerCss(options: { brandColor?: string } = {}): string 
   background: white;
   color: #1a1a1a;
   max-width: 56rem;
-  padding: 1.5rem;
+  padding: 1rem 1.25rem;
   border-radius: 0.75rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
   width: 100%;
+  pointer-events: auto;
+  /* Mobile cap: max ~28% viewport tak, że hero CTA i sticky bar zawsze widoczne nad/pod */
+  max-height: 28vh;
+  overflow-y: auto;
+}
+@media (min-width: 640px) {
+  #mm-consent-banner {
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    pointer-events: auto;
+  }
+  #mm-consent-banner .mm-consent-card {
+    max-height: 80vh;
+    padding: 1.5rem;
+  }
 }
 #mm-consent-banner h2 {
   font-size: 1.15rem;

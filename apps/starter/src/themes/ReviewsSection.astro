@@ -1,0 +1,14 @@
+---
+import clientConfig from "../client.config.ts";
+import MinimalistReviews from "./minimalist/components/ReviewsSection.astro";
+import ElegantReviews from "./elegant/components/ReviewsSection.astro";
+import DynamicReviews from "./dynamic/components/ReviewsSection.astro";
+import EditorialReviews from "./editorial/components/ReviewsSection.astro";
+
+const preset = clientConfig.theme.preset;
+---
+
+{preset === "minimalist" && <MinimalistReviews />}
+{preset === "elegant" && <ElegantReviews />}
+{preset === "dynamic" && <DynamicReviews />}
+{preset === "editorial" && <EditorialReviews />}

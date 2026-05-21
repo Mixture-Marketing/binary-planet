@@ -1,0 +1,142 @@
+---
+/**
+ * Elegant Header — appears only AFTER user scrolls past hero.
+ * Initially hidden (hero has its own brand). On scroll: cream-paper bar
+ * with italic brand left, mini nav center, phone right.
+ *
+ * Implementation: pure CSS via IntersectionObserver in JS would add complexity;
+ * we use a sticky bar that fades in via scroll-triggered visibility.
+ */
+import { formatPolishPhone, phoneAriaLabel } from "@mixturemarketing/web-core/local";
+import clientConfig from "../../../client.config.ts";
+import ThemeToggle from "../../ThemeToggle.astro";
+import MobileDrawer from "../../MobileDrawer.astro";
+
+const navItems = [
+  { href: "/", label: "Główna" },
+  { href: "/oferta", label: "Usługi" },
+  { href: "/o-firmie", label: "O nas" },
+  { href: "/aktualnosci", label: "Galeria" },
+  { href: "/kontakt", label: "Rezerwacja" },
+];
+const currentPath = Astro.url.pathname.replace(/\/+$/, "") || "/";
+const phoneDisplay = formatPolishPhone(clientConfig.contact.primaryPhone);
+const phoneAria = phoneAriaLabel(clientConfig.contact.primaryPhone);
+---
+
+<header role="banner" class="e-header" data-e-header>
+  <div class="container-px e-header__inner">
+    <a href="/" class="e-header__brand">{clientConfig.business.name}</a>
+
+    <nav class="e-header__nav" aria-label="Główna nawigacja" data-nav-desktop>
+      <ul>
+        {navItems.map((item) => {
+          const isCurrent = currentPath === item.href.replace(/\/+$/, "") || (item.href === "/" && currentPath === "/");
+          return (
+            <li>
+              <a href={item.href} aria-current={isCurrent ? "page" : undefined} class={isCurrent ? "is-current" : ""}>
+                {item.label}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+
+    <div class="e-header__right">
+      <a href={`tel:${clientConfig.contact.primaryPhone}`} class="e-header__phone" aria-label={phoneAria}>
+        {phoneDisplay}
+      </a>
+      <ThemeToggle style="elegant" />
+      <button type="button" class="e-header__menu" aria-label="Otwórz menu" data-menu-toggle aria-controls="mobile-drawer" aria-expanded="false">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<MobileDrawer navItems={navItems} style="elegant" />
+
+<style>
+  .e-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .e-header { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--color-surface); }
+  }
+  .e-header__inner {
+    max-width: 76rem;
+    margin: 0 auto;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+  .e-header__brand {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.35rem;
+    color: var(--color-text);
+    text-decoration: none;
+    letter-spacing: -0.005em;
+  }
+  .e-header__nav { display: none; }
+  @media (min-width: 900px) { .e-header__nav { display: flex; } }
+  .e-header__nav ul {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .e-header__nav a {
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    transition: color 200ms ease;
+    padding-bottom: 2px;
+    border-bottom: 1px solid transparent;
+  }
+  .e-header__nav a:hover { color: var(--color-text); }
+  .e-header__nav a.is-current {
+    color: var(--color-brand);
+    border-bottom-color: var(--color-accent);
+  }
+
+  .e-header__right { display: flex; align-items: center; gap: 0.75rem; }
+  .e-header__phone {
+    display: none;
+    color: var(--color-text);
+    text-decoration: none;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    font-variant-numeric: tabular-nums;
+  }
+  @media (min-width: 640px) { .e-header__phone { display: inline-flex; } }
+  .e-header__phone:hover { color: var(--color-brand); }
+
+  .e-header__menu {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    background: transparent;
+    border: 0;
+    color: var(--color-text);
+    cursor: pointer;
+  }
+  @media (min-width: 900px) { .e-header__menu { display: none; } }
+</style>

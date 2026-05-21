@@ -1,0 +1,95 @@
+---
+/**
+ * Dynamic ServicesList — card grid (auto-fit), red price tag bottom, hover-lift.
+ */
+import clientConfig from "../../../client.config.ts";
+
+interface Props { heading?: string; linkToDetails?: boolean; }
+const { heading = "Wycena bez wychodzenia z domu", linkToDetails = false } = Astro.props;
+const { services } = clientConfig;
+---
+
+<section aria-labelledby="services-heading" class="d-services" id="oferta">
+  <div class="container-px d-services__inner">
+    <header class="d-services__head">
+      <span class="d-services__eyebrow"># cennik usług</span>
+      <h2 id="services-heading" class="d-services__h2">{heading}</h2>
+    </header>
+
+    <div class="d-services__grid">
+      {services.map((s) => {
+        const Tag = linkToDetails ? "a" : "div";
+        return (
+          <Tag
+            {...(linkToDetails ? { href: `/uslugi/${s.slug}` } : {})}
+            class="d-service"
+            data-track-event={linkToDetails ? "service_click" : undefined}
+          >
+            <h3 class="d-service__name">{s.name}</h3>
+            <p class="d-service__desc">{s.description}</p>
+            {s.priceFrom && <span class="d-service__price">{s.priceFrom}</span>}
+          </Tag>
+        );
+      })}
+    </div>
+  </div>
+</section>
+
+<style>
+  .d-services {
+    padding-block: clamp(4rem, 7vw, 6rem);
+    background: var(--color-surface);
+  }
+  .d-services__inner { max-width: 80rem; margin: 0 auto; }
+  .d-services__head { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 2.5rem; }
+  .d-services__eyebrow { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.78rem; letter-spacing: 0.12em; color: var(--color-text-muted); }
+  .d-services__h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+    margin: 0;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    color: var(--color-text);
+  }
+  .d-services__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.85rem;
+  }
+  .d-service {
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    padding: 1.5rem;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: border-color 200ms ease, transform 200ms ease;
+    text-decoration: none;
+    color: inherit;
+  }
+  .d-service:hover { border-color: var(--color-brand); transform: translateY(-2px); }
+  .d-service__name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin: 0;
+    color: var(--color-text);
+    letter-spacing: -0.01em;
+  }
+  .d-service__desc {
+    font-size: 0.88rem;
+    color: var(--color-text-muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .d-service__price {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.85rem;
+    color: var(--color-brand);
+    font-weight: 600;
+    margin-top: auto;
+    font-variant-numeric: tabular-nums;
+  }
+</style>

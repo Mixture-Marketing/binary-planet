@@ -54,6 +54,9 @@ wrangler.toml.local
 # pnpm
 .pnpm-debug.log
 
+# Claude Code working dir (skills, locks, internal state — not source)
+.claude/
+
 # Temporary
 tmp/
 temp/

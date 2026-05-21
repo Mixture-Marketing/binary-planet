@@ -1,10 +1,10 @@
 ---
+import { env } from "cloudflare:workers";
 import AdminLayout from "../layouts/AdminLayout.astro";
 import StatCard from "../components/StatCard.astro";
 
 import { getDashboardStats, listRecentLeads, listOpenAlerts } from "../lib/db.ts";
 
-const env = Astro.locals.runtime?.env;
 if (!env?.DB) return new Response("Runtime not available", { status: 500 });
 
 const stats = await getDashboardStats(env.DB);

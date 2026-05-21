@@ -1,0 +1,86 @@
+---
+/**
+ * Minimalist Stats — mono-monumental row, 4 numbers, hairline dividers.
+ * Auto-builds from clientConfig (years, reviews, service area, employee count or OC).
+ */
+import clientConfig from "../../../client.config.ts";
+
+const { business, location, reviews } = clientConfig;
+const yearsActive = business.foundedYear ? new Date().getFullYear() - business.foundedYear : null;
+const reviewsCount = reviews?.length ?? 0;
+
+// Build stat list dynamically — ONLY include meaningful numbers.
+// "3 reviews" as a hero stat = template-tell (Linear/Vercel never quantify weakness).
+// Skip reviewsCount if < 10 (low-count perfect-rating triggers Google quality filter + looks weak).
+type Stat = { value: string; suffix?: string; label: string; accent?: boolean };
+const items: Stat[] = [];
+if (yearsActive && yearsActive >= 1) items.push({ value: String(yearsActive), label: "Lat praktyki" });
+items.push({ value: String(location.serviceArea.length), label: "Obszarów obsługi", accent: true });
+if (reviewsCount >= 10) items.push({ value: String(reviewsCount), label: "Opinii Google" });
+if (business.employeeCount && business.employeeCount > 0) items.push({ value: String(business.employeeCount), label: "Osób w zespole" });
+
+// Render section ONLY when we have ≥3 stats — fewer = looks empty.
+const shouldRender = items.length >= 3;
+---
+
+{shouldRender && (
+<section class="m-stats" aria-label="Liczby firmy">
+  <div class="container-px m-stats__inner">
+    <div class="m-stats__grid" data-count={items.length}>
+      {items.slice(0, 4).map((s) => (
+        <div class="m-stat">
+          <p class={`m-stat__val${s.accent ? " m-stat__val--accent" : ""}`}>
+            {s.value}{s.suffix && <small>{s.suffix}</small>}
+          </p>
+          {s.label && <p class="m-stat__label">{s.label}</p>}
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+)}
+
+<style>
+  .m-stats {
+    padding-block: clamp(3rem, 6vw, 5rem);
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+  }
+  .m-stats__inner { max-width: 80rem; margin: 0 auto; }
+  .m-stats__grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; }
+  @media (min-width: 768px) { .m-stats__grid { grid-template-columns: repeat(4, 1fr); } }
+  .m-stat {
+    padding: 1.5rem;
+    border-right: 1px solid var(--color-border);
+  }
+  .m-stat:last-child { border-right: 0; }
+  @media (max-width: 767px) {
+    .m-stat:nth-child(2n) { border-right: 0; }
+    .m-stat:nth-child(-n+2) { border-bottom: 1px solid var(--color-border); }
+  }
+  .m-stat__val {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    line-height: 1;
+    letter-spacing: -0.04em;
+    margin: 0;
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+  }
+  .m-stat__val--accent { color: var(--color-brand); }
+  .m-stat__val small {
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    margin-left: 0.25rem;
+  }
+  .m-stat__label {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+    margin-top: 0.5rem;
+    text-transform: uppercase;
+  }
+</style>

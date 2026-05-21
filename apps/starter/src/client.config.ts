@@ -8,7 +8,7 @@
 import { validateClientConfig, type ClientConfig } from "./client.config.schema.js";
 
 const config: ClientConfig = {
-  clientId: "clk_kowalski_rzeszow",
+  clientId: "clk_demo_dynamic",
 
   business: {
     name: "Ślusarz Kowalski",
@@ -103,12 +103,13 @@ const config: ClientConfig = {
   },
 
   theme: {
-    preset: "craftsman",
-    variant: "red-bold",
+    preset: "dynamic",
+    variant: "red-action",
+    mode: "light",
   },
 
   domain: {
-    primary: "kowalski-slusarz.pl",
+    primary: "demo-dynamic.mixturemarketing.pl",
     canonicalScheme: "https",
   },
 
@@ -148,6 +149,11 @@ const config: ClientConfig = {
     termsUrl: "https://kowalski-slusarz.pl/regulamin",
     dpaSigned: true,
   },
+
+  sections: [
+    { kind: "pricing", enabled: true },
+    { kind: "video", enabled: false, config: { heading: "Zobacz nas w akcji" } },
+  ],
 };
 
 // Validate at module-load. Throws on bad config — fails Astro build.

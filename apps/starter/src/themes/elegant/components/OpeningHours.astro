@@ -1,0 +1,107 @@
+---
+/**
+ * Elegant OpeningHours — serif italic table, ornament header, no badges.
+ */
+import clientConfig from "../../../client.config.ts";
+import { ORNAMENT_PATHS } from "@mixturemarketing/web-core/ornaments";
+
+const { hours, location } = clientConfig;
+const DAYS: Array<[keyof typeof hours, string]> = [
+  ["monday", "Poniedziałek"], ["tuesday", "Wtorek"], ["wednesday", "Środa"],
+  ["thursday", "Czwartek"], ["friday", "Piątek"], ["saturday", "Sobota"], ["sunday", "Niedziela"],
+];
+const today = new Date().getDay();
+const todayKey: keyof typeof hours = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][today]! as keyof typeof hours;
+const renderHours = (v: unknown): string => {
+  if (v === "closed") return "zamknięte";
+  if (Array.isArray(v) && v.length === 2) return `${v[0]} – ${v[1]}`;
+  return "—";
+};
+---
+
+<section aria-labelledby="hours-heading" class="e-hours">
+  <div class="container-px e-hours__inner">
+    <header class="e-hours__head">
+      <p class="e-hours__overline">Wizyty</p>
+      <h2 id="hours-heading" class="e-hours__title">Godziny otwarcia</h2>
+      <div class="e-hours__divider" aria-hidden="true">
+        <svg viewBox="0 0 100 24" width="120" height="20" set:html={ORNAMENT_PATHS["divider-fleuron"]}></svg>
+      </div>
+    </header>
+
+    <dl class="e-hours__table">
+      {DAYS.map(([key, label]) => {
+        const isToday = key === todayKey;
+        return (
+          <div class={`e-hours__row ${isToday ? "is-today" : ""}`}>
+            <dt>{label}</dt>
+            <dd>{renderHours(hours[key])}</dd>
+          </div>
+        );
+      })}
+    </dl>
+
+    {hours.note && (
+      <p class="e-hours__note">{hours.note}</p>
+    )}
+
+    <p class="e-hours__address">
+      {location.address.streetAddress}, {location.address.postalCode} {location.address.city}
+    </p>
+  </div>
+</section>
+
+<style>
+  .e-hours { padding-block: 5rem; background: var(--color-surface); }
+  .e-hours__inner { max-width: 40rem; margin: 0 auto; text-align: center; }
+  .e-hours__head { margin-bottom: 2.5rem; }
+  .e-hours__overline {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--color-accent); margin: 0 0 0.75rem 0;
+  }
+  .e-hours__title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4.5vw, 3rem);
+    font-weight: 500; font-style: italic;
+    margin: 0; color: var(--color-text); line-height: 1.1;
+  }
+  .e-hours__divider { margin-top: 1.25rem; color: var(--color-accent); }
+  .e-hours__table {
+    margin: 0; padding: 0;
+    border-top: 1px solid var(--color-border);
+  }
+  .e-hours__row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .e-hours__row dt {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--color-text);
+    font-size: 1.05rem;
+  }
+  .e-hours__row dd {
+    margin: 0;
+    font-family: var(--font-body);
+    color: var(--color-text-muted);
+    font-size: 1rem;
+  }
+  .e-hours__row.is-today dt,
+  .e-hours__row.is-today dd { color: var(--color-brand); font-weight: 500; }
+  .e-hours__note {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--color-accent);
+    margin: 2rem 0 0 0;
+    font-size: 1rem;
+  }
+  .e-hours__address {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    margin: 0.5rem 0 0 0;
+    font-style: italic;
+  }
+</style>

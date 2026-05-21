@@ -1,0 +1,119 @@
+---
+/**
+ * Dynamic ReviewsSection — 3-card grid with quote-mark watermark,
+ * yellow stars, mono metadata. Plus aggregate rating line.
+ */
+import clientConfig from "../../../client.config.ts";
+
+interface Props { heading?: string; }
+const { heading = "Klienci mówią" } = Astro.props;
+const reviews = clientConfig.reviews ?? [];
+const avg = reviews.length > 0
+  ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+  : null;
+---
+
+{reviews.length > 0 && (
+  <section aria-labelledby="reviews-heading" class="d-reviews">
+    <div class="container-px d-reviews__inner">
+      <header class="d-reviews__head">
+        <h2 id="reviews-heading" class="d-reviews__h2">{heading}</h2>
+        {avg && (
+          <p class="d-reviews__rating" aria-label={`Ocena ${avg} na 5 z ${reviews.length} opinii`}>
+            <strong>{avg} / 5</strong> · {reviews.length} {reviews.length === 1 ? "opinia" : reviews.length < 5 ? "opinie" : "opinii"} · Google
+          </p>
+        )}
+      </header>
+
+      <div class="d-reviews__grid">
+        {reviews.map((r) => (
+          <article class="d-review">
+            <div class="d-review__stars" aria-hidden="true">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</div>
+            <p class="d-review__text">{r.text}</p>
+            <p class="d-review__author"><strong>{r.author}</strong> · {r.date}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .d-reviews {
+    padding-block: clamp(4rem, 7vw, 6rem);
+    background: var(--color-surface);
+  }
+  .d-reviews__inner { max-width: 80rem; margin: 0 auto; }
+  .d-reviews__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  .d-reviews__h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+    margin: 0;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    color: var(--color-text);
+  }
+  .d-reviews__rating {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+  .d-reviews__rating strong { color: var(--color-brand); font-weight: 700; }
+
+  .d-reviews__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  @media (min-width: 768px) { .d-reviews__grid { grid-template-columns: repeat(3, 1fr); } }
+
+  .d-review {
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    padding: 1.75rem;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    position: relative;
+  }
+  .d-review::before {
+    content: '"';
+    position: absolute;
+    top: 0.5rem;
+    right: 1.25rem;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 4rem;
+    color: var(--color-brand);
+    opacity: 0.15;
+    line-height: 1;
+  }
+  .d-review__stars { color: #fbbf24; letter-spacing: 0.1em; }
+  .d-review__text {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: var(--color-text);
+    margin: 0;
+  }
+  .d-review__author {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    margin: 0;
+    margin-top: auto;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--color-border);
+  }
+  .d-review__author strong { color: var(--color-text); font-family: var(--font-display); font-size: 0.92rem; font-weight: 700; }
+</style>

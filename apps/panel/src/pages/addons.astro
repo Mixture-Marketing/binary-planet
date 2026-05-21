@@ -1,0 +1,295 @@
+---
+import { env } from "cloudflare:workers";
+import "../styles/panel.css";
+
+const client = Astro.locals.client;
+if (!client) return Astro.redirect("/login?next=%2Faddons");
+
+if (!env?.DB) return new Response("Runtime not available", { status: 500 });
+
+import {
+  listAddons,
+  listBundles,
+  listClientAddons,
+  filterRecommendedForIndustry,
+  monthlyAddonSpend,
+  categoryLabel,
+  formatPrice,
+  type AddonModule,
+} from "../lib/addons.ts";
+
+const [catalog, bundles, active] = await Promise.all([
+  listAddons(env.DB),
+  listBundles(env.DB),
+  listClientAddons(env.DB, client.id),
+]);
+
+// Klient's industry — fetched from clients table
+const clientRow = await env.DB
+  .prepare(`SELECT industry, primary_domain, tier FROM clients WHERE id = ? LIMIT 1`)
+  .bind(client.id)
+  .first<{ industry: string | null; primary_domain: string | null; tier: string }>();
+const industry = clientRow?.industry ?? null;
+
+const activeSlugs = new Set(active.map((a) => a.addon_slug));
+const monthlySpend = monthlyAddonSpend(active, catalog);
+const tierBaseGrosze = { starter: 17900, standard: 24900, premium: 34900, professional: 54900 }[clientRow?.tier ?? "standard"] ?? 24900;
+
+const recommended = filterRecommendedForIndustry(catalog, industry)
+  .filter((a) => !activeSlugs.has(a.slug))
+  .slice(0, 3);
+
+const recommendedBundles = bundles
+  .filter((b) => !industry || b.recommended_for.includes(industry))
+  .filter((b) => !b.addon_slugs.every((s) => activeSlugs.has(s)))
+  .slice(0, 2);
+
+// Group full catalog by category
+const grouped = catalog.reduce<Record<AddonModule["category"], AddonModule[]>>((acc, a) => {
+  (acc[a.category] ??= []).push(a);
+  return acc;
+}, {} as Record<AddonModule["category"], AddonModule[]>);
+
+const categoryOrder: AddonModule["category"][] = [
+  "marketing_seo", "design_ux", "ai_automation", "sales_conversion", "security_analytics", "one_time",
+];
+
+const industryLabel: Record<string, string> = {
+  locksmith: "ślusarz/mechanik",
+  auto_repair: "warsztat samochodowy",
+  beauty: "salon kosmetyczny",
+  hairdresser: "fryzjer",
+  barber: "barber",
+  dentist: "dentysta",
+  physiotherapist: "fizjoterapeuta",
+  accountant: "biuro rachunkowe",
+  lawyer: "kancelaria prawna",
+  restaurant: "restauracja",
+  cafe: "kawiarnia",
+  florist: "kwiaciarnia",
+  fitness_trainer: "trener personalny",
+  carpenter: "stolarz",
+  plumber: "hydraulik",
+  electrician: "elektryk",
+  roofer: "dekarz",
+};
+---
+
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Dodatki — {client.businessName}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body style="padding: 2rem; background: var(--c-bg); min-height: 100vh;">
+    <main style="max-width: 1100px; margin: 0 auto;">
+      <header style="margin-bottom: 2rem;">
+        <a href="/" style="color: var(--c-brand); text-decoration: none; font-size: 0.85rem;">← Panel</a>
+        <h1 style="font-size: 1.75rem; font-weight: 800; margin: 0.5rem 0;">Dodatki i rozszerzenia</h1>
+        <p style="color: var(--c-text-muted); margin: 0;">
+          Twoja subskrypcja: <strong>{(clientRow?.tier ?? "standard").toUpperCase()}</strong> ({(tierBaseGrosze / 100).toFixed(0)} zł/mc)
+          {monthlySpend > 0 && <span> · Dodatki recurring: <strong>{(monthlySpend / 100).toFixed(0)} zł/mc</strong></span>}
+          {monthlySpend > 0 && <span> · <strong>Razem: {((tierBaseGrosze + monthlySpend) / 100).toFixed(0)} zł/mc</strong></span>}
+        </p>
+      </header>
+
+      {/* Active addons */}
+      {active.length > 0 && (
+        <section style="margin-bottom: 2rem;">
+          <h2 style="font-size: 1.15rem; font-weight: 700; margin: 0 0 0.75rem 0;">Aktywne ({active.length})</h2>
+          <div style="display: grid; gap: 0.5rem;">
+            {active.map((a) => {
+              const meta = catalog.find((c) => c.slug === a.addon_slug);
+              if (!meta) return null;
+              return (
+                <article class="card" style="display: grid; grid-template-columns: 1fr max-content; gap: 1rem; align-items: center;">
+                  <div>
+                    <p style="margin: 0; font-weight: 600;">
+                      {meta.name}
+                      {a.status === "trial" && <span class="badge" style="margin-left: 0.4rem; background: #fef3c7; color: #78350f;">trial do {a.trial_until?.slice(0, 10)}</span>}
+                      {a.status === "active" && <span class="badge badge-success" style="margin-left: 0.4rem;">aktywny</span>}
+                    </p>
+                    <p style="margin: 0.2rem 0 0 0; font-size: 0.82rem; color: var(--c-text-muted);">
+                      {formatPrice(a.price_grosze_at_activation, meta.billing_period)} · aktywowano {a.activated_at.slice(0, 10)}
+                    </p>
+                  </div>
+                  <button type="button" class="btn addon-deactivate-btn" data-slug={a.addon_slug} data-name={meta.name} style="font-size: 0.78rem; padding: 0.35rem 0.7rem;">
+                    Wyłącz
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Recommended for industry */}
+      {recommended.length > 0 && (
+        <section style="margin-bottom: 2rem;">
+          <h2 style="font-size: 1.15rem; font-weight: 700; margin: 0 0 0.75rem 0;">
+            💡 Polecane dla branży: <span style="color: var(--c-brand);">{industry ? industryLabel[industry] ?? industry : "—"}</span>
+          </h2>
+          <div style="display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+            {recommended.map((a) => (
+              <article class="card" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <div>
+                  <p style="margin: 0; font-weight: 700;">{a.name}</p>
+                  <p style="margin: 0.2rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">{a.short_description}</p>
+                </div>
+                <p style="margin: 0; font-size: 0.85rem; color: var(--c-success); font-weight: 600;">✓ {a.benefit_line}</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto;">
+                  <strong>{formatPrice(a.price_grosze, a.billing_period)}</strong>
+                  <button type="button" class="btn btn-primary addon-activate-btn" data-slug={a.slug} data-name={a.name} style="font-size: 0.8rem; padding: 0.4rem 0.85rem;">
+                    Aktywuj
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Bundle deals */}
+      {recommendedBundles.length > 0 && (
+        <section style="margin-bottom: 2rem;">
+          <h2 style="font-size: 1.15rem; font-weight: 700; margin: 0 0 0.75rem 0;">🎁 Pakiety dodatków (oszczędzaj)</h2>
+          <div style="display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+            {recommendedBundles.map((b) => {
+              const items = b.addon_slugs.map((s) => catalog.find((c) => c.slug === s)).filter((x): x is AddonModule => !!x);
+              const regularPrice = items.reduce((sum, i) => sum + i.price_grosze, 0);
+              const saving = regularPrice - b.bundle_price_grosze;
+              return (
+                <article class="card" style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%); border-left: 3px solid #10b981;">
+                  <p style="margin: 0; font-weight: 700; font-size: 1rem;">{b.name}</p>
+                  <p style="margin: 0.3rem 0 0.5rem 0; font-size: 0.85rem; color: var(--c-text-muted);">{b.description}</p>
+                  <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.8rem;">
+                    {items.map((i) => <li>{i.name} ({formatPrice(i.price_grosze, i.billing_period)})</li>)}
+                  </ul>
+                  <p style="margin: 0.5rem 0 0.6rem 0; font-size: 0.9rem;">
+                    <s style="color: var(--c-text-muted);">{(regularPrice / 100).toFixed(0)} zł</s>
+                    {" "}
+                    <strong style="color: #047857; font-size: 1.1rem;">{(b.bundle_price_grosze / 100).toFixed(0)} zł/mc</strong>
+                    {" "}
+                    <span style="background: #10b981; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700;">oszczędzasz {(saving / 100).toFixed(0)} zł</span>
+                  </p>
+                  <button type="button" class="btn btn-primary bundle-activate-btn" data-bundle-slug={b.slug} data-slugs={b.addon_slugs.join(",")} data-name={b.name} style="font-size: 0.85rem;">
+                    Aktywuj cały pakiet
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Full catalog by category */}
+      <section style="margin-bottom: 2rem;">
+        <h2 style="font-size: 1.15rem; font-weight: 700; margin: 0 0 1rem 0;">Wszystkie dodatki</h2>
+        {categoryOrder.map((cat) => {
+          const items = grouped[cat] ?? [];
+          if (items.length === 0) return null;
+          return (
+            <details class="card" style="margin-bottom: 0.5rem;">
+              <summary style="cursor: pointer; font-weight: 600; display: flex; justify-content: space-between;">
+                <span>{categoryLabel(cat)}</span>
+                <span style="color: var(--c-text-muted); font-size: 0.85rem;">{items.length} {items.length === 1 ? "dodatek" : "dodatków"}</span>
+              </summary>
+              <div style="margin-top: 0.75rem; display: grid; gap: 0.6rem;">
+                {items.map((a) => {
+                  const isActive = activeSlugs.has(a.slug);
+                  return (
+                    <div style="padding: 0.6rem 0.8rem; background: var(--c-bg); border-radius: 6px; display: grid; grid-template-columns: 1fr max-content; gap: 1rem; align-items: center;">
+                      <div>
+                        <p style="margin: 0; font-weight: 600; font-size: 0.92rem;">{a.name}</p>
+                        <p style="margin: 0.15rem 0 0 0; font-size: 0.78rem; color: var(--c-text-muted);">{a.short_description}</p>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 0.6rem;">
+                        <strong style="font-size: 0.85rem; white-space: nowrap;">{formatPrice(a.price_grosze, a.billing_period)}</strong>
+                        {isActive ? (
+                          <span class="badge badge-success" style="font-size: 0.7rem;">aktywny</span>
+                        ) : (
+                          <button type="button" class="btn addon-activate-btn" data-slug={a.slug} data-name={a.name} style="font-size: 0.78rem; padding: 0.3rem 0.65rem; min-height: 28px;">
+                            Aktywuj
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
+          );
+        })}
+      </section>
+
+      <p style="text-align: center; color: var(--c-text-muted); font-size: 0.82rem; margin-top: 2rem;">
+        Pytania? <a href="mailto:info@mixturemarketing.pl" style="color: var(--c-brand);">info@mixturemarketing.pl</a>
+      </p>
+    </main>
+
+    <script is:inline>
+      async function activateOne(slug, name, btn) {
+        if (!(await window.mmConfirm(`Aktywować "${name}"? Naliczane od kolejnej faktury.`, { confirmLabel: "Aktywuj" }))) return;
+        btn.disabled = true;
+        btn.textContent = "...";
+        try {
+          const res = await fetch(`/api/addons/${slug}/activate`, { method: "POST" });
+          const json = await res.json();
+          if (json.ok) {
+            btn.textContent = "OK ✓";
+            setTimeout(() => location.reload(), 600);
+          } else {
+            alert("Błąd: " + (json.error ?? "unknown"));
+            btn.disabled = false;
+            btn.textContent = "Aktywuj";
+          }
+        } catch (e) {
+          alert("Network: " + e);
+          btn.disabled = false;
+          btn.textContent = "Aktywuj";
+        }
+      }
+
+      document.querySelectorAll(".addon-activate-btn").forEach((b) => {
+        b.addEventListener("click", () => activateOne(b.dataset.slug, b.dataset.name, b));
+      });
+
+      document.querySelectorAll(".addon-deactivate-btn").forEach((b) => {
+        b.addEventListener("click", async () => {
+          if (!(await window.mmConfirm(`Wyłączyć "${b.dataset.name}"? Działa do końca opłaconego okresu.`, { confirmLabel: "Wyłącz", danger: true }))) return;
+          b.disabled = true;
+          const res = await fetch(`/api/addons/${b.dataset.slug}/deactivate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reason: "klient_self_service" }),
+          });
+          const json = await res.json();
+          if (json.ok) location.reload();
+          else { alert("Błąd: " + (json.error ?? "unknown")); b.disabled = false; }
+        });
+      });
+
+      document.querySelectorAll(".bundle-activate-btn").forEach((b) => {
+        b.addEventListener("click", async () => {
+          if (!(await window.mmConfirm(`Aktywować pakiet "${b.dataset.name}"? Wszystkie dodatki zostaną włączone razem.`, { confirmLabel: "Aktywuj pakiet" }))) return;
+          b.disabled = true;
+          b.textContent = "...";
+          const slugs = (b.dataset.slugs || "").split(",").filter(Boolean);
+          const results = await Promise.all(slugs.map((s) => fetch(`/api/addons/${s}/activate`, { method: "POST" }).then((r) => r.json())));
+          const failed = results.filter((r) => !r.ok);
+          if (failed.length === 0) {
+            b.textContent = "Aktywowane ✓";
+            setTimeout(() => location.reload(), 600);
+          } else {
+            alert(`${results.length - failed.length}/${results.length} aktywowane. Błędy: ` + failed.map((f) => f.error).join(", "));
+            b.disabled = false;
+            b.textContent = "Aktywuj cały pakiet";
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -8,19 +8,26 @@ interface Props {
     businessName: string;
     tier: string;
   };
+  activeAddons?: string[];
 }
 
-const { client } = Astro.props;
+const { client, activeAddons = [] } = Astro.props;
 const currentPath = Astro.url.pathname;
+const hasAddon = (slug: string): boolean => activeAddons.includes(slug);
 
-const navItems: { href: string; label: string; icon: IconName }[] = [
+type NavItem = { href: string; label: string; icon: IconName; show?: boolean };
+const navItems: NavItem[] = [
   { href: "/", label: "Dashboard", icon: "layout-dashboard" },
   { href: "/leady", label: "Leady", icon: "inbox" },
   { href: "/faktury", label: "Faktury", icon: "file-text" },
   { href: "/raporty", label: "Raporty", icon: "clipboard-list" },
+  { href: "/integrations", label: "Integracje", icon: "package", show: hasAddon("wolt_glovo") || hasAddon("nfc_stand") },
+  { href: "/instagram", label: "Instagram", icon: "external-link", show: hasAddon("instagram_sync") },
+  { href: "/competitor-monitoring", label: "Konkurencja", icon: "target", show: hasAddon("competitor_monitoring") },
+  { href: "/addons", label: "Dodatki", icon: "plus" },
   { href: "/ustawienia", label: "Ustawienia", icon: "settings" },
   { href: "/rodo", label: "RODO", icon: "shield-check" },
-];
+].filter((it) => it.show !== false);
 
 const isActive = (href: string): boolean => {
   if (href === "/") return currentPath === "/";

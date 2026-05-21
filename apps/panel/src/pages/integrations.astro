@@ -1,0 +1,103 @@
+---
+import { env } from "cloudflare:workers";
+import "../styles/panel.css";
+
+const client = Astro.locals.client;
+if (!client) return Astro.redirect("/login?next=%2Fintegrations");
+
+if (!env?.DB) return new Response("Runtime not available", { status: 500 });
+
+const [deliveryAddon, nfcAddon, deliveryCfg, nfcCfg] = await Promise.all([
+  env.DB.prepare(`SELECT id FROM client_addons WHERE client_id=? AND addon_slug='wolt_glovo' AND status IN ('trial','active') LIMIT 1`).bind(client.id).first<{ id: number }>(),
+  env.DB.prepare(`SELECT id FROM client_addons WHERE client_id=? AND addon_slug='nfc_stand' AND status IN ('trial','active') LIMIT 1`).bind(client.id).first<{ id: number }>(),
+  env.DB.prepare(`SELECT delivery_url, provider FROM delivery_config WHERE client_id=? LIMIT 1`).bind(client.id).first<{ delivery_url: string; provider: string }>(),
+  env.DB.prepare(`SELECT google_place_id, shipping_status FROM nfc_config WHERE client_id=? LIMIT 1`).bind(client.id).first<{ google_place_id: string; shipping_status: string }>(),
+]);
+---
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Integracje — {client.businessName}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body style="padding: 2rem; background: var(--c-bg);">
+    <main style="max-width: 800px; margin: 0 auto;">
+      <header style="margin-bottom: 1.5rem;">
+        <a href="/addons" style="color: var(--c-brand); text-decoration: none; font-size: 0.85rem;">← Dodatki</a>
+        <h1 style="font-size: 1.75rem; font-weight: 800; margin: 0.5rem 0;">🔌 Integracje jednorazowe</h1>
+        <p style="color: var(--c-text-muted); margin: 0;">Wolt/Glovo delivery + NFC stojak "Zbliż i oceń".</p>
+      </header>
+
+      {/* ===== DELIVERY ===== */}
+      <section class="card" style="margin-bottom: 1.5rem;">
+        <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 0.5rem 0;">🍔 Delivery (Wolt/Glovo/Pyszne/Uber Eats)</h2>
+        {!deliveryAddon && (
+          <p style="margin: 0; padding: 0.6rem 1rem; background: #fef3c7; border-radius: 6px; font-size: 0.9rem;">Aktywuj <strong>Wolt/Glovo integracja 199 zł 1×</strong> w <a href="/addons" style="color: var(--c-brand);">Dodatki</a>.</p>
+        )}
+        {deliveryAddon && (
+          <form id="delivery-form" style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.75rem;">
+            <label style="font-size: 0.9rem; font-weight: 600;">URL do Twojej restauracji na Wolt/Glovo/Pyszne</label>
+            <input type="url" name="url" placeholder="https://wolt.com/pl/poland/warsaw/restaurant/twoja-firma" value={deliveryCfg?.delivery_url ?? ""} required style="width: 100%; padding: 0.5rem; border: 1px solid var(--c-border); border-radius: 6px;">
+            <p style="font-size: 0.78rem; color: var(--c-text-muted); margin: 0;">Akceptowane: wolt.com, glovoapp.com, pyszne.pl, ubereats.com</p>
+            <button type="submit" class="btn btn-primary" style="align-self: flex-start;">Zapisz + odśwież stronę</button>
+          </form>
+        )}
+      </section>
+
+      {/* ===== NFC ===== */}
+      <section class="card" style="margin-bottom: 1.5rem;">
+        <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 0.5rem 0;">📱 NFC stojak "Zbliż i oceń" (99 zł 1×)</h2>
+        {!nfcAddon && (
+          <p style="margin: 0; padding: 0.6rem 1rem; background: #fef3c7; border-radius: 6px; font-size: 0.9rem;">Aktywuj <strong>NFC stojak 99 zł</strong> w <a href="/addons" style="color: var(--c-brand);">Dodatki</a>.</p>
+        )}
+        {nfcAddon && (
+          <>
+            <p style="font-size: 0.88rem; color: var(--c-text-muted); margin: 0.5rem 0 1rem 0;">Podaj swoje <strong>Google Place ID</strong> — znajdziesz na <a href="https://developers.google.com/maps/documentation/places/web-service/place-id" target="_blank" rel="noopener" style="color: var(--c-brand);">tej stronie</a>. Klient zbliża telefon do stojaka → otwiera stronę dodawania opinii w Google.</p>
+            <form id="nfc-form" style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <label style="font-size: 0.9rem; font-weight: 600;">Google Place ID</label>
+              <input type="text" name="place_id" placeholder="np. ChIJN1t_tDeuEmsRUsoyG83frY4" value={nfcCfg?.google_place_id ?? ""} required pattern="[A-Za-z0-9_-]{20,}" style="width: 100%; padding: 0.5rem; border: 1px solid var(--c-border); border-radius: 6px; font-family: ui-monospace, monospace;">
+              <button type="submit" class="btn btn-primary" style="align-self: flex-start;">Zapisz + odśwież stronę</button>
+            </form>
+            {nfcCfg && (
+              <p style="margin-top: 1rem; font-size: 0.85rem; padding: 0.75rem 1rem; background: var(--c-bg); border-radius: 6px;">
+                <strong>Status wysyłki stojaka:</strong> <span class="badge">{nfcCfg.shipping_status}</span><br>
+                <strong>Twój URL "opinia":</strong> <code style="font-size: 0.78rem;">https://{client.businessName.toLowerCase()}/opinia</code> (zakodowany na NFC chip)
+              </p>
+            )}
+          </>
+        )}
+      </section>
+
+      <p style="text-align: center; color: var(--c-text-muted); font-size: 0.82rem; margin-top: 2rem;">
+        Pytania? <a href="mailto:info@mixturemarketing.pl" style="color: var(--c-brand);">info@mixturemarketing.pl</a>
+      </p>
+    </main>
+
+    <script is:inline>
+      async function saveConfig(form, kind, fields) {
+        const btn = form.querySelector('button[type=submit]');
+        btn.disabled = true;
+        btn.textContent = 'Zapisuję…';
+        const data = new FormData(form);
+        const body = { kind };
+        for (const f of fields) body[f] = data.get(f);
+        try {
+          const res = await fetch('/api/integrations/save', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          const json = await res.json();
+          if (json.ok) {
+            btn.textContent = 'Zapisane ✓ — strona przebuduje się w ~2 min';
+            setTimeout(() => location.reload(), 2000);
+          } else { alert('Błąd: ' + (json.error || 'unknown')); btn.disabled = false; btn.textContent = 'Zapisz + odśwież stronę'; }
+        } catch (e) { alert('Network: ' + e); btn.disabled = false; btn.textContent = 'Zapisz + odśwież stronę'; }
+      }
+      const d = document.getElementById('delivery-form');
+      if (d) d.addEventListener('submit', (e) => { e.preventDefault(); saveConfig(d, 'delivery', ['url']); });
+      const n = document.getElementById('nfc-form');
+      if (n) n.addEventListener('submit', (e) => { e.preventDefault(); saveConfig(n, 'nfc', ['place_id']); });
+    </script>
+  </body>
+</html>

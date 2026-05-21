@@ -22,12 +22,12 @@ export async function setupTestDb(): Promise<TestSetup> {
 
   await db
     .prepare(
-      `INSERT INTO clients (id, business_name, industry, subtype_schema, theme_preset, city, tier, status,
+      `INSERT INTO clients (id, business_name, nip, industry, subtype_schema, theme_preset, city, tier, status,
                             primary_domain, feature_flags_json, modules_json, activated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
-      clientId, "Ślusarz Kowalski", "locksmith", "Locksmith", "craftsman", "Rzeszów",
+      clientId, "Ślusarz Kowalski", "8121234567", "locksmith", "Locksmith", "craftsman", "Rzeszów",
       "standard", "active", "kowalski-slusarz.pl", "{}", '["care"]', "2026-01-15T00:00:00.000Z",
     )
     .run();
