@@ -46,7 +46,7 @@ importers:
         version: link:../../packages/web-core
       '@tailwindcss/vite':
         specifier: ^4.0.0
-        version: 4.3.0(vite@5.4.21(@types/node@25.9.1)(lightningcss@1.32.0))
+        version: 4.3.0(vite@7.3.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))
       astro:
         specifier: ^6.0.0
         version: 6.3.6(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.4)(yaml@2.9.0)
@@ -4610,13 +4610,6 @@ snapshots:
       '@tailwindcss/oxide-wasm32-wasi': 4.3.0
       '@tailwindcss/oxide-win32-arm64-msvc': 4.3.0
       '@tailwindcss/oxide-win32-x64-msvc': 4.3.0
-
-  '@tailwindcss/vite@4.3.0(vite@5.4.21(@types/node@25.9.1)(lightningcss@1.32.0))':
-    dependencies:
-      '@tailwindcss/node': 4.3.0
-      '@tailwindcss/oxide': 4.3.0
-      tailwindcss: 4.3.0
-      vite: 5.4.21(@types/node@25.9.1)(lightningcss@1.32.0)
 
   '@tailwindcss/vite@4.3.0(vite@7.3.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))':
     dependencies:
