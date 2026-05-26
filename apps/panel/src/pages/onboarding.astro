@@ -648,11 +648,12 @@ if (!client) return Astro.redirect("/login");
         display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;
       }
 
-      /* Multi-step wizard — show only current step's <details>, hide rest */
+      /* Multi-step wizard — show only current step's <details>, hide rest.
+       * Note: do NOT force display:block on children — would unhide <script> and
+       * <style> elements (normally display:none), rendering them as visible text. */
       #onboarding-form > details { display: none; }
       #onboarding-form > details.is-active-step { display: block; }
-      #onboarding-form > details.is-active-step[open] > *:not(summary) { display: block; }
-      /* Disable summary toggle in step mode — content always visible */
+      /* Disable summary toggle in step mode — content always visible when details[open] */
       #onboarding-form > details.is-active-step > summary { pointer-events: none; cursor: default; }
 
       /* Stepper — pills on top */
@@ -895,6 +896,13 @@ if (!client) return Astro.redirect("/login");
             const fd = new FormData();
             fd.append("logo", file);
             const res = await fetch("/api/settings/logo-upload", { method: "POST", body: fd });
+            const ct = res.headers.get("content-type") || "";
+            if (!ct.includes("application/json")) {
+              // Server returned HTML (redirect / error page) — show HTTP status, not parse error
+              logoStatus.style.color = "var(--c-danger)";
+              logoStatus.textContent = `✗ Błąd serwera (${res.status}). Spróbuj ponownie lub odśwież stronę.`;
+              return;
+            }
             const body = await res.json();
             if (body.ok) {
               logoStatus.style.color = "#047857";

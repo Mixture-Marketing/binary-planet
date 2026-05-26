@@ -12,7 +12,14 @@ import { readSessionCookie, validateSession } from "./lib/auth.ts";
 import { env } from "cloudflare:workers";
 
 const PUBLIC_PATHS = ["/login", "/api/auth/send-link", "/api/auth/verify", "/api/logo"];
-const ONBOARDING_PATHS = ["/onboarding", "/api/onboarding", "/api/auth/logout"];
+// Paths klient in pending/provisioning status can hit (wizard-only). Anything else
+// gets redirected to /onboarding so they finish the wizard first.
+const ONBOARDING_PATHS = [
+  "/onboarding",
+  "/api/onboarding",
+  "/api/auth/logout",
+  "/api/settings/logo-upload", // Logo widget inside wizard step 6
+];
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const url = new URL(context.request.url);
