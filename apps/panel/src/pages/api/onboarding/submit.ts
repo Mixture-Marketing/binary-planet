@@ -189,8 +189,13 @@ function buildClientConfig(p: OnboardingPayload, clientId: string, businessName:
       ...(p.theme_hero && { heroVariant: p.theme_hero }),
       ...(p.theme_accent && { accent: p.theme_accent }),
     },
+    // Domain.primary is REQUIRED by client.config schema. For preview mode klients
+    // (no own domain yet) we set a placeholder which the HUB will rewrite to the
+    // real workers.dev URL (hub knows CF_WORKERS_DEV_SUBDOMAIN env var) before
+    // committing config to the klient repo. See provision-client.ts step 4.
+    // Klient can later replace with own domain via Ustawienia → Domena.
     domain: {
-      ...(p.primary_domain && { primary: p.primary_domain }),
+      primary: p.primary_domain ?? "WORKERS_DEV_PLACEHOLDER.workers.dev",
       source: p.domain_source,
       canonicalScheme: "https",
     },

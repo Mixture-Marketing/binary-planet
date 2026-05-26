@@ -291,7 +291,8 @@ export async function provisionOne(
     }
 
     // ---- Step 2: OVH configure DNS (skipped in TEST_MODE, preview, or owned) ----
-    const cnameTarget = `mm-starter-${row.client_id.replace(/^clk_/, "")}.workers.dev`;
+    // CNAME target must match the actual deployed Worker name (workerNameFor).
+    const cnameTarget = `mm-starter-${row.client_id}.workers.dev`;
     if (isPreviewMode) {
       steps.push(stepResult("ovh_configure_dns", true, "[PREVIEW] No custom domain — DNS not needed", false, { skipped: true, mode: "preview" }));
     } else if (testMode) {
@@ -316,7 +317,15 @@ export async function provisionOne(
     }
 
     // ---- Step 4: GitHub commit client.config.ts ----
-    const tsContent = wrapConfigAsTs(row.config_json);
+    // Rewrite WORKERS_DEV_PLACEHOLDER → actual workers.dev URL (panel doesn't know
+    // CF_WORKERS_DEV_SUBDOMAIN — only hub does).
+    const subdomainForConfig = env.CF_WORKERS_DEV_SUBDOMAIN ?? "ACCOUNT";
+    const finalWorkersDevUrl = `mm-starter-${row.client_id}.${subdomainForConfig}.workers.dev`;
+    const patchedConfigJson = row.config_json.replace(
+      /WORKERS_DEV_PLACEHOLDER\.workers\.dev/g,
+      finalWorkersDevUrl,
+    );
+    const tsContent = wrapConfigAsTs(patchedConfigJson);
     {
       const r = await githubCommitFile(env, {
         repo_owner: orgRepo.owner,
@@ -331,11 +340,13 @@ export async function provisionOne(
 
     // ---- Step 4a: patch Sveltia config.yml with per-klient repo + URL ----
     {
-      // Resolve site URL: custom domain in prod, workers.dev preview in test mode
-      const workerSlug = row.client_id.replace(/^clk_/, "").replace(/_/g, "-").slice(0, 40);
+      // Resolve site URL based on domain_source:
+      //   - preview: always workers.dev (no custom domain)
+      //   - register/owned: custom domain (HTTPS)
       const subdomain = env.CF_WORKERS_DEV_SUBDOMAIN ?? "ACCOUNT";
-      const siteUrl = testMode
-        ? `https://mm-test-${workerSlug}.${subdomain}.workers.dev`
+      const workersDevUrl = `https://mm-starter-${row.client_id}.${subdomain}.workers.dev`;
+      const siteUrl = (isPreviewMode || testMode)
+        ? workersDevUrl
         : `https://${domain}`;
 
       const sveltiaConfig = await fetchAndPatchSveltiaConfig(env, {
@@ -358,8 +369,8 @@ export async function provisionOne(
     }
 
     // ---- Step 4c: Track 19a — provision KV namespaces (forms rate limit + fallback queue) ----
-    const workerSlugLocal = row.client_id.replace(/^clk_/, "").replace(/_/g, "-").slice(0, 40);
-    const kvPrefix = testMode ? `mm-test-${workerSlugLocal}` : `mm-${workerSlugLocal}`;
+    // KV prefix matches Worker name for clarity in CF dashboard.
+    const kvPrefix = `mm-starter-${row.client_id}`;
     {
       const rateRes = await cfCreateKvNamespace(env, { title: `${kvPrefix}-rate-limit` });
       steps.push(stepResult("cf_kv_rate_limit", rateRes.ok, rateRes.message, dryRun, { namespace_id: rateRes.namespace_id }));
@@ -428,16 +439,20 @@ export async function provisionOne(
     }
 
     // ---- Update clients row → active ----
+    // Store workers.dev URL in preview_domain so dashboard can show a clickable
+    // link even when klient hasn't bought a custom domain yet.
+    const previewDomain = `mm-starter-${row.client_id}.${subdomainForConfig}.workers.dev`;
     await env.DB
       .prepare(
         `UPDATE clients
             SET status = 'active',
                 activated_at = COALESCE(activated_at, datetime('now')),
                 github_repo_url = ?,
-                cf_worker_name = ?
+                cf_worker_name = ?,
+                preview_domain = ?
           WHERE id = ?`,
       )
-      .bind(`https://github.com/${orgRepo.owner}/${orgRepo.name}`, workerName ?? null, row.client_id)
+      .bind(`https://github.com/${orgRepo.owner}/${orgRepo.name}`, workerName ?? null, previewDomain, row.client_id)
       .run();
   } catch (e) {
     finalStatus = "failed";

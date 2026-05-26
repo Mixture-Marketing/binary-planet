@@ -10,6 +10,18 @@ if (!env?.DB || !client) return new Response("Runtime not ready", { status: 500 
 const stats = await getDashboardStats(env.DB, client.id);
 const recentLeads = await listLeads(env.DB, client.id, { limit: 5 });
 
+// Fetch klient site URL — primary_domain (custom) or preview_domain (workers.dev fallback)
+const siteRow = await env.DB
+  .prepare(`SELECT primary_domain, preview_domain FROM clients WHERE id = ? LIMIT 1`)
+  .bind(client.id)
+  .first<{ primary_domain: string | null; preview_domain: string | null }>();
+const siteUrl = siteRow?.primary_domain
+  ? `https://${siteRow.primary_domain}`
+  : siteRow?.preview_domain
+    ? `https://${siteRow.preview_domain}`
+    : null;
+const isPreviewOnly = !siteRow?.primary_domain && !!siteRow?.preview_domain;
+
 // Provisioning status — show banner when site is being built or pending wizard
 interface ProvRow {
   provisioning_status: string;
@@ -83,12 +95,40 @@ const STAT_CARDS: Array<{ label: string; value: string | number; icon: Parameter
 ---
 
 <PanelLayout title="Dashboard">
-  <header style="margin-bottom: 2rem;">
-    <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0;">Witaj, {client?.businessName ?? ""}</h1>
-    <p style="margin: 0; color: var(--c-text-muted);">
-      Stan na {new Date().toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" })}.
-    </p>
+  <header style="margin-bottom: 2rem; display: flex; gap: 1rem; align-items: start; justify-content: space-between; flex-wrap: wrap;">
+    <div>
+      <h1 style="font-size: 2rem; font-weight: 800; margin: 0 0 0.5rem 0;">Witaj, {client?.businessName ?? ""}</h1>
+      <p style="margin: 0; color: var(--c-text-muted);">
+        Stan na {new Date().toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" })}.
+      </p>
+    </div>
+    {siteUrl && (
+      <a
+        href={siteUrl}
+        target="_blank"
+        rel="noopener"
+        class="card"
+        style={`text-decoration: none; padding: 0.85rem 1.1rem; display: flex; align-items: center; gap: 0.7rem; ${isPreviewOnly ? "background: #fef3c7; border-color: #fcd34d;" : "background: var(--c-surface); border-color: var(--c-brand);"}; transition: transform 150ms;`}
+      >
+        <div>
+          <p style="margin: 0; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--c-text-muted); font-weight: 600;">
+            {isPreviewOnly ? "Podgląd na workers.dev" : "Twoja strona"}
+          </p>
+          <p style={`margin: 0.15rem 0 0 0; font-weight: 600; font-size: 0.95rem; color: ${isPreviewOnly ? "#78350f" : "var(--c-brand)"};`}>
+            {siteRow?.primary_domain || siteRow?.preview_domain}
+            <span style="margin-left: 0.4rem; opacity: 0.7;">↗</span>
+          </p>
+        </div>
+      </a>
+    )}
   </header>
+
+  {siteUrl && isPreviewOnly && (
+    <section style="border: 1px solid #fcd34d; background: #fffbeb; border-radius: 0.75rem; padding: 1rem 1.25rem; margin-bottom: 1.5rem; font-size: 0.92rem; color: #78350f;">
+      <strong>Tymczasowy adres workers.dev.</strong> Aby uruchomić własną domenę (np. twojafirma.pl) i ustawić tytuł w Google, wejdź w
+      <a href="/ustawienia#domena" style="color: inherit; text-decoration: underline; font-weight: 600;"> Ustawienia → Domena</a>.
+    </section>
+  )}
 
   {provInfo && (
     <section

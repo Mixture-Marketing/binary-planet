@@ -135,7 +135,9 @@ describe("provisionOne (orchestrator)", () => {
     expect(client?.status).toBe("active");
     expect(client?.activated_at).toBeTruthy();
     expect(client?.github_repo_url).toContain("MixtureMarketing/clk_test-site");
-    expect(client?.cf_worker_name).toBe("mm-starter-test");
+    // Worker name matches klient-deploy.yml GH Actions derivation: mm-starter-{full clientId}.
+    // Aligns hub + GH Actions naming so cf_worker_name in DB always equals deployed name.
+    expect(client?.cf_worker_name).toBe("mm-starter-clk_test");
   });
 
   it("missing primary_domain → failed with error", async () => {

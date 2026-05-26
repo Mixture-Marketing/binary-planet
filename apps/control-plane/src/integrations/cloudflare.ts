@@ -32,10 +32,18 @@ function testMode(env: Env): boolean {
   return !dryRun(env) && (env.PROVISIONING_TEST_MODE ?? "").toLowerCase() === "true";
 }
 
-/** Worker name: `mm-test-{slug}` in test mode (easier cleanup), `mm-starter-{slug}` in prod. */
-export function workerNameFor(env: Env, clientId: string): string {
-  const slug = clientId.replace(/^clk_/, "").replace(/_/g, "-").slice(0, 40);
-  return testMode(env) ? `mm-test-${slug}` : `mm-starter-${slug}`;
+/**
+ * Worker name — MUST match klient-deploy.yml derivation:
+ *   REPO_NAME="{client_id}-site"
+ *   SUFFIX="${REPO_NAME%-site}"  →  full client_id
+ *   name="mm-starter-${SUFFIX}"  →  mm-starter-{client_id}
+ *
+ * Both push-triggered and workflow_dispatch (input not passed) end up at this
+ * name, so hub's `cf_worker_name` matches whatever GH Actions actually deploys.
+ * testMode no longer changes the name (was a stale convention pre-2026-05-26).
+ */
+export function workerNameFor(_env: Env, clientId: string): string {
+  return `mm-starter-${clientId}`;
 }
 
 /**
