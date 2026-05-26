@@ -36,8 +36,12 @@ const PROV_STATUS_LABELS: Record<string, { label: string; tone: "info" | "succes
 };
 const provInfo = provRow ? PROV_STATUS_LABELS[provRow.provisioning_status] : null;
 const provSteps = provRow?.steps_json ? (() => {
-  try { return JSON.parse(provRow.steps_json) as Array<{ step: string; ok: boolean; message?: string }>; } catch { return null; }
+  try { return JSON.parse(provRow.steps_json) as Array<{ step: string; ok: boolean; message?: string; dry_run?: boolean }>; } catch { return null; }
 })() : null;
+// Detect DRY-RUN: hub's PROVISIONING_DRY_RUN=true (default) marks every step as dry_run.
+// In that case the provisioning_status flips to "done" but NOTHING was actually deployed.
+// Show explicit warning so klient doesn't think their site is live.
+const isDryRun = provSteps !== null && provSteps.length > 0 && provSteps.every((s) => s.dry_run === true);
 const provStarted = provRow?.provisioning_started_at ? new Date(provRow.provisioning_started_at) : null;
 const provDurationMs = provStarted && provRow?.provisioning_finished_at
   ? new Date(provRow.provisioning_finished_at).getTime() - provStarted.getTime()
@@ -90,16 +94,27 @@ const STAT_CARDS: Array<{ label: string; value: string | number; icon: Parameter
     <section
       role="status"
       aria-live="polite"
-      style={`border: 1px solid; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 2rem; ${TONE_STYLES[provInfo.tone] ?? ""}`}
+      style={`border: 1px solid; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 2rem; ${isDryRun ? TONE_STYLES.warn : (TONE_STYLES[provInfo.tone] ?? "")}`}
     >
       <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
         <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0;">
-          {provInfo.tone === "info" && <Icon name="rocket" size={22} />}
-          {provInfo.tone === "warn" && <Icon name="info" size={22} />}
-          {provInfo.tone === "success" && <Icon name="check-circle-2" size={22} />}
-          {provInfo.tone === "error" && <Icon name="alert-triangle" size={22} />}
+          {isDryRun ? <Icon name="alert-triangle" size={22} /> : provInfo.tone === "info" && <Icon name="rocket" size={22} />}
+          {!isDryRun && provInfo.tone === "warn" && <Icon name="info" size={22} />}
+          {!isDryRun && provInfo.tone === "success" && <Icon name="check-circle-2" size={22} />}
+          {!isDryRun && provInfo.tone === "error" && <Icon name="alert-triangle" size={22} />}
           <div>
-            <p style="margin: 0; font-weight: 700; font-size: 1.05rem;">Twoja strona — {provInfo.label}</p>
+            <p style="margin: 0; font-weight: 700; font-size: 1.05rem;">
+              {isDryRun
+                ? "Tryb testowy (DRY-RUN) — strona NIE została jeszcze wdrożona"
+                : `Twoja strona — ${provInfo.label}`}
+            </p>
+            {isDryRun && (
+              <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; opacity: 0.85;">
+                Pipeline przebiegł w trybie symulacji (PROVISIONING_DRY_RUN=true). Aby uruchomić
+                realny provisioning agencja musi ustawić ten flag w sekretach hub'a + zresetować
+                Twój status do <code>pending</code>.
+              </p>
+            )}
             {provDurationMs !== null && (
               <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; opacity: 0.85;">
                 {provRow?.provisioning_status === "done"
