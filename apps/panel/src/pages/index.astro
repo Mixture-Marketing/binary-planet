@@ -10,6 +10,53 @@ if (!env?.DB || !client) return new Response("Runtime not ready", { status: 500 
 const stats = await getDashboardStats(env.DB, client.id);
 const recentLeads = await listLeads(env.DB, client.id, { limit: 5 });
 
+// Provisioning status — show banner when site is being built or pending wizard
+interface ProvRow {
+  provisioning_status: string;
+  provisioning_started_at: string | null;
+  provisioning_finished_at: string | null;
+  provisioning_error: string | null;
+  steps_json: string | null;
+}
+const provRow = await env.DB
+  .prepare(
+    `SELECT provisioning_status, provisioning_started_at, provisioning_finished_at,
+            provisioning_error, steps_json
+       FROM client_provisioning_configs WHERE client_id = ? LIMIT 1`,
+  )
+  .bind(client.id)
+  .first<ProvRow>();
+
+const PROV_STATUS_LABELS: Record<string, { label: string; tone: "info" | "success" | "warn" | "error" }> = {
+  pending: { label: "W kolejce — start automatyczny co 2 min", tone: "info" },
+  running: { label: "W trakcie budowy strony...", tone: "info" },
+  waiting_domain: { label: "Czekamy na rejestrację domeny w OVH", tone: "warn" },
+  done: { label: "Strona gotowa", tone: "success" },
+  failed: { label: "Błąd provisioningu — skontaktuj się z agencją", tone: "error" },
+};
+const provInfo = provRow ? PROV_STATUS_LABELS[provRow.provisioning_status] : null;
+const provSteps = provRow?.steps_json ? (() => {
+  try { return JSON.parse(provRow.steps_json) as Array<{ step: string; ok: boolean; message?: string }>; } catch { return null; }
+})() : null;
+const provStarted = provRow?.provisioning_started_at ? new Date(provRow.provisioning_started_at) : null;
+const provDurationMs = provStarted && provRow?.provisioning_finished_at
+  ? new Date(provRow.provisioning_finished_at).getTime() - provStarted.getTime()
+  : provStarted ? Date.now() - provStarted.getTime() : null;
+const fmtDur = (ms: number): string => {
+  const min = Math.floor(ms / 60000);
+  if (min < 1) return "<1 min";
+  if (min < 60) return `${min} min`;
+  return `${Math.floor(min / 60)}h ${min % 60}min`;
+};
+
+// Tones → colors
+const TONE_STYLES: Record<string, string> = {
+  info: "background: #dbeafe; border-color: #93c5fd; color: #1e3a8a;",
+  success: "background: #d1fae5; border-color: #6ee7b7; color: #065f46;",
+  warn: "background: #fef3c7; border-color: #fcd34d; color: #78350f;",
+  error: "background: #fee2e2; border-color: #fca5a5; color: #991b1b;",
+};
+
 const formatRelative = (iso: string): string => {
   const ms = Date.now() - new Date(iso).getTime();
   const min = Math.floor(ms / 60000);
@@ -38,6 +85,71 @@ const STAT_CARDS: Array<{ label: string; value: string | number; icon: Parameter
       Stan na {new Date().toLocaleDateString("pl-PL", { weekday: "long", day: "numeric", month: "long" })}.
     </p>
   </header>
+
+  {provInfo && (
+    <section
+      role="status"
+      aria-live="polite"
+      style={`border: 1px solid; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 2rem; ${TONE_STYLES[provInfo.tone] ?? ""}`}
+    >
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0;">
+          {provInfo.tone === "info" && <Icon name="rocket" size={22} />}
+          {provInfo.tone === "warn" && <Icon name="info" size={22} />}
+          {provInfo.tone === "success" && <Icon name="check-circle-2" size={22} />}
+          {provInfo.tone === "error" && <Icon name="alert-triangle" size={22} />}
+          <div>
+            <p style="margin: 0; font-weight: 700; font-size: 1.05rem;">Twoja strona — {provInfo.label}</p>
+            {provDurationMs !== null && (
+              <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; opacity: 0.85;">
+                {provRow?.provisioning_status === "done"
+                  ? `Zakończono w ${fmtDur(provDurationMs)}`
+                  : `Trwa od ${fmtDur(provDurationMs)}`}
+              </p>
+            )}
+            {provRow?.provisioning_status === "failed" && provRow.provisioning_error && (
+              <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; opacity: 0.85;">
+                Szczegóły: {provRow.provisioning_error}
+              </p>
+            )}
+          </div>
+        </div>
+        {provSteps && provSteps.length > 0 && (
+          <details style="font-size: 0.85rem;">
+            <summary style="cursor: pointer; font-weight: 600;">
+              {provSteps.filter((s) => s.ok).length}/{provSteps.length} kroków
+            </summary>
+            <ul style="margin: 0.75rem 0 0 0; padding-left: 1.25rem; line-height: 1.6;">
+              {provSteps.map((s) => (
+                <li>{s.ok ? "✓" : "✗"} {s.step.replace(/_/g, " ")}{s.message ? ` — ${s.message}` : ""}</li>
+              ))}
+            </ul>
+          </details>
+        )}
+      </div>
+    </section>
+  )}
+
+  {!provInfo && client?.status === "pending" && (
+    <section
+      role="status"
+      aria-live="polite"
+      style={`border: 1px solid; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 2rem; ${TONE_STYLES.warn}`}
+    >
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <Icon name="clipboard-list" size={22} />
+        <div>
+          <p style="margin: 0; font-weight: 700; font-size: 1.05rem;">Wypełnij wizard onboardingu</p>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.9rem;">
+            <a href="/onboarding" style="color: inherit; text-decoration: underline; font-weight: 600;">
+              Otwórz wizard →
+            </a>
+            {" "}żeby ruszyć z budową strony. Bez wypełnienia nic się nie dzieje.
+          </p>
+        </div>
+      </div>
+    </section>
+  )}
 
   <section style="display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 2.5rem;">
     {STAT_CARDS.map((s) => (

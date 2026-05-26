@@ -161,8 +161,14 @@ if (!client) return Astro.redirect("/login");
               </div>
             </label>
             <label style="display: block; margin-top: 0.75rem;">Domena * (np. kowalski-slusarz.pl)
-              <input type="text" name="primary_domain" required placeholder="twojafirma.pl" pattern="[a-z0-9.-]+\.[a-z]{2,}" />
+              <input type="text" name="primary_domain" id="primary_domain" required placeholder="twojafirma.pl" pattern="[a-z0-9.-]+\.[a-z]{2,}" autocomplete="off" />
             </label>
+            <div
+              id="domain-check-result"
+              role="status"
+              aria-live="polite"
+              style="margin-top: 0.5rem; font-size: 0.9rem; min-height: 1.3rem;"
+            ></div>
           </div>
         </details>
 
@@ -420,29 +426,111 @@ if (!client) return Astro.redirect("/login");
         const row = document.createElement("div");
         row.className = "service-row";
         row.innerHTML = `
+          <input type="hidden" name="services_${i}_slug" data-auto-slug value="${prefill.slug||''}" />
           <div class="grid-2">
-            <label>Slug * (małe litery + myślniki)
-              <input type="text" name="services_${i}_slug" required pattern="[a-z0-9-]+" value="${prefill.slug||''}" placeholder="awaryjne-otwieranie-zamkow" />
-            </label>
-            <label>Nazwa *
-              <input type="text" name="services_${i}_name" required maxlength="120" value="${prefill.name||''}" placeholder="Awaryjne otwieranie zamków" />
+            <label>Nazwa usługi *
+              <input type="text" name="services_${i}_name" data-service-name required maxlength="120" value="${prefill.name||''}" placeholder="np. Awaryjne otwieranie zamków" />
             </label>
             <label>Cena od (opcjonalne)
               <input type="text" name="services_${i}_price_from" maxlength="40" value="${prefill.price_from||''}" placeholder="od 100 zł" />
             </label>
-            <label>Ikona (opcjonalne)
-              <input type="text" name="services_${i}_icon_key" maxlength="40" value="${prefill.icon_key||''}" />
-            </label>
           </div>
           <label style="margin-top: 0.5rem;">Krótki opis *
-            <textarea name="services_${i}_description" required maxlength="500" rows="2" placeholder="Otwieram każdy zamek bez uszkodzenia drzwi...">${prefill.description||''}</textarea>
+            <textarea name="services_${i}_description" required maxlength="500" rows="2" placeholder="np. Otwieram każdy zamek bez uszkodzenia drzwi, dojazd 24/7 w okolice Rzeszowa.">${prefill.description||''}</textarea>
           </label>
+          <input type="hidden" name="services_${i}_icon_key" value="${prefill.icon_key||''}" />
           <button type="button" class="btn" data-remove style="margin-top: 0.5rem; font-size: 0.8rem;">Usuń</button>
         `;
+        // Auto-generate slug from name (slugify Polish characters → ASCII kebab-case)
+        const nameInput = row.querySelector("[data-service-name]");
+        const slugInput = row.querySelector("[data-auto-slug]");
+        function slugify(s) {
+          return s
+            .toLowerCase()
+            .normalize("NFD").replace(/[̀-ͯ]/g, "")
+            .replace(/ł/g, "l")
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "")
+            .slice(0, 60);
+        }
+        nameInput.addEventListener("input", () => {
+          // Don't overwrite if user manually customized (prefilled non-empty + differs from current name slugify)
+          if (!slugInput.dataset.locked) slugInput.value = slugify(nameInput.value);
+        });
+        // If prefill had explicit slug, lock auto-update
+        if (prefill.slug && slugify(prefill.name || "") !== prefill.slug) {
+          slugInput.dataset.locked = "true";
+        }
         row.querySelector("[data-remove]").addEventListener("click", () => row.remove());
         servicesList.appendChild(row);
       }
       addServiceBtn.addEventListener("click", () => addServiceRow());
+
+      // ============ DOMAIN AVAILABILITY CHECK (OVH) ============
+      // Debounced inline check — calls /api/onboarding/check-domain when user
+      // pauses typing. Shows price (first year + renew) or "taken" status.
+      const domainInput = document.getElementById("primary_domain");
+      const domainResult = document.getElementById("domain-check-result");
+      const domainSourceRadios = document.querySelectorAll('input[name="domain_source"]');
+      let domainCheckTimer = null;
+      let lastCheckedDomain = "";
+      function shouldCheck() {
+        // Only check when user wants us to REGISTER (not "I have own")
+        const sourceEl = document.querySelector('input[name="domain_source"]:checked');
+        return sourceEl?.value === "register";
+      }
+      function renderDomainResult(html, tone) {
+        const colors = {
+          info: "color: #1e40af;",
+          ok: "color: #047857;",
+          warn: "color: #b45309;",
+          err: "color: #b91c1c;",
+        };
+        domainResult.style.cssText = "margin-top: 0.5rem; font-size: 0.9rem; min-height: 1.3rem; " + (colors[tone] || colors.info);
+        domainResult.innerHTML = html;
+      }
+      async function checkDomainNow() {
+        const d = domainInput.value.trim().toLowerCase();
+        if (!d || !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(d)) {
+          domainResult.innerHTML = "";
+          return;
+        }
+        if (d === lastCheckedDomain) return;
+        if (!shouldCheck()) {
+          renderDomainResult("Wybrałeś \"mam własną domenę\" — sprawdzanie dostępności pominięte.", "info");
+          return;
+        }
+        lastCheckedDomain = d;
+        renderDomainResult("⏳ Sprawdzam dostępność w OVH...", "info");
+        try {
+          const res = await fetch("/api/onboarding/check-domain?domain=" + encodeURIComponent(d));
+          const body = await res.json();
+          if (!body.ok) {
+            renderDomainResult("⚠ Nie udało się sprawdzić: " + (body.error || "unknown"), "warn");
+            return;
+          }
+          const data = body.data;
+          if (data.available) {
+            const price = data.price_first_year ? `${data.price_first_year.value} ${data.price_first_year.currency || "PLN"}` : "(cena nieznana)";
+            const renew = data.price_renew ? `, odnowienie ${data.price_renew.value} ${data.price_renew.currency || "PLN"}/rok` : "";
+            renderDomainResult(`✓ <strong>${d}</strong> dostępna — pierwszy rok ${price}${renew} (wliczone w pakiet)`, "ok");
+          } else {
+            renderDomainResult(`✗ <strong>${d}</strong> już zajęta. Jeśli to Twoja domena — zaznacz wyżej "Mam już własną domenę".`, "err");
+          }
+        } catch (e) {
+          renderDomainResult("⚠ Błąd sieci: " + (e?.message || e), "warn");
+        }
+      }
+      if (domainInput) {
+        domainInput.addEventListener("input", () => {
+          if (domainCheckTimer) clearTimeout(domainCheckTimer);
+          domainCheckTimer = setTimeout(checkDomainNow, 700);
+        });
+        domainSourceRadios.forEach((r) => r.addEventListener("change", () => {
+          lastCheckedDomain = "";
+          checkDomainNow();
+        }));
+      }
 
       const reviewsList = document.getElementById("reviews-list");
       const addReviewBtn = document.getElementById("add-review");
