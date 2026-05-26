@@ -242,11 +242,17 @@ export async function provisionOne(
   try {
     const config = JSON.parse(row.config_json) as Record<string, unknown>;
     const business = (config["business"] as { name?: string } | undefined) ?? {};
-    const domain = (config["domain"] as { primary?: string } | undefined)?.primary ?? row.primary_domain ?? "";
-    if (!domain) throw new Error("missing primary_domain in config");
+    const domainCfg = (config["domain"] as { primary?: string; source?: string } | undefined);
+    const domainSource = domainCfg?.source ?? "register";
+    const isPreviewMode = domainSource === "preview";
+    const domain = domainCfg?.primary ?? row.primary_domain ?? "";
+    // Preview mode bypasses OVH entirely — klient gets workers.dev URL only.
+    if (!isPreviewMode && !domain) throw new Error("missing primary_domain in config (and not preview mode)");
 
     // ---- Step 1: OVH register domain (or availability probe in TEST_MODE) ----
-    if (testMode) {
+    if (isPreviewMode) {
+      steps.push(stepResult("ovh_register_domain", true, "[PREVIEW] Klient chose workers.dev preview — skipping OVH", false, { skipped: true, mode: "preview" }));
+    } else if (testMode) {
       const r = await ovhCheckDomainAvailability(env, { domain });
       steps.push(stepResult("ovh_check_availability", r.ok, r.message, false, {
         orderable: r.orderable,
@@ -258,9 +264,7 @@ export async function provisionOne(
       if (!r.ok) throw new Error(`ovh_check_availability: ${r.message}`);
     } else {
       // Skip if config_json says client already owns the domain (domain_source: "owned").
-      let config: { domain?: { source?: string } } = {};
-      try { config = JSON.parse(row.config_json); } catch { /* empty */ }
-      if (config.domain?.source === "owned") {
+      if (domainSource === "owned") {
         steps.push(stepResult("ovh_register_domain", true, "[SKIPPED] Klient owns the domain — DNS will be configured manually", false, { skipped: true }));
       } else {
         const r = await ovhRegisterDomain(env, { domain, client_id: row.client_id });
@@ -286,10 +290,14 @@ export async function provisionOne(
       }
     }
 
-    // ---- Step 2: OVH configure DNS (skipped in TEST_MODE — domain not owned) ----
+    // ---- Step 2: OVH configure DNS (skipped in TEST_MODE, preview, or owned) ----
     const cnameTarget = `mm-starter-${row.client_id.replace(/^clk_/, "")}.workers.dev`;
-    if (testMode) {
+    if (isPreviewMode) {
+      steps.push(stepResult("ovh_configure_dns", true, "[PREVIEW] No custom domain — DNS not needed", false, { skipped: true, mode: "preview" }));
+    } else if (testMode) {
       steps.push(stepResult("ovh_configure_dns", true, "[TEST_MODE] Skipped DNS — domain not purchased", false, { skipped: true }));
+    } else if (domainSource === "owned") {
+      steps.push(stepResult("ovh_configure_dns", true, "[SKIPPED] Klient owns domain — must configure DNS manually", false, { skipped: true, cname_target: cnameTarget }));
     } else {
       const r = await ovhConfigureDns(env, { domain, cname_target: cnameTarget });
       steps.push(stepResult("ovh_configure_dns", r.ok, r.message, dryRun, { cname_target: cnameTarget }));
@@ -406,12 +414,15 @@ export async function provisionOne(
       if (!r.ok) throw new Error(`cf_deploy_worker: ${r.message}`);
     }
 
-    // ---- Step 6 (combined): attach custom domain (skipped in TEST_MODE) ----
-    if (workerName && !testMode) {
+    // ---- Step 6 (combined): attach custom domain (skipped in TEST_MODE / preview / owned) ----
+    if (workerName && isPreviewMode) {
+      steps.push(stepResult("cf_attach_domain", true, "[PREVIEW] Klient using workers.dev — no custom domain to attach", false, { skipped: true, mode: "preview" }));
+    } else if (workerName && !testMode && domainSource === "register") {
       const r = await cfAttachCustomDomain(env, { worker_name: workerName, domain });
       steps.push(stepResult("cf_attach_domain", r.ok, r.message, dryRun));
-      // Non-fatal if attach fails in dry-run/prod — strona działa na preview URL.
       if (!r.ok && !dryRun) log.warn("provision.attach_domain_failed", { client_id: row.client_id, message: r.message });
+    } else if (workerName && domainSource === "owned") {
+      steps.push(stepResult("cf_attach_domain", true, "[OWNED] Klient must point DNS manually — domain attach skipped", false, { skipped: true }));
     } else if (workerName && testMode) {
       steps.push(stepResult("cf_attach_domain", true, "[TEST_MODE] Skipped custom domain attach — using workers.dev preview", false, { skipped: true }));
     }

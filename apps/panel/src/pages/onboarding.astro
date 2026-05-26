@@ -210,19 +210,34 @@ if (!client) return Astro.redirect("/login");
             <label class="radio-card">
               <input type="radio" name="domain_source" value="register" required checked style="margin-top: 0.25rem;" />
               <div>
-                <strong>Zarejestrujcie dla mnie nową domenę</strong>
-                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">Sprawdzimy dostępność i kupimy w OVH — koszt wliczony w pakiet (~16-60 zł/rok zależnie od końcówki).</p>
+                <strong>Kupcie domenę dla mnie</strong>
+                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">
+                  Sprawdzimy dostępność w OVH. Domenę kupujesz <strong>na swoją firmę</strong> (NIP), płacisz <strong>~17-60 zł/rok</strong>
+                  zależnie od końcówki (.pl ok 17 zł, .com.pl ok 60 zł). Doliczymy do najbliższej faktury.
+                </p>
               </div>
             </label>
             <label class="radio-card">
               <input type="radio" name="domain_source" value="owned" style="margin-top: 0.25rem;" />
               <div>
                 <strong>Mam już własną domenę</strong>
-                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">Skonfigurujemy DNS — wystarczy że dasz nam dostęp do panelu rejestratora (OVH / home.pl / nazwa.pl).</p>
+                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">
+                  Skonfigurujemy DNS — wystarczy że dasz nam dostęp do panelu rejestratora (OVH / home.pl / nazwa.pl).
+                </p>
+              </div>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="domain_source" value="preview" id="domain_source_preview" style="margin-top: 0.25rem;" />
+              <div>
+                <strong>Na razie tylko preview (bez własnej domeny)</strong>
+                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">
+                  Strona dostępna pod tymczasowym adresem <code>twojafirma.workers.dev</code> — żebyś mógł
+                  zobaczyć i przetestować zanim zdecydujesz o własnej domenie. Możesz dodać domenę później w panelu.
+                </p>
               </div>
             </label>
           </div>
-          <label style="display: block;">
+          <label id="domain-input-wrap" style="display: block;">
             <span class="field-label-text">Domena<span class="req">*</span></span>
             <input type="text" name="primary_domain" id="primary_domain" required placeholder="np. kowalski-slusarz.pl" pattern="[a-z0-9.\\-]+\\.[a-z]{2,}" autocomplete="off" />
             <small class="field-hint">Tylko same litery, cyfry, myślniki + końcówka (.pl, .com, .eu).</small>
@@ -233,6 +248,11 @@ if (!client) return Astro.redirect("/login");
               style="margin-top: 0.5rem; font-size: 0.9rem; min-height: 1.3rem;"
             ></div>
           </label>
+          <div id="preview-info-box" style="display: none; padding: 0.75rem 1rem; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; font-size: 0.9rem; color: #065f46;">
+            <strong>✓ Tryb preview</strong> — Twoja strona pojawi się pod adresem
+            <code id="preview-url-placeholder">mm-starter-twojafirma.workers.dev</code> w ~6 minut po zatwierdzeniu wizardu.
+            Bez kosztów domeny. Później w panelu możesz dodać własną domenę bez utraty danych.
+          </div>
         </details>
 
         <!-- ============ 3. LOKALIZACJA ============ -->
@@ -819,11 +839,32 @@ if (!client) return Astro.redirect("/login");
           if (domainCheckTimer) clearTimeout(domainCheckTimer);
           domainCheckTimer = setTimeout(checkDomainNow, 700);
         });
-        domainSourceRadios.forEach((r) => r.addEventListener("change", () => {
-          lastCheckedDomain = "";
-          checkDomainNow();
-        }));
       }
+
+      // ============ DOMAIN SOURCE TOGGLE (preview / register / owned) ============
+      const domainInputWrap = document.getElementById("domain-input-wrap");
+      const previewBox = document.getElementById("preview-info-box");
+      function updateDomainModeUI() {
+        const sourceEl = document.querySelector('input[name="domain_source"]:checked');
+        const mode = sourceEl?.value || "register";
+        if (mode === "preview") {
+          // Hide domain input + show preview info; clear required so step validates
+          if (domainInputWrap) domainInputWrap.style.display = "none";
+          if (previewBox) previewBox.style.display = "block";
+          if (domainInput) {
+            domainInput.required = false;
+            domainInput.value = "";
+          }
+        } else {
+          if (domainInputWrap) domainInputWrap.style.display = "block";
+          if (previewBox) previewBox.style.display = "none";
+          if (domainInput) domainInput.required = true;
+        }
+        lastCheckedDomain = "";
+        if (domainInput?.value) checkDomainNow();
+      }
+      domainSourceRadios.forEach((r) => r.addEventListener("change", updateDomainModeUI));
+      updateDomainModeUI();
 
       // ============ POSTAL CODE AUTO-FORMAT (NN-NNN) ============
       const postalInput = document.getElementById("postal_code");
@@ -1278,7 +1319,9 @@ if (!client) return Astro.redirect("/login");
           description: get("description"),
           tagline: get("tagline"),
           long_description: get("long_description"),
-          primary_domain: get("primary_domain"),
+          // Preview mode: no domain — provisioning will deploy to workers.dev subdomain.
+          // Hub generates a deterministic preview slug from client_id when primary_domain is empty.
+          primary_domain: get("primary_domain") || undefined,
           domain_source: get("domain_source"),
           street_address: get("street_address"),
           city: get("city"),

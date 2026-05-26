@@ -31,8 +31,8 @@ interface OnboardingPayload {
   long_description: string;
 
   // Step 2: Domena
-  primary_domain: string;
-  domain_source: "owned" | "register";
+  primary_domain?: string; // optional when domain_source='preview'
+  domain_source: "owned" | "register" | "preview";
 
   // Step 3: Lokalizacja
   street_address: string;
@@ -91,7 +91,13 @@ function validate(p: OnboardingPayload): ValidationError[] {
   required(p.description, "description", "Opis firmy");
   required(p.tagline, "tagline", "Tagline");
   required(p.long_description, "long_description", "Długi opis");
-  required(p.primary_domain, "primary_domain", "Domena");
+  // Domain: required UNLESS preview mode (then hub generates workers.dev subdomain)
+  if (p.domain_source !== "preview") {
+    required(p.primary_domain, "primary_domain", "Domena");
+    if (p.primary_domain && !p.primary_domain.match(/^[a-z0-9.-]+\.[a-z]{2,}$/)) {
+      errors.push({ field: "primary_domain", message: "Domena w formacie np. kowalski-slusarz.pl" });
+    }
+  }
   required(p.street_address, "street_address", "Ulica");
   required(p.city, "city", "Miasto");
   required(p.voivodeship, "voivodeship", "Województwo");
@@ -100,9 +106,6 @@ function validate(p: OnboardingPayload): ValidationError[] {
 
   if (!/^\d{2}-\d{3}$/.test(p.postal_code ?? "")) {
     errors.push({ field: "postal_code", message: "Kod pocztowy w formacie NN-NNN" });
-  }
-  if (!p.primary_domain?.match(/^[a-z0-9.-]+\.[a-z]{2,}$/)) {
-    errors.push({ field: "primary_domain", message: "Domena w formacie np. kowalski-slusarz.pl" });
   }
   if (!Array.isArray(p.services) || p.services.length === 0) {
     errors.push({ field: "services", message: "Dodaj przynajmniej jedną usługę" });
@@ -187,7 +190,8 @@ function buildClientConfig(p: OnboardingPayload, clientId: string, businessName:
       ...(p.theme_accent && { accent: p.theme_accent }),
     },
     domain: {
-      primary: p.primary_domain,
+      ...(p.primary_domain && { primary: p.primary_domain }),
+      source: p.domain_source,
       canonicalScheme: "https",
     },
     integrations: {
@@ -271,7 +275,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     )
     .bind(
       payload.industry, payload.schema_type, payload.theme_preset, payload.theme_variant ?? null,
-      payload.city, payload.postal_code, payload.voivodeship, payload.primary_domain,
+      payload.city, payload.postal_code, payload.voivodeship, payload.primary_domain ?? null,
       payload.legal_name ?? null, payload.regon ?? null,
       client.id,
     )
