@@ -101,41 +101,68 @@ if (!client) return Astro.redirect("/login");
             <span style="background: var(--c-brand); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">1</span>
             Dodatkowe dane firmy
           </summary>
-          <p style="margin: 0.75rem 0; color: var(--c-text-muted); font-size: 0.85rem;">NIP, nazwę i email już podałeś. Tu wpisujesz to czego brakuje.</p>
+          <p class="field-hint" style="margin-top: 0.5rem;">NIP, nazwę firmy i email podałeś już przy zamówieniu. Tu uzupełniasz resztę.</p>
           <div class="grid-2">
-            <label>Nazwa prawna (jeśli inna niż handlowa)
+            <label>
+              <span class="field-label-text">Nazwa prawna</span>
               <input type="text" name="legal_name" placeholder="np. Kowalski Jan — Usługi Ślusarskie" />
+              <small class="field-hint">Tylko jeśli inna niż handlowa (DG czasem ma długą oficjalną nazwę).</small>
             </label>
-            <label>REGON (9 lub 14 cyfr)
-              <input type="text" name="regon" pattern="\d{9}(\d{5})?" placeholder="123456789" />
+            <label>
+              <span class="field-label-text">REGON</span>
+              <input type="text" name="regon" pattern="\d{9}(\d{5})?" inputmode="numeric" maxlength="14" placeholder="123456789" />
+              <small class="field-hint">9 cyfr (DG) lub 14 cyfr (spółka). Pomijasz jeśli nie masz.</small>
             </label>
-            <label>Branża *
+            <label>
+              <span class="field-label-text">Branża<span class="req">*</span></span>
               <select name="industry" required data-industry>
                 <option value="">— wybierz —</option>
                 {INDUSTRIES.map((i) => (
                   <option value={i.slug} data-schema={i.schemaType}>{i.label}</option>
                 ))}
               </select>
+              <small class="field-hint">Wpływa na schema.org (lepsza pozycja w Google) + sugerowane sekcje strony.</small>
             </label>
             <input type="hidden" name="schema_type" required />
-            <label>Rok założenia
-              <input type="number" name="founded_year" min="1900" max={new Date().getFullYear()} />
+            <label>
+              <span class="field-label-text">Rok założenia</span>
+              <input type="number" name="founded_year" inputmode="numeric" min="1900" max={new Date().getFullYear()} placeholder="2018" />
+              <small class="field-hint">Buduje zaufanie ("od 7 lat na rynku"). Pomijasz jeśli nowa firma.</small>
             </label>
-            <label>Liczba pracowników
-              <input type="number" name="employee_count" min="1" max="10000" />
+            <label>
+              <span class="field-label-text">Liczba pracowników</span>
+              <input type="number" name="employee_count" inputmode="numeric" min="1" max="10000" placeholder="1" />
+              <small class="field-hint">Wliczając Ciebie. Wyświetlamy jako "team" tylko gdy &gt; 1.</small>
             </label>
-            <label>Imię i nazwisko osoby kontaktowej
-              <input type="text" name="contact_person_name" maxlength="100" />
+            <label>
+              <span class="field-label-text">Osoba kontaktowa</span>
+              <input type="text" name="contact_person_name" maxlength="100" placeholder="Jan Kowalski" />
+              <small class="field-hint">Imię i nazwisko właściciela / managera. Pokażemy w sekcji "Zespół" jeśli włączysz.</small>
             </label>
           </div>
-          <label style="display: block; margin-top: 0.75rem;">Krótki opis firmy * (do 500 znaków — pokazany w meta + wynikach Google)
-            <textarea name="description" required maxlength="500" rows="2" placeholder="Profesjonalne usługi ślusarskie w Rzeszowie. Otwieranie zamków, dorabianie kluczy — 24/7."></textarea>
+          <label style="display: block;">
+            <span class="field-label-text">Krótki opis firmy<span class="req">*</span></span>
+            <textarea name="description" required maxlength="500" rows="2" data-counter="description-counter" placeholder="Profesjonalne usługi ślusarskie w Rzeszowie. Otwieranie zamków, dorabianie kluczy — 24/7."></textarea>
+            <div style="display: flex; justify-content: space-between; gap: 1rem;">
+              <small class="field-hint">Pokazany w Google jako opis pod tytułem. <strong>Cel: zachęta do kliknięcia.</strong></small>
+              <small class="field-counter" id="description-counter">0 / 500</small>
+            </div>
           </label>
-          <label style="display: block; margin-top: 0.75rem;">Tagline * (jedna linia — na stronie głównej w hero)
-            <input type="text" name="tagline" required maxlength="140" placeholder="Otworzymy każdy zamek — 24/7 w Rzeszowie" />
+          <label style="display: block;">
+            <span class="field-label-text">Tagline<span class="req">*</span></span>
+            <input type="text" name="tagline" required maxlength="140" data-counter="tagline-counter" placeholder="Otworzymy każdy zamek — 24/7 w Rzeszowie" />
+            <div style="display: flex; justify-content: space-between; gap: 1rem;">
+              <small class="field-hint">Jedna mocna linia w hero strony głównej. Konkrety + lokalizacja.</small>
+              <small class="field-counter" id="tagline-counter">0 / 140</small>
+            </div>
           </label>
-          <label style="display: block; margin-top: 0.75rem;">Długi opis * (do 5000 znaków — na stronie "O firmie")
-            <textarea name="long_description" required maxlength="5000" rows="6" placeholder="Działam jako ślusarz w Rzeszowie od ponad 20 lat..."></textarea>
+          <label style="display: block;">
+            <span class="field-label-text">Długi opis firmy<span class="req">*</span></span>
+            <textarea name="long_description" required maxlength="5000" rows="6" data-counter="longdesc-counter" placeholder="Działam jako ślusarz w Rzeszowie od ponad 20 lat. Specjalizuję się w awaryjnym otwieraniu zamków bez uszkadzania drzwi — używam profesjonalnych narzędzi (wytrychy, pikówki). Pracuję 24/7, dojeżdżam do 50 km od centrum Rzeszowa..."></textarea>
+            <div style="display: flex; justify-content: space-between; gap: 1rem;">
+              <small class="field-hint">Pokazany na stronie "O firmie" + indeksowany przez Google. Min. 200 znaków dla dobrego SEO.</small>
+              <small class="field-counter" id="longdesc-counter">0 / 5000</small>
+            </div>
           </label>
         </details>
 
@@ -145,31 +172,33 @@ if (!client) return Astro.redirect("/login");
             <span style="background: var(--c-brand); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">2</span>
             Domena Twojej strony
           </summary>
-          <div style="margin-top: 0.75rem;">
-            <label style="display: flex; gap: 0.6rem; align-items: start; padding: 0.75rem; border: 1px solid var(--c-border); border-radius: 6px; cursor: pointer; margin-bottom: 0.5rem;">
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <label class="radio-card">
               <input type="radio" name="domain_source" value="register" required checked style="margin-top: 0.25rem;" />
               <div>
-                <strong>Chcę żeby MixtureMarketing zarejestrował dla mnie</strong>
-                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">Sprawdzimy dostępność i kupimy w OVH (40 zł/rok wliczone w pakiet).</p>
+                <strong>Zarejestrujcie dla mnie nową domenę</strong>
+                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">Sprawdzimy dostępność i kupimy w OVH — koszt wliczony w pakiet (~16-60 zł/rok zależnie od końcówki).</p>
               </div>
             </label>
-            <label style="display: flex; gap: 0.6rem; align-items: start; padding: 0.75rem; border: 1px solid var(--c-border); border-radius: 6px; cursor: pointer;">
+            <label class="radio-card">
               <input type="radio" name="domain_source" value="owned" style="margin-top: 0.25rem;" />
               <div>
                 <strong>Mam już własną domenę</strong>
-                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">Skonfigurujemy DNS — wystarczy że dasz nam dostęp do panelu rejestratora.</p>
+                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">Skonfigurujemy DNS — wystarczy że dasz nam dostęp do panelu rejestratora (OVH / home.pl / nazwa.pl).</p>
               </div>
             </label>
-            <label style="display: block; margin-top: 0.75rem;">Domena * (np. kowalski-slusarz.pl)
-              <input type="text" name="primary_domain" id="primary_domain" required placeholder="twojafirma.pl" pattern="[a-z0-9.-]+\.[a-z]{2,}" autocomplete="off" />
-            </label>
+          </div>
+          <label style="display: block;">
+            <span class="field-label-text">Domena<span class="req">*</span></span>
+            <input type="text" name="primary_domain" id="primary_domain" required placeholder="np. kowalski-slusarz.pl" pattern="[a-z0-9.-]+\.[a-z]{2,}" autocomplete="off" />
+            <small class="field-hint">Tylko same litery, cyfry, myślniki + końcówka (.pl, .com, .eu).</small>
             <div
               id="domain-check-result"
               role="status"
               aria-live="polite"
               style="margin-top: 0.5rem; font-size: 0.9rem; min-height: 1.3rem;"
             ></div>
-          </div>
+          </label>
         </details>
 
         <!-- ============ 3. LOKALIZACJA ============ -->
@@ -178,32 +207,48 @@ if (!client) return Astro.redirect("/login");
             <span style="background: var(--c-brand); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">3</span>
             Lokalizacja
           </summary>
-          <div class="grid-2" style="margin-top: 0.75rem;">
-            <label>Ulica i numer *
+          <div class="grid-2">
+            <label>
+              <span class="field-label-text">Ulica i numer<span class="req">*</span></span>
               <input type="text" name="street_address" required placeholder="ul. Słowackiego 12" />
+              <small class="field-hint">Adres siedziby. Pokazany na Google Maps + na stronie kontaktowej.</small>
             </label>
-            <label>Miasto (siedziba) *
+            <label>
+              <span class="field-label-text">Miasto<span class="req">*</span></span>
               <input type="text" name="city" required placeholder="Rzeszów" />
+              <small class="field-hint">Miasto siedziby firmy.</small>
             </label>
-            <label>Województwo *
+            <label>
+              <span class="field-label-text">Województwo<span class="req">*</span></span>
               <select name="voivodeship" required>
                 <option value="">— wybierz —</option>
                 {POLISH_VOIVODESHIPS.map((v) => <option value={v}>{v}</option>)}
               </select>
             </label>
-            <label>Kod pocztowy * (NN-NNN)
-              <input type="text" name="postal_code" required pattern="\d{2}-\d{3}" placeholder="35-060" />
-            </label>
-            <label>Latitude (opcjonalne)
-              <input type="number" name="latitude" step="any" placeholder="50.0413" />
-            </label>
-            <label>Longitude (opcjonalne)
-              <input type="number" name="longitude" step="any" placeholder="21.999" />
+            <label>
+              <span class="field-label-text">Kod pocztowy<span class="req">*</span></span>
+              <input type="text" name="postal_code" id="postal_code" required pattern="\d{2}-\d{3}" inputmode="numeric" maxlength="6" placeholder="35-060" autocomplete="postal-code" />
+              <small class="field-hint">Myślnik dodawany automatycznie. Format: NN-NNN.</small>
             </label>
           </div>
-          <label style="display: block; margin-top: 0.75rem;">Obszar obsługi * (oddzielone przecinkami)
+          <details style="margin-top: 0.85rem;">
+            <summary style="font-size: 0.88rem; color: var(--c-text-muted); cursor: pointer;">Współrzędne GPS (opcjonalne — generujemy automatycznie z adresu)</summary>
+            <div class="grid-2" style="margin-top: 0.5rem;">
+              <label>
+                <span class="field-label-text">Latitude</span>
+                <input type="number" name="latitude" step="any" placeholder="50.0413" inputmode="decimal" />
+                <small class="field-hint">Tylko jeśli automatyczne mapowanie z adresu jest nieprecyzyjne.</small>
+              </label>
+              <label>
+                <span class="field-label-text">Longitude</span>
+                <input type="number" name="longitude" step="any" placeholder="21.999" inputmode="decimal" />
+              </label>
+            </div>
+          </details>
+          <label style="display: block;">
+            <span class="field-label-text">Obszar obsługi<span class="req">*</span></span>
             <input type="text" name="service_area" required placeholder="Rzeszów, Boguchwała, Tyczyn, Łańcut, Krasne" />
-            <small style="color: var(--c-text-muted); font-size: 0.8rem;">Wpisz miasta gdzie dojeżdżasz — generujemy osobną stronę local SEO dla każdego.</small>
+            <small class="field-hint">Miasta gdzie dojeżdżasz — generujemy osobną stronę local SEO dla każdego ("Ślusarz Boguchwała"). Oddzielone przecinkami, min. 1.</small>
           </label>
         </details>
 
@@ -222,21 +267,52 @@ if (!client) return Astro.redirect("/login");
           <summary style="font-weight: 700; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
             <span style="background: var(--c-brand); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">5</span>
             Godziny otwarcia
+            <span class="section-badge optional">opcjonalne</span>
           </summary>
-          <p style="color: var(--c-text-muted); font-size: 0.85rem; margin: 0.5rem 0;">
-            Format: <code>HH:MM-HH:MM</code> (np. 08:00-18:00) lub <code>closed</code>. Puste = ukryj dzień.
-          </p>
-          <div class="grid-2" style="margin-top: 0.75rem;">
-            <label>Poniedziałek <input type="text" name="hours_monday" placeholder="08:00-18:00" /></label>
-            <label>Wtorek <input type="text" name="hours_tuesday" placeholder="08:00-18:00" /></label>
-            <label>Środa <input type="text" name="hours_wednesday" placeholder="08:00-18:00" /></label>
-            <label>Czwartek <input type="text" name="hours_thursday" placeholder="08:00-18:00" /></label>
-            <label>Piątek <input type="text" name="hours_friday" placeholder="08:00-18:00" /></label>
-            <label>Sobota <input type="text" name="hours_saturday" placeholder="09:00-14:00 lub closed" /></label>
-            <label>Niedziela <input type="text" name="hours_sunday" placeholder="closed" /></label>
+          <p class="field-hint">Wybierz szablon poniżej, albo wpisz ręcznie format <code>HH:MM-HH:MM</code> (np. <code>08:00-18:00</code>). Wpisz <code>closed</code> dla dnia wolnego. Puste pole = nie pokazujemy tego dnia.</p>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem;">
+            <button type="button" class="btn" data-hours-preset="standard" style="font-size: 0.82rem;">📋 Standardowe (8-18 pn-pt)</button>
+            <button type="button" class="btn" data-hours-preset="extended" style="font-size: 0.82rem;">⏰ Wydłużone (7-20 pn-pt + sob)</button>
+            <button type="button" class="btn" data-hours-preset="24-7" style="font-size: 0.82rem;">🚨 Całodobowo (24/7)</button>
+            <button type="button" class="btn" data-hours-preset="weekend" style="font-size: 0.82rem;">🛍️ Z weekendem (9-17 pn-sob)</button>
+            <button type="button" class="btn" data-hours-preset="clear" style="font-size: 0.82rem;">✕ Wyczyść</button>
           </div>
-          <label style="display: block; margin-top: 0.75rem;">Dodatkowa notatka
+
+          <div class="grid-2" style="margin-top: 0.85rem;">
+            <label>
+              <span class="field-label-text">Poniedziałek</span>
+              <input type="text" name="hours_monday" placeholder="08:00-18:00" pattern="(closed|\d{2}:\d{2}-\d{2}:\d{2})?" />
+            </label>
+            <label>
+              <span class="field-label-text">Wtorek</span>
+              <input type="text" name="hours_tuesday" placeholder="08:00-18:00" pattern="(closed|\d{2}:\d{2}-\d{2}:\d{2})?" />
+            </label>
+            <label>
+              <span class="field-label-text">Środa</span>
+              <input type="text" name="hours_wednesday" placeholder="08:00-18:00" pattern="(closed|\d{2}:\d{2}-\d{2}:\d{2})?" />
+            </label>
+            <label>
+              <span class="field-label-text">Czwartek</span>
+              <input type="text" name="hours_thursday" placeholder="08:00-18:00" pattern="(closed|\d{2}:\d{2}-\d{2}:\d{2})?" />
+            </label>
+            <label>
+              <span class="field-label-text">Piątek</span>
+              <input type="text" name="hours_friday" placeholder="08:00-18:00" pattern="(closed|\d{2}:\d{2}-\d{2}:\d{2})?" />
+            </label>
+            <label>
+              <span class="field-label-text">Sobota</span>
+              <input type="text" name="hours_saturday" placeholder="09:00-14:00 lub closed" pattern="(closed|\d{2}:\d{2}-\d{2}:\d{2})?" />
+            </label>
+            <label>
+              <span class="field-label-text">Niedziela</span>
+              <input type="text" name="hours_sunday" placeholder="closed" pattern="(closed|\d{2}:\d{2}-\d{2}:\d{2})?" />
+            </label>
+          </div>
+          <label style="display: block;">
+            <span class="field-label-text">Dodatkowa informacja</span>
             <input type="text" name="hours_note" maxlength="200" placeholder="Awaryjne wezwania 24/7 — telefon w każdej chwili" />
+            <small class="field-hint">Pojawi się pod tabelą godzin — np. info o przerwach, urlopach, dodatkowych usługach.</small>
           </label>
         </details>
 
@@ -332,23 +408,37 @@ if (!client) return Astro.redirect("/login");
         <!-- ============ 7. INTEGRACJE ============ -->
         <details class="card" style="margin-bottom: 1rem;">
           <summary style="font-weight: 700; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
-            <span style="background: var(--c-text-muted); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">7</span>
-            Analityka (opcjonalne)
+            <span style="background: var(--c-brand); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">7</span>
+            Analityka
+            <span class="section-badge optional">opcjonalne</span>
           </summary>
-          <div style="margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
-            <label style="display: flex; gap: 0.5rem; align-items: center;">
-              <input type="checkbox" name="plausible" checked /> Plausible Analytics (cookieless, RODO-friendly)
+          <p class="field-hint">Mierzymy odwiedziny strony. Plausible jest domyślnie włączony (cookieless, bez zgody RODO).</p>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <label class="radio-card" style="cursor: pointer;">
+              <input type="checkbox" name="plausible" checked />
+              <div>
+                <strong>Plausible Analytics</strong>
+                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">Self-hosted, cookieless, RODO-friendly. Bez banera zgód. Wystarczy 95% przypadków.</p>
+              </div>
             </label>
-            <label style="display: flex; gap: 0.5rem; align-items: center;">
-              <input type="checkbox" name="zaraz" /> Cloudflare Zaraz (server-side GA/Meta — wymaga konfiguracji)
+            <label class="radio-card" style="cursor: pointer;">
+              <input type="checkbox" name="zaraz" />
+              <div>
+                <strong>Cloudflare Zaraz</strong>
+                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">Server-side GA4/Meta Pixel (wolny narzut + lepsze dane). Wymaga konfiguracji + zgód RODO.</p>
+              </div>
             </label>
           </div>
-          <div class="grid-2" style="margin-top: 0.75rem;">
-            <label>GA4 Measurement ID
+          <div class="grid-2">
+            <label>
+              <span class="field-label-text">GA4 Measurement ID</span>
               <input type="text" name="ga4_id" pattern="G-[A-Z0-9]+" placeholder="G-XXXXXXXXXX" />
+              <small class="field-hint">Znajdziesz w Google Analytics → Admin → Property Settings.</small>
             </label>
-            <label>Meta Pixel ID
-              <input type="text" name="meta_pixel" pattern="\d+" />
+            <label>
+              <span class="field-label-text">Meta Pixel ID</span>
+              <input type="text" name="meta_pixel" pattern="\d+" inputmode="numeric" placeholder="123456789012345" />
+              <small class="field-hint">Znajdziesz w Meta Business Manager → Events Manager.</small>
             </label>
           </div>
         </details>
@@ -356,14 +446,16 @@ if (!client) return Astro.redirect("/login");
         <!-- ============ 8. OPINIE ============ -->
         <details class="card" style="margin-bottom: 1rem;">
           <summary style="font-weight: 700; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
-            <span style="background: var(--c-text-muted); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">8</span>
-            Opinie startowe (opcjonalne, max 3)
+            <span style="background: var(--c-brand); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">8</span>
+            Opinie startowe
+            <span class="section-badge optional">opcjonalne (max 3)</span>
           </summary>
-          <p style="color: var(--c-text-muted); font-size: 0.85rem; margin: 0.5rem 0;">
-            Wpisz opinie z GBP które chcesz pokazać na starcie. Później klienci końcowi sami będą dawać opinie po wykonanej usłudze.
+          <p class="field-hint">
+            Skopiuj 1-3 opinie z Twojej wizytówki Google (Google Maps → "Twoja firma" → karta Opinie).
+            Pokażemy je na stronie głównej żeby budować zaufanie. Później klienci końcowi sami będą dawać opinie.
           </p>
           <div id="reviews-list" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
-          <button type="button" id="add-review" class="btn" style="margin-top: 0.5rem;">+ Dodaj opinię</button>
+          <button type="button" id="add-review" class="btn">+ Dodaj opinię</button>
         </details>
 
         <!-- ============ 9. RODO ============ -->
@@ -371,49 +463,132 @@ if (!client) return Astro.redirect("/login");
           <summary style="font-weight: 700; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
             <span style="background: var(--c-brand); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">9</span>
             RODO i DPA
+            <span class="section-badge required">wymagane</span>
           </summary>
-          <p style="color: var(--c-text-muted); font-size: 0.85rem; margin: 0.5rem 0;">
-            MixtureMarketing działa jako podmiot przetwarzający (Art. 28 RODO). Musisz zaakceptować umowę powierzenia (DPA).
+          <p class="field-hint">
+            MixtureMarketing przetwarza dane Twoich klientów (formularze leadów) jako <strong>podmiot przetwarzający</strong> (Art. 28 RODO).
+            Musisz zaakceptować umowę powierzenia (DPA) — to gwarancja że dane Twoich klientów są bezpieczne i Ty pozostajesz administratorem.
           </p>
-          <div class="grid-2" style="margin-top: 0.75rem;">
-            <label>Wersja zgody
-              <input type="text" name="consent_version" value="v1.0" required />
+          <div class="grid-2">
+            <input type="hidden" name="consent_version" value="v1.0" required />
+            <label>
+              <span class="field-label-text">URL polityki prywatności</span>
+              <input type="url" name="privacy_policy_url" placeholder="https://twojafirma.pl/polityka-prywatnosci" />
+              <small class="field-hint">Jeśli już masz na innej stronie — link tutaj. Inaczej wygenerujemy szablon RODO-zgodny.</small>
             </label>
-            <label>URL polityki prywatności (opcjonalne)
-              <input type="text" name="privacy_policy_url" placeholder="https://twojafirma.pl/polityka-prywatnosci" />
-            </label>
-            <label>URL regulaminu (opcjonalne)
-              <input type="text" name="terms_url" placeholder="https://twojafirma.pl/regulamin" />
+            <label>
+              <span class="field-label-text">URL regulaminu</span>
+              <input type="url" name="terms_url" placeholder="https://twojafirma.pl/regulamin" />
+              <small class="field-hint">Opcjonalnie. Dla B2B i usług na zlecenie warto mieć.</small>
             </label>
           </div>
-          <label style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.75rem;">
+          <label class="radio-card" style="cursor: pointer; margin-top: 0.85rem;">
             <input type="checkbox" name="dpa_signed" required />
-            <span>Akceptuję umowę powierzenia przetwarzania (DPA) z MixtureMarketing *</span>
+            <div>
+              <strong>Akceptuję umowę powierzenia przetwarzania danych (DPA) z MixtureMarketing<span class="req">*</span></strong>
+              <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">
+                Pełna treść umowy: <a href="/rodo" target="_blank" style="color: var(--c-brand);">Polityka RODO MixtureMarketing →</a>
+              </p>
+            </div>
           </label>
         </details>
 
         <!-- ============ SUBMIT ============ -->
         <div id="form-errors" style="display: none; padding: 1rem; background: #fef2f2; border: 1px solid #fecaca; color: var(--c-danger); border-radius: 8px; margin-bottom: 1rem;"></div>
 
-        <div style="display: flex; gap: 1rem; align-items: center;">
-          <button type="submit" id="submit-btn" class="btn btn-primary" style="flex: 1; min-height: 48px; font-size: 1rem;">
+        <div class="submit-bar">
+          <div style="flex: 1; min-width: 200px;">
+            <p style="margin: 0; font-weight: 700; font-size: 1rem;">Gotowy do startu?</p>
+            <p style="margin: 0.15rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">
+              Po zatwierdzeniu zaczynamy budowę. Strona online za ~24h. <span id="draft-status" style="color: var(--c-text-muted); font-size: 0.85rem;"></span>
+            </p>
+          </div>
+          <button type="submit" id="submit-btn" class="btn btn-primary" style="min-height: 48px; font-size: 1rem; padding: 0.75rem 1.5rem;">
             Zatwierdź i rozpocznij budowę strony →
           </button>
-          <span id="draft-status" style="color: var(--c-text-muted); font-size: 0.85rem;"></span>
         </div>
       </form>
     </main>
 
     <style is:global>
-      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-      @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
-      label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.9rem; }
-      input[type="text"], input[type="email"], input[type="number"], select, textarea {
-        padding: 0.5rem 0.65rem; border: 1px solid var(--c-border); border-radius: 6px;
+      /* Field grid — 2-col desktop, 1-col mobile, with consistent gap */
+      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1rem; }
+      @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; gap: 0.85rem; } }
+
+      /* Label structure — text above, input below, hint below input */
+      label {
+        display: flex; flex-direction: column; gap: 0.3rem;
+        font-size: 0.92rem; line-height: 1.4;
+        color: var(--c-text);
+      }
+      label > .field-label-text { font-weight: 600; }
+      label .req { color: var(--c-danger); font-weight: 700; margin-left: 0.15rem; }
+      .field-hint {
+        font-size: 0.78rem; color: var(--c-text-muted); margin-top: 0.1rem;
+        line-height: 1.4;
+      }
+      .field-counter {
+        font-size: 0.72rem; color: var(--c-text-muted);
+        text-align: right; font-variant-numeric: tabular-nums;
+        margin-top: -0.15rem;
+      }
+      .field-counter.is-warn { color: #b45309; }
+      .field-counter.is-over { color: var(--c-danger); font-weight: 600; }
+
+      /* Inputs — bigger touch targets (44px min), consistent padding */
+      input[type="text"], input[type="email"], input[type="number"], input[type="tel"], select, textarea {
+        padding: 0.65rem 0.75rem;
+        border: 1px solid var(--c-border); border-radius: 8px;
         font-family: inherit; font-size: 0.95rem; background: white;
+        min-height: 42px; box-sizing: border-box;
+        transition: border-color 150ms, box-shadow 150ms;
+      }
+      textarea { min-height: 80px; resize: vertical; }
+      input:focus, select:focus, textarea:focus {
+        outline: none; border-color: var(--c-brand);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-brand) 20%, transparent);
       }
       input:invalid:not(:placeholder-shown) { border-color: var(--c-danger); }
-      .service-row, .review-row { background: var(--c-surface-muted); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--c-border); }
+      input:invalid:not(:placeholder-shown):focus {
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-danger) 20%, transparent);
+      }
+
+      /* Sub-sections inside details */
+      details > *:not(summary) { margin-top: 0.85rem; }
+      details > summary { padding: 0.15rem 0; }
+
+      .service-row, .review-row {
+        background: var(--c-surface-muted); padding: 1rem;
+        border-radius: 8px; border: 1px solid var(--c-border);
+      }
+
+      /* Radio cards */
+      .radio-card {
+        display: flex; gap: 0.6rem; align-items: start;
+        padding: 0.85rem 1rem; border: 1px solid var(--c-border);
+        border-radius: 8px; cursor: pointer;
+        transition: border-color 150ms, background 150ms;
+      }
+      .radio-card:has(input:checked) {
+        border-color: var(--c-brand); background: color-mix(in srgb, var(--c-brand) 6%, transparent);
+      }
+
+      /* Submit button area */
+      .submit-bar {
+        position: sticky; bottom: 1rem; z-index: 5;
+        background: var(--c-surface); border: 1px solid var(--c-border);
+        border-radius: 12px; padding: 1rem;
+        box-shadow: 0 -4px 12px -8px rgba(0,0,0,0.15);
+        display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;
+      }
+
+      /* Section badges — required vs optional */
+      .section-badge {
+        font-size: 0.7rem; padding: 0.15rem 0.45rem; border-radius: 999px;
+        margin-left: 0.5rem; font-weight: 600; letter-spacing: 0.02em;
+      }
+      .section-badge.required { background: color-mix(in srgb, var(--c-danger) 12%, transparent); color: #991b1b; }
+      .section-badge.optional { background: var(--c-surface-muted); color: var(--c-text-muted); }
     </style>
 
     <script is:inline>
@@ -531,6 +706,57 @@ if (!client) return Astro.redirect("/login");
           checkDomainNow();
         }));
       }
+
+      // ============ POSTAL CODE AUTO-FORMAT (NN-NNN) ============
+      const postalInput = document.getElementById("postal_code");
+      if (postalInput) {
+        postalInput.addEventListener("input", (e) => {
+          const v = e.target.value.replace(/\D/g, "").slice(0, 5);
+          e.target.value = v.length > 2 ? v.slice(0, 2) + "-" + v.slice(2) : v;
+        });
+      }
+
+      // ============ CHARACTER COUNTERS ============
+      document.querySelectorAll("[data-counter]").forEach((input) => {
+        const counter = document.getElementById(input.dataset.counter);
+        if (!counter) return;
+        const max = parseInt(input.maxLength, 10) || parseInt(input.getAttribute("maxlength"), 10) || 0;
+        const update = () => {
+          const len = input.value.length;
+          counter.textContent = `${len} / ${max}`;
+          counter.classList.toggle("is-warn", len > max * 0.85 && len <= max);
+          counter.classList.toggle("is-over", len >= max);
+        };
+        input.addEventListener("input", update);
+        update();
+      });
+
+      // ============ HOURS PRESETS ============
+      const HOURS_PRESETS = {
+        "standard": { monday: "08:00-18:00", tuesday: "08:00-18:00", wednesday: "08:00-18:00", thursday: "08:00-18:00", friday: "08:00-18:00", saturday: "closed", sunday: "closed" },
+        "extended": { monday: "07:00-20:00", tuesday: "07:00-20:00", wednesday: "07:00-20:00", thursday: "07:00-20:00", friday: "07:00-20:00", saturday: "09:00-14:00", sunday: "closed" },
+        "24-7":     { monday: "00:00-23:59", tuesday: "00:00-23:59", wednesday: "00:00-23:59", thursday: "00:00-23:59", friday: "00:00-23:59", saturday: "00:00-23:59", sunday: "00:00-23:59" },
+        "weekend":  { monday: "09:00-17:00", tuesday: "09:00-17:00", wednesday: "09:00-17:00", thursday: "09:00-17:00", friday: "09:00-17:00", saturday: "09:00-17:00", sunday: "closed" },
+        "clear":    { monday: "", tuesday: "", wednesday: "", thursday: "", friday: "", saturday: "", sunday: "" },
+      };
+      document.querySelectorAll("[data-hours-preset]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          const preset = HOURS_PRESETS[btn.dataset.hoursPreset];
+          if (!preset) return;
+          Object.entries(preset).forEach(([day, val]) => {
+            const input = document.querySelector(`input[name="hours_${day}"]`);
+            if (input) {
+              input.value = val;
+              input.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+          });
+          if (btn.dataset.hoursPreset === "24-7") {
+            const note = document.querySelector('input[name="hours_note"]');
+            if (note && !note.value) note.value = "Awaryjne wezwania 24/7 — telefon w każdej chwili";
+          }
+        });
+      });
 
       const reviewsList = document.getElementById("reviews-list");
       const addReviewBtn = document.getElementById("add-review");
