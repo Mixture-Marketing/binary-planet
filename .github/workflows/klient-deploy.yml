@@ -74,6 +74,11 @@ jobs:
         run: pnpm --filter mm-starter build
         env:
           NODE_ENV: production
+          # @astrojs/cloudflare v13 + vite-plugin tries to start wrangler remote proxy
+          # session at build time to fetch CF binding types. Without these env vars
+          # it errors "You must be logged in to use wrangler dev in remote mode".
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
       - name: Determine Worker name
         id: worker
