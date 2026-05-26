@@ -122,6 +122,7 @@ export interface ClientFullConfig {
   postal_code: string | null;
   voivodeship: string | null;
   primary_domain: string | null;
+  preview_domain: string | null;
   tier: string;
   status: string;
   theme_preset: string;
@@ -137,7 +138,7 @@ export async function getClientFullConfig(
   return await db
     .prepare(
       `SELECT id, business_name, legal_name, nip, industry, city, postal_code, voivodeship,
-              primary_domain, tier, status, theme_preset, has_lock_in, lock_in_until, activated_at
+              primary_domain, preview_domain, tier, status, theme_preset, has_lock_in, lock_in_until, activated_at
          FROM clients WHERE id = ? LIMIT 1`,
     )
     .bind(clientId)

@@ -473,7 +473,79 @@ export async function provisionOne(
     .run();
 
   log.info("provision.end", { client_id: row.client_id, status: finalStatus, steps: steps.length });
+
+  // Notify klient via email when provisioning succeeds (best-effort, non-blocking).
+  if (finalStatus === "done") {
+    await sendProvisioningDoneEmail(env, row.client_id).catch((e) => {
+      log.warn("provision.email_failed", { client_id: row.client_id, error: e instanceof Error ? e.message : String(e) });
+    });
+  }
+
   return { client_id: row.client_id, ok: finalStatus === "done", steps, ...(errorMsg && { error: errorMsg }) };
+}
+
+/**
+ * Send "your site is live" email to klient. Uses preview_domain or primary_domain
+ * from clients table (whichever exists — provisioning sets both).
+ * Resend API. Best-effort: swallow errors so provision doesn't fail on email issues.
+ */
+async function sendProvisioningDoneEmail(env: Env, clientId: string): Promise<void> {
+  if (!env.RESEND_API_KEY) return;
+
+  const row = await env.DB
+    .prepare(
+      `SELECT c.business_name, c.primary_domain, c.preview_domain, cc.contact_email_enc
+         FROM clients c LEFT JOIN client_contacts cc ON cc.client_id = c.id
+        WHERE c.id = ? LIMIT 1`,
+    )
+    .bind(clientId)
+    .first<{ business_name: string; primary_domain: string | null; preview_domain: string | null; contact_email_enc: string | null }>();
+  if (!row?.contact_email_enc) return;
+
+  const email = row.contact_email_enc.startsWith("dev:") ? row.contact_email_enc.slice(4) : row.contact_email_enc;
+  const siteUrl = row.primary_domain
+    ? `https://${row.primary_domain}`
+    : row.preview_domain
+      ? `https://${row.preview_domain}`
+      : "https://panel.mixturemarketing.pl/";
+  const isPreview = !row.primary_domain && !!row.preview_domain;
+  const escape = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+
+  const previewNote = isPreview
+    ? `<p style="color: #b45309; margin: 16px 0;"><strong>Uwaga:</strong> Strona jest na tymczasowym adresie workers.dev. Aby uruchomić własną domenę (np. twojafirma.pl), wejdź w <a href="https://panel.mixturemarketing.pl/ustawienia#domena" style="color: #047857;">Ustawienia → Domena</a> w panelu klienta.</p>`
+    : "";
+
+  const html = `
+    <div style="font-family: system-ui, sans-serif; max-width: 540px; margin: 0 auto; padding: 24px;">
+      <h1 style="color: #047857; margin: 0 0 16px 0;">🎉 Twoja strona jest gotowa!</h1>
+      <p>Cześć,</p>
+      <p>Twoja strona dla firmy <strong>${escape(row.business_name)}</strong> została wdrożona i jest dostępna pod adresem:</p>
+      <p style="margin: 24px 0; padding: 16px; background: #ecfdf5; border-left: 4px solid #047857; border-radius: 6px;">
+        <a href="${siteUrl}" style="color: #047857; font-weight: 600; font-size: 1.1rem; text-decoration: none;">${escape(siteUrl)} →</a>
+      </p>
+      ${previewNote}
+      <p>W panelu klienta zobaczysz statystyki leadów, faktury i ustawienia strony:</p>
+      <p style="margin: 16px 0;">
+        <a href="https://panel.mixturemarketing.pl/" style="display: inline-block; background: #047857; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">Otwórz panel klienta →</a>
+      </p>
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 32px 0;">
+      <p style="color: #64748b; font-size: 13px;">
+        Pytania? Odpowiedz na tego maila lub napisz na <a href="mailto:info@mixturemarketing.pl">info@mixturemarketing.pl</a>.<br>
+        MixtureMarketing
+      </p>
+    </div>
+  `;
+
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: env.RESEND_FROM ?? "admin@mixturemarketing.pl",
+      to: email,
+      subject: `🎉 Twoja strona jest gotowa — ${row.business_name}`,
+      html,
+    }),
+  });
 }
 
 function stepResult(

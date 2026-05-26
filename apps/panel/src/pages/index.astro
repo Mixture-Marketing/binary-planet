@@ -21,6 +21,10 @@ const siteUrl = siteRow?.primary_domain
     ? `https://${siteRow.preview_domain}`
     : null;
 const isPreviewOnly = !siteRow?.primary_domain && !!siteRow?.preview_domain;
+// Klient may have BOTH: custom domain as primary + workers.dev preview as backup.
+// Useful for testing changes safely or as fallback if DNS goes wrong.
+const hasBothDomains = !!siteRow?.primary_domain && !!siteRow?.preview_domain;
+const previewBackupUrl = hasBothDomains ? `https://${siteRow!.preview_domain}` : null;
 
 // Provisioning status — show banner when site is being built or pending wizard
 interface ProvRow {
@@ -127,6 +131,33 @@ const STAT_CARDS: Array<{ label: string; value: string | number; icon: Parameter
     <section style="border: 1px solid #fcd34d; background: #fffbeb; border-radius: 0.75rem; padding: 1rem 1.25rem; margin-bottom: 1.5rem; font-size: 0.92rem; color: #78350f;">
       <strong>Tymczasowy adres workers.dev.</strong> Aby uruchomić własną domenę (np. twojafirma.pl) i ustawić tytuł w Google, wejdź w
       <a href="/ustawienia#domena" style="color: inherit; text-decoration: underline; font-weight: 600;"> Ustawienia → Domena</a>.
+    </section>
+  )}
+
+  {hasBothDomains && previewBackupUrl && (
+    <section style="border: 1px solid #a7f3d0; background: #ecfdf5; border-radius: 0.75rem; padding: 1rem 1.25rem; margin-bottom: 1.5rem; font-size: 0.9rem; color: #065f46;">
+      <div style="display: flex; gap: 1rem; align-items: start; flex-wrap: wrap;">
+        <Icon name="info" size={18} />
+        <div style="flex: 1; min-width: 0;">
+          <p style="margin: 0 0 0.4rem 0;"><strong>Twoja strona dostępna pod 2 adresami:</strong></p>
+          <ul style="margin: 0; padding-left: 1.25rem; line-height: 1.7;">
+            <li>
+              <strong>Główny adres:</strong>{" "}
+              <a href={siteUrl} target="_blank" rel="noopener" style="color: inherit; font-weight: 600; text-decoration: underline;">
+                {siteRow!.primary_domain}
+              </a>{" "}
+              <span style="opacity: 0.75;">— używaj w wizytówce, marketingu, reklamach</span>
+            </li>
+            <li>
+              <strong>Preview / backup:</strong>{" "}
+              <a href={previewBackupUrl} target="_blank" rel="noopener" style="color: inherit; font-weight: 500; text-decoration: underline;">
+                {siteRow!.preview_domain}
+              </a>{" "}
+              <span style="opacity: 0.75;">— do testów + fallback gdyby coś z DNS poszło nie tak</span>
+            </li>
+          </ul>
+        </div>
+      </div>
     </section>
   )}
 
