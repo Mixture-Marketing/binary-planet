@@ -43,13 +43,13 @@ import { INDUSTRIES, POLISH_VOIVODESHIPS } from "../../lib/onboarding.ts";
           <input type="text" name="legal_name" placeholder="Kowalski Jan — Usługi Ślusarskie" />
         </label>
         <label>NIP * (10 cyfr)
-          <input type="text" name="nip" required pattern="\d{10}" placeholder="8121234567" maxlength="10" />
+          <input type="text" name="nip" required pattern="\\d{10}" placeholder="8121234567" maxlength="10" />
         </label>
         <label>REGON (9 lub 14 cyfr)
-          <input type="text" name="regon" pattern="\d{9}(\d{5})?" placeholder="123456789" />
+          <input type="text" name="regon" pattern="\\d{9}(\\d{5})?" placeholder="123456789" />
         </label>
         <label>KRS (jeśli spółka)
-          <input type="text" name="krs" pattern="\d{10}" />
+          <input type="text" name="krs" pattern="\\d{10}" />
         </label>
         <label>Branża *
           <select name="industry" required data-industry>
@@ -83,10 +83,10 @@ import { INDUSTRIES, POLISH_VOIVODESHIPS } from "../../lib/onboarding.ts";
       <summary style="font-weight: 700; font-size: 1.1rem; cursor: pointer;">2. Kontakt</summary>
       <div class="grid-2" style="margin-top: 1rem;">
         <label>Telefon główny * (+48...)
-          <input type="text" name="primary_phone" required pattern="\+\d{8,15}" placeholder="+48171234567" />
+          <input type="text" name="primary_phone" required pattern="\\+\\d{8,15}" placeholder="+48171234567" />
         </label>
         <label>Telefon dodatkowy
-          <input type="text" name="secondary_phone" pattern="\+\d{8,15}" />
+          <input type="text" name="secondary_phone" pattern="\\+\\d{8,15}" />
         </label>
         <label>Email kontaktowy *
           <input type="email" name="email" required placeholder="kontakt@kowalski-slusarz.pl" />
@@ -117,7 +117,7 @@ import { INDUSTRIES, POLISH_VOIVODESHIPS } from "../../lib/onboarding.ts";
           </select>
         </label>
         <label>Kod pocztowy * (NN-NNN)
-          <input type="text" name="postal_code" required pattern="\d{2}-\d{3}" placeholder="35-060" />
+          <input type="text" name="postal_code" required pattern="\\d{2}-\\d{3}" placeholder="35-060" />
         </label>
         <label>Latitude
           <input type="number" name="latitude" step="any" placeholder="50.0413" />
@@ -252,10 +252,10 @@ import { INDUSTRIES, POLISH_VOIVODESHIPS } from "../../lib/onboarding.ts";
           <input type="text" name="ga4_id" pattern="G-[A-Z0-9]+" placeholder="G-XXXXXXXXXX" />
         </label>
         <label>Meta Pixel ID
-          <input type="text" name="meta_pixel" pattern="\d+" />
+          <input type="text" name="meta_pixel" pattern="\\d+" />
         </label>
         <label>Google Ads Conversion ID
-          <input type="text" name="google_ads_conversion_id" pattern="AW-\d+" placeholder="AW-123456789" />
+          <input type="text" name="google_ads_conversion_id" pattern="AW-\\d+" placeholder="AW-123456789" />
         </label>
         <label>Turnstile Site Key (form anti-spam)
           <input type="text" name="turnstile_site_key" />

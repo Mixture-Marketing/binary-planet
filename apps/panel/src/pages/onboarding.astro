@@ -139,7 +139,7 @@ if (!client) return Astro.redirect("/login");
             </label>
             <label>
               <span class="field-label-text">REGON</span>
-              <input type="text" name="regon" pattern="\d{9}(\d{5})?" inputmode="numeric" maxlength="14" placeholder="123456789" />
+              <input type="text" name="regon" pattern="\\d{9}(\\d{5})?" inputmode="numeric" maxlength="14" placeholder="123456789" />
               <small class="field-hint">9 cyfr (DG) lub 14 cyfr (spółka). Pomijasz jeśli nie masz.</small>
             </label>
             <label>
@@ -170,7 +170,7 @@ if (!client) return Astro.redirect("/login");
             </label>
             <label>
               <span class="field-label-text">Telefon kontaktowy</span>
-              <input type="tel" name="contact_phone" id="contact_phone" inputmode="tel" maxlength="20" pattern="(\+48 )?\d{3} \d{3} \d{3}|(\+48)?\d{9}" placeholder="+48 600 123 456" autocomplete="tel" />
+              <input type="tel" name="contact_phone" id="contact_phone" inputmode="tel" maxlength="20" pattern="(\\+48 )?\\d{3} \\d{3} \\d{3}|(\\+48)?\\d{9}" placeholder="+48 600 123 456" autocomplete="tel" />
               <small class="field-hint">Format polski: 9 cyfr (z prefiksem +48 lub bez). Auto-formatowanie. Pokazany na stronie kontaktowej + click-to-call.</small>
             </label>
           </div>
@@ -224,7 +224,7 @@ if (!client) return Astro.redirect("/login");
           </div>
           <label style="display: block;">
             <span class="field-label-text">Domena<span class="req">*</span></span>
-            <input type="text" name="primary_domain" id="primary_domain" required placeholder="np. kowalski-slusarz.pl" pattern="[a-z0-9.-]+\.[a-z]{2,}" autocomplete="off" />
+            <input type="text" name="primary_domain" id="primary_domain" required placeholder="np. kowalski-slusarz.pl" pattern="[a-z0-9.\\-]+\\.[a-z]{2,}" autocomplete="off" />
             <small class="field-hint">Tylko same litery, cyfry, myślniki + końcówka (.pl, .com, .eu).</small>
             <div
               id="domain-check-result"
@@ -261,7 +261,7 @@ if (!client) return Astro.redirect("/login");
             </label>
             <label>
               <span class="field-label-text">Kod pocztowy<span class="req">*</span></span>
-              <input type="text" name="postal_code" id="postal_code" required pattern="\d{2}-\d{3}" inputmode="numeric" maxlength="6" placeholder="35-060" autocomplete="postal-code" />
+              <input type="text" name="postal_code" id="postal_code" required pattern="\\d{2}-\\d{3}" inputmode="numeric" maxlength="6" placeholder="35-060" autocomplete="postal-code" />
               <small class="field-hint">Myślnik dodawany automatycznie. Format: NN-NNN.</small>
             </label>
           </div>
@@ -316,31 +316,31 @@ if (!client) return Astro.redirect("/login");
           <div class="grid-2" style="margin-top: 0.85rem;">
             <label>
               <span class="field-label-text">Poniedziałek</span>
-              <input type="text" name="hours_monday" placeholder="08:00-18:00" pattern="(closed|\d{2}:\d{2}-\d{2}:\d{2})?" />
+              <input type="text" name="hours_monday" placeholder="08:00-18:00" pattern="(closed|\\d{2}:\\d{2}-\\d{2}:\\d{2})?" />
             </label>
             <label>
               <span class="field-label-text">Wtorek</span>
-              <input type="text" name="hours_tuesday" placeholder="08:00-18:00" pattern="(closed|\d{2}:\d{2}-\d{2}:\d{2})?" />
+              <input type="text" name="hours_tuesday" placeholder="08:00-18:00" pattern="(closed|\\d{2}:\\d{2}-\\d{2}:\\d{2})?" />
             </label>
             <label>
               <span class="field-label-text">Środa</span>
-              <input type="text" name="hours_wednesday" placeholder="08:00-18:00" pattern="(closed|\d{2}:\d{2}-\d{2}:\d{2})?" />
+              <input type="text" name="hours_wednesday" placeholder="08:00-18:00" pattern="(closed|\\d{2}:\\d{2}-\\d{2}:\\d{2})?" />
             </label>
             <label>
               <span class="field-label-text">Czwartek</span>
-              <input type="text" name="hours_thursday" placeholder="08:00-18:00" pattern="(closed|\d{2}:\d{2}-\d{2}:\d{2})?" />
+              <input type="text" name="hours_thursday" placeholder="08:00-18:00" pattern="(closed|\\d{2}:\\d{2}-\\d{2}:\\d{2})?" />
             </label>
             <label>
               <span class="field-label-text">Piątek</span>
-              <input type="text" name="hours_friday" placeholder="08:00-18:00" pattern="(closed|\d{2}:\d{2}-\d{2}:\d{2})?" />
+              <input type="text" name="hours_friday" placeholder="08:00-18:00" pattern="(closed|\\d{2}:\\d{2}-\\d{2}:\\d{2})?" />
             </label>
             <label>
               <span class="field-label-text">Sobota</span>
-              <input type="text" name="hours_saturday" placeholder="09:00-14:00 lub closed" pattern="(closed|\d{2}:\d{2}-\d{2}:\d{2})?" />
+              <input type="text" name="hours_saturday" placeholder="09:00-14:00 lub closed" pattern="(closed|\\d{2}:\\d{2}-\\d{2}:\\d{2})?" />
             </label>
             <label>
               <span class="field-label-text">Niedziela</span>
-              <input type="text" name="hours_sunday" placeholder="closed" pattern="(closed|\d{2}:\d{2}-\d{2}:\d{2})?" />
+              <input type="text" name="hours_sunday" placeholder="closed" pattern="(closed|\\d{2}:\\d{2}-\\d{2}:\\d{2})?" />
             </label>
           </div>
           <label style="display: block;">
@@ -488,7 +488,7 @@ if (!client) return Astro.redirect("/login");
             </label>
             <label>
               <span class="field-label-text">Meta Pixel ID</span>
-              <input type="text" name="meta_pixel" pattern="\d+" inputmode="numeric" placeholder="123456789012345" />
+              <input type="text" name="meta_pixel" pattern="\\d+" inputmode="numeric" placeholder="123456789012345" />
               <small class="field-hint">Znajdziesz w Meta Business Manager → Events Manager.</small>
             </label>
           </div>
@@ -1116,7 +1116,6 @@ if (!client) return Astro.redirect("/login");
       });
 
       // ============ PROGRESS INDICATOR ============
-      const TOTAL_SECTIONS = 9;
       const progressFill = document.getElementById("progress-fill");
       const progressLabel = document.getElementById("progress-label");
       const progressPct = document.getElementById("progress-pct");
