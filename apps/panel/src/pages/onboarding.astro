@@ -753,19 +753,27 @@ if (!client) return Astro.redirect("/login");
       }
 
       // ============ PHONE AUTO-FORMAT (+48 XXX XXX XXX) ============
+      // Format on BLUR only — formatting on every keystroke causes cursor jumps.
+      // User types freely (any format), we clean + format when they leave the field.
       const phoneInput = document.getElementById("contact_phone");
+      function formatPhone(raw) {
+        const hasPlus = raw.trim().startsWith("+");
+        let digits = raw.replace(/\D/g, "");
+        // Country code 48 stripping: if hasPlus, always strip leading 48;
+        // if no plus but 11+ digits starting with 48 → also country code
+        if (hasPlus && digits.startsWith("48")) digits = digits.slice(2);
+        else if (!hasPlus && digits.startsWith("48") && digits.length >= 11) digits = digits.slice(2);
+        digits = digits.slice(0, 9);
+        const grouped = digits.length > 6 ? `${digits.slice(0,3)} ${digits.slice(3,6)} ${digits.slice(6)}`
+                     : digits.length > 3 ? `${digits.slice(0,3)} ${digits.slice(3)}`
+                     : digits;
+        if (digits.length === 0) return "";
+        return "+48 " + grouped;
+      }
       if (phoneInput) {
-        phoneInput.addEventListener("input", (e) => {
-          let v = e.target.value.replace(/[^\d+]/g, "");
-          // Strip optional +48 prefix, format last 9 digits
-          let prefix = "";
-          if (v.startsWith("+48")) { prefix = "+48 "; v = v.slice(3); }
-          else if (v.startsWith("48") && v.length >= 11) { prefix = "+48 "; v = v.slice(2); }
-          v = v.replace(/\D/g, "").slice(0, 9);
-          const grouped = v.length > 6 ? `${v.slice(0,3)} ${v.slice(3,6)} ${v.slice(6)}`
-                       : v.length > 3 ? `${v.slice(0,3)} ${v.slice(3)}`
-                       : v;
-          e.target.value = (prefix || (v.length === 9 ? "+48 " : "")) + grouped;
+        phoneInput.addEventListener("blur", (e) => {
+          const formatted = formatPhone(e.target.value);
+          if (formatted !== e.target.value) e.target.value = formatted;
         });
       }
 
