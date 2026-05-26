@@ -58,6 +58,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   return applySecurityHeaders(response, {
     nonce,
+    // Admin has 6+ inline `<script is:inline>` blocks (onboarding wizard, retry
+    // buttons, cron triggers, alerts handlers). Same constraint as panel —
+    // Astro 6 doesn't propagate nonce to is:inline scripts so strict nonce-only
+    // CSP blocks all interactivity. Follow-up: migrate to nonce={nonce} per script.
+    allowAstroInlineScripts: true,
     integrations: { hubApi: true },
     // Admin panel: stricter — no analytics, no marketing trackers
     cspOverrides: {

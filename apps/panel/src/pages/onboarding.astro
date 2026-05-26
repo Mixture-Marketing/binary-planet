@@ -94,7 +94,7 @@ if (!client) return Astro.redirect("/login");
         </div>
       </div>
 
-      <form id="onboarding-form" novalidate>
+      <form id="onboarding-form" novalidate method="POST" action="#">
         <!-- ============ 1. DANE FIRMY ============ -->
         <details open class="card" style="margin-bottom: 1rem;">
           <summary style="font-weight: 700; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">

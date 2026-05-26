@@ -88,6 +88,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   return applySecurityHeaders(response, {
     nonce,
+    // Panel has 10+ inline `<script is:inline>` blocks (wizards, addons, settings
+    // forms, ConfirmDialog). Astro 6 doesn't auto-propagate nonce to is:inline,
+    // so strict nonce-only CSP blocks all interactivity. Klient `pending` post-
+    // payment couldn't fill onboarding wizard (form submit blocked → GET reload
+    // with all data in URL → security leak). Follow-up: migrate to nonce={nonce}
+    // per script + remove this flag. Tracked in MEMORY.md / runbooks.
+    allowAstroInlineScripts: true,
     integrations: { hubApi: true },
     cspOverrides: {
       "img-src": ["'self'", "data:"],
