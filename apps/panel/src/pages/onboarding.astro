@@ -139,6 +139,11 @@ if (!client) return Astro.redirect("/login");
               <input type="text" name="contact_person_name" maxlength="100" placeholder="Jan Kowalski" />
               <small class="field-hint">Imię i nazwisko właściciela / managera. Pokażemy w sekcji "Zespół" jeśli włączysz.</small>
             </label>
+            <label>
+              <span class="field-label-text">Telefon kontaktowy</span>
+              <input type="tel" name="contact_phone" id="contact_phone" inputmode="tel" maxlength="20" pattern="(\+48 )?\d{3} \d{3} \d{3}|(\+48)?\d{9}" placeholder="+48 600 123 456" autocomplete="tel" />
+              <small class="field-hint">Format polski: 9 cyfr (z prefiksem +48 lub bez). Auto-formatowanie. Pokazany na stronie kontaktowej + click-to-call.</small>
+            </label>
           </div>
           <label style="display: block;">
             <span class="field-label-text">Krótki opis firmy<span class="req">*</span></span>
@@ -320,9 +325,26 @@ if (!client) return Astro.redirect("/login");
         <details open class="card" style="margin-bottom: 1rem;">
           <summary style="font-weight: 700; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
             <span style="background: var(--c-brand); color: white; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem;">6</span>
-            Styl strony — wybierz wizualnie
+            Styl strony i logo
+            <span class="section-badge optional">opcjonalne</span>
           </summary>
-          <p style="margin: 0.75rem 0; color: var(--c-text-muted); font-size: 0.9rem;">
+
+          {/* Logo upload widget — calls /api/settings/logo-upload */}
+          <div class="logo-upload-widget" style="display: flex; gap: 1rem; align-items: center; padding: 1rem; background: var(--c-surface-muted); border: 1px solid var(--c-border); border-radius: 8px; margin-bottom: 1rem;">
+            <div id="logo-preview" style="width: 80px; height: 80px; border-radius: 8px; background: white; border: 1px dashed var(--c-border); display: flex; align-items: center; justify-content: center; color: var(--c-text-muted); font-size: 0.75rem; text-align: center; overflow: hidden; flex-shrink: 0;">
+              brak<br />logo
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <label style="display: block;">
+                <span class="field-label-text">Logo firmy</span>
+                <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display: block; margin-top: 0.4rem; font-size: 0.85rem;" />
+                <small class="field-hint">PNG, JPG, SVG lub WebP. Max 500 KB. Wgraj kwadrat lub poziome logo — używamy w nagłówku strony.</small>
+              </label>
+              <div id="logo-upload-status" role="status" aria-live="polite" style="margin-top: 0.4rem; font-size: 0.85rem; min-height: 1.2rem;"></div>
+            </div>
+          </div>
+
+          <p style="margin: 0; color: var(--c-text-muted); font-size: 0.9rem;">
             Każdy styl ma inny charakter — kolory, fonty, układ. Kliknij ten, który najlepiej pasuje do Twojej firmy.
             Możesz to zmienić w każdej chwili po onboardingu w <code>Ustawienia → Wygląd strony</code>.
           </p>
@@ -497,10 +519,24 @@ if (!client) return Astro.redirect("/login");
         <div id="form-errors" style="display: none; padding: 1rem; background: #fef2f2; border: 1px solid #fecaca; color: var(--c-danger); border-radius: 8px; margin-bottom: 1rem;"></div>
 
         <div class="submit-bar">
-          <div style="flex: 1; min-width: 200px;">
-            <p style="margin: 0; font-weight: 700; font-size: 1rem;">Gotowy do startu?</p>
-            <p style="margin: 0.15rem 0 0 0; font-size: 0.85rem; color: var(--c-text-muted);">
-              Po zatwierdzeniu zaczynamy budowę. Strona online za ~24h. <span id="draft-status" style="color: var(--c-text-muted); font-size: 0.85rem;"></span>
+          <div style="flex: 1; min-width: 220px;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+              <span id="progress-label" style="font-weight: 700; font-size: 0.95rem; min-width: 7rem;">0 / 9 sekcji</span>
+              <div
+                role="progressbar"
+                aria-valuemin="0"
+                aria-valuemax="9"
+                aria-valuenow="0"
+                aria-label="Postęp wizardu"
+                id="progress-track"
+                style="flex: 1; height: 8px; background: var(--c-border); border-radius: 999px; overflow: hidden;"
+              >
+                <div id="progress-fill" style="height: 100%; width: 0%; background: var(--c-brand); transition: width 250ms ease;"></div>
+              </div>
+              <span id="progress-pct" style="font-size: 0.78rem; color: var(--c-text-muted); min-width: 2.5rem; text-align: right; font-variant-numeric: tabular-nums;">0%</span>
+            </div>
+            <p style="margin: 0; font-size: 0.82rem; color: var(--c-text-muted);">
+              Strona online za ~24h od submita. <span id="draft-status"></span>
             </p>
           </div>
           <button type="submit" id="submit-btn" class="btn btn-primary" style="min-height: 48px; font-size: 1rem; padding: 0.75rem 1.5rem;">
@@ -716,6 +752,23 @@ if (!client) return Astro.redirect("/login");
         });
       }
 
+      // ============ PHONE AUTO-FORMAT (+48 XXX XXX XXX) ============
+      const phoneInput = document.getElementById("contact_phone");
+      if (phoneInput) {
+        phoneInput.addEventListener("input", (e) => {
+          let v = e.target.value.replace(/[^\d+]/g, "");
+          // Strip optional +48 prefix, format last 9 digits
+          let prefix = "";
+          if (v.startsWith("+48")) { prefix = "+48 "; v = v.slice(3); }
+          else if (v.startsWith("48") && v.length >= 11) { prefix = "+48 "; v = v.slice(2); }
+          v = v.replace(/\D/g, "").slice(0, 9);
+          const grouped = v.length > 6 ? `${v.slice(0,3)} ${v.slice(3,6)} ${v.slice(6)}`
+                       : v.length > 3 ? `${v.slice(0,3)} ${v.slice(3)}`
+                       : v;
+          e.target.value = (prefix || (v.length === 9 ? "+48 " : "")) + grouped;
+        });
+      }
+
       // ============ CHARACTER COUNTERS ============
       document.querySelectorAll("[data-counter]").forEach((input) => {
         const counter = document.getElementById(input.dataset.counter);
@@ -730,6 +783,43 @@ if (!client) return Astro.redirect("/login");
         input.addEventListener("input", update);
         update();
       });
+
+      // ============ LOGO UPLOAD ============
+      const logoInput = document.getElementById("logo-file-input");
+      const logoPreview = document.getElementById("logo-preview");
+      const logoStatus = document.getElementById("logo-upload-status");
+      if (logoInput) {
+        logoInput.addEventListener("change", async () => {
+          const file = logoInput.files && logoInput.files[0];
+          if (!file) return;
+          if (file.size > 500 * 1024) {
+            logoStatus.style.color = "var(--c-danger)";
+            logoStatus.textContent = `Plik zbyt duży: ${Math.round(file.size / 1024)} KB, max 500 KB.`;
+            return;
+          }
+          // Local preview
+          const url = URL.createObjectURL(file);
+          logoPreview.innerHTML = `<img src="${url}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;" />`;
+          logoStatus.style.color = "var(--c-text-muted)";
+          logoStatus.textContent = "⏳ Wgrywanie...";
+          try {
+            const fd = new FormData();
+            fd.append("logo", file);
+            const res = await fetch("/api/settings/logo-upload", { method: "POST", body: fd });
+            const body = await res.json();
+            if (body.ok) {
+              logoStatus.style.color = "#047857";
+              logoStatus.textContent = "✓ Logo zapisane. Pojawi się na Twojej stronie.";
+            } else {
+              logoStatus.style.color = "var(--c-danger)";
+              logoStatus.textContent = "✗ Błąd: " + (body.error || "unknown");
+            }
+          } catch (e) {
+            logoStatus.style.color = "var(--c-danger)";
+            logoStatus.textContent = "✗ Błąd sieci: " + (e?.message || e);
+          }
+        });
+      }
 
       // ============ HOURS PRESETS ============
       const HOURS_PRESETS = {
@@ -800,6 +890,7 @@ if (!client) return Astro.redirect("/login");
       // localStorage draft
       const form = document.getElementById("onboarding-form");
       const DRAFT_KEY = "mm-panel-onboarding-draft-v1";
+      const DRAFT_TS_KEY = "mm-panel-onboarding-draft-ts";
       const draftStatus = document.getElementById("draft-status");
 
       function snapshotForm() {
@@ -808,12 +899,71 @@ if (!client) return Astro.redirect("/login");
         for (const [k, v] of data.entries()) out[k] = v;
         return out;
       }
+
+      // Relative time formatter — "2 min temu", "1 godz temu", "wczoraj"
+      function relativeTime(ts) {
+        if (!ts) return "";
+        const sec = Math.floor((Date.now() - ts) / 1000);
+        if (sec < 5) return "przed chwilą";
+        if (sec < 60) return `${sec} s temu`;
+        const min = Math.floor(sec / 60);
+        if (min < 60) return `${min} min temu`;
+        const hr = Math.floor(min / 60);
+        if (hr < 24) return `${hr} godz temu`;
+        return `${Math.floor(hr / 24)} d temu`;
+      }
+      function updateDraftStatus() {
+        const ts = parseInt(localStorage.getItem(DRAFT_TS_KEY) || "0", 10);
+        if (!ts) { draftStatus.textContent = ""; return; }
+        draftStatus.textContent = "Ostatni zapis: " + relativeTime(ts) + ".";
+      }
+      // Tick every 15s so "2 min temu" auto-refreshes to "3 min temu"
+      setInterval(updateDraftStatus, 15_000);
+
       function saveDraft() {
         try {
+          const now = Date.now();
           localStorage.setItem(DRAFT_KEY, JSON.stringify(snapshotForm()));
-          draftStatus.textContent = "Zapisano " + new Date().toLocaleTimeString("pl-PL");
+          localStorage.setItem(DRAFT_TS_KEY, String(now));
+          updateDraftStatus();
         } catch {}
       }
+
+      // ============ PROGRESS INDICATOR ============
+      const TOTAL_SECTIONS = 9;
+      const progressFill = document.getElementById("progress-fill");
+      const progressLabel = document.getElementById("progress-label");
+      const progressPct = document.getElementById("progress-pct");
+      const progressTrack = document.getElementById("progress-track");
+      function isSectionFilled(section) {
+        // A section "counts as filled" when ALL required inputs (visible) have non-empty values
+        const requireds = section.querySelectorAll('input[required]:not([type="hidden"]), select[required], textarea[required]');
+        if (requireds.length === 0) {
+          // Optional section — count as filled if ANY non-hidden input has a value (or checkbox checked)
+          const any = section.querySelectorAll('input:not([type="hidden"]), select, textarea');
+          return Array.from(any).some((el) => {
+            if (el.type === "checkbox") return el.checked;
+            return String(el.value || "").trim().length > 0;
+          });
+        }
+        return Array.from(requireds).every((el) => {
+          if (el.type === "checkbox") return el.checked;
+          return String(el.value || "").trim().length > 0;
+        });
+      }
+      function updateProgress() {
+        const sections = Array.from(form.querySelectorAll(":scope > details"));
+        const filled = sections.filter(isSectionFilled).length;
+        const pct = Math.round((filled / TOTAL_SECTIONS) * 100);
+        if (progressFill) progressFill.style.width = pct + "%";
+        if (progressLabel) progressLabel.textContent = `${filled} / ${TOTAL_SECTIONS} sekcji`;
+        if (progressPct) progressPct.textContent = pct + "%";
+        if (progressTrack) progressTrack.setAttribute("aria-valuenow", String(filled));
+        // Green fill when complete
+        if (progressFill) progressFill.style.background = filled === TOTAL_SECTIONS ? "#10b981" : "var(--c-brand)";
+      }
+      form.addEventListener("input", updateProgress);
+      form.addEventListener("change", updateProgress);
       function loadDraft() {
         try {
           const raw = localStorage.getItem(DRAFT_KEY);
@@ -834,17 +984,56 @@ if (!client) return Astro.redirect("/login");
         } catch { addServiceRow(); }
       }
       loadDraft();
+      updateProgress();
+      updateDraftStatus();
       form.addEventListener("input", () => {
         clearTimeout(window.__draftTimer);
         window.__draftTimer = setTimeout(saveDraft, 400);
       });
 
       const SUBMIT_LABEL = "Zatwierdź i rozpocznij budowę strony →";
+
+      // Clear previous error highlights from sections
+      function clearSectionErrors() {
+        form.querySelectorAll(":scope > details").forEach((s) => {
+          s.classList.remove("has-errors");
+          s.style.borderColor = "";
+        });
+      }
+      // Find first invalid required input, open its section, scroll + focus
+      function highlightFirstInvalid() {
+        clearSectionErrors();
+        const invalid = form.querySelectorAll("input:invalid:not([type=hidden]), select:invalid, textarea:invalid");
+        if (invalid.length === 0) return null;
+        const first = invalid[0];
+        const section = first.closest("details");
+        if (section) {
+          section.open = true;
+          section.classList.add("has-errors");
+          section.style.borderColor = "var(--c-danger)";
+          section.style.boxShadow = "0 0 0 3px color-mix(in srgb, var(--c-danger) 15%, transparent)";
+          section.scrollIntoView({ behavior: "smooth", block: "center" });
+          setTimeout(() => first.focus(), 600);
+        }
+        return { input: first, section };
+      }
+
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const submitBtn = document.getElementById("submit-btn");
         const errBox = document.getElementById("form-errors");
         errBox.style.display = "none";
+
+        // Native validity check first — highlight section before sending
+        if (!form.checkValidity()) {
+          const result = highlightFirstInvalid();
+          if (result) {
+            errBox.innerHTML = `<strong>Brakuje danych w sekcji:</strong> sprawdź podświetlone pole "${result.input.name || result.input.id || "—"}".`;
+            errBox.style.display = "block";
+            return;
+          }
+        }
+        clearSectionErrors();
         submitBtn.disabled = true;
         submitBtn.textContent = "Wysyłam…";
 
@@ -899,6 +1088,7 @@ if (!client) return Astro.redirect("/login");
           longitude: num("longitude"),
           service_area: get("service_area").split(",").map(s => s.trim()).filter(Boolean),
           contact_person_name: get("contact_person_name") || undefined,
+          contact_phone: get("contact_phone") || undefined,
           services,
           hours: {
             monday: get("hours_monday") || undefined,
