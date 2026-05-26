@@ -94,6 +94,35 @@ if (!client) return Astro.redirect("/login");
         </div>
       </div>
 
+      {/* Multi-step wizard navigation — only top stepper visible at any time */}
+      <nav class="wizard-stepper" aria-label="Postęp wizardu" style="margin-bottom: 1.25rem;">
+        <ol id="stepper-list" style="display: flex; flex-wrap: wrap; gap: 0.4rem; list-style: none; padding: 0; margin: 0;">
+          {[
+            { n: 1, label: "Firma" },
+            { n: 2, label: "Domena" },
+            { n: 3, label: "Adres" },
+            { n: 4, label: "Usługi" },
+            { n: 5, label: "Godziny" },
+            { n: 6, label: "Styl + logo" },
+            { n: 7, label: "Analityka" },
+            { n: 8, label: "Opinie" },
+            { n: 9, label: "RODO" },
+          ].map((s) => (
+            <li
+              data-step-jump={s.n}
+              role="button"
+              tabindex="0"
+              aria-current={s.n === 1 ? "step" : undefined}
+              class={s.n === 1 ? "is-current" : ""}
+              style="display: flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.7rem; border: 1px solid var(--c-border); border-radius: 999px; background: var(--c-surface); cursor: pointer; font-size: 0.82rem; font-weight: 500; transition: background 150ms, color 150ms, border-color 150ms;"
+            >
+              <span class="step-num" style="display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: var(--c-surface-muted); font-size: 0.72rem; font-weight: 700;">{s.n}</span>
+              <span class="step-label">{s.label}</span>
+            </li>
+          ))}
+        </ol>
+      </nav>
+
       <form id="onboarding-form" novalidate method="POST" action="#">
         <!-- ============ 1. DANE FIRMY ============ -->
         <details open class="card" style="margin-bottom: 1rem;">
@@ -518,29 +547,30 @@ if (!client) return Astro.redirect("/login");
         <!-- ============ SUBMIT ============ -->
         <div id="form-errors" style="display: none; padding: 1rem; background: #fef2f2; border: 1px solid #fecaca; color: var(--c-danger); border-radius: 8px; margin-bottom: 1rem;"></div>
 
-        <div class="submit-bar">
-          <div style="flex: 1; min-width: 220px;">
-            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-              <span id="progress-label" style="font-weight: 700; font-size: 0.95rem; min-width: 7rem;">0 / 9 sekcji</span>
+        <div class="step-nav-bar">
+          <button type="button" id="prev-step" class="btn" style="min-height: 44px; padding: 0.6rem 1.2rem;" hidden>← Wstecz</button>
+          <div style="flex: 1; text-align: center;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; justify-content: center;">
+              <span id="progress-label" style="font-weight: 700; font-size: 0.85rem;">Krok 1 / 9</span>
               <div
                 role="progressbar"
                 aria-valuemin="0"
                 aria-valuemax="9"
-                aria-valuenow="0"
-                aria-label="Postęp wizardu"
+                aria-valuenow="1"
                 id="progress-track"
-                style="flex: 1; height: 8px; background: var(--c-border); border-radius: 999px; overflow: hidden;"
+                style="flex: 1; max-width: 200px; height: 6px; background: var(--c-border); border-radius: 999px; overflow: hidden;"
               >
-                <div id="progress-fill" style="height: 100%; width: 0%; background: var(--c-brand); transition: width 250ms ease;"></div>
+                <div id="progress-fill" style="height: 100%; width: 11%; background: var(--c-brand); transition: width 300ms ease;"></div>
               </div>
-              <span id="progress-pct" style="font-size: 0.78rem; color: var(--c-text-muted); min-width: 2.5rem; text-align: right; font-variant-numeric: tabular-nums;">0%</span>
+              <span id="progress-pct" style="font-size: 0.72rem; color: var(--c-text-muted); min-width: 2.2rem; text-align: right; font-variant-numeric: tabular-nums;">11%</span>
             </div>
-            <p style="margin: 0; font-size: 0.82rem; color: var(--c-text-muted);">
-              Strona online za ~24h od submita. <span id="draft-status"></span>
+            <p style="margin: 0.3rem 0 0 0; font-size: 0.75rem; color: var(--c-text-muted);">
+              <span id="draft-status"></span>
             </p>
           </div>
-          <button type="submit" id="submit-btn" class="btn btn-primary" style="min-height: 48px; font-size: 1rem; padding: 0.75rem 1.5rem;">
-            Zatwierdź i rozpocznij budowę strony →
+          <button type="button" id="next-step" class="btn btn-primary" style="min-height: 44px; padding: 0.6rem 1.2rem;">Dalej →</button>
+          <button type="submit" id="submit-btn" class="btn btn-primary" style="min-height: 44px; padding: 0.6rem 1.2rem;" hidden>
+            Zatwierdź i rozpocznij budowę →
           </button>
         </div>
       </form>
@@ -616,6 +646,57 @@ if (!client) return Astro.redirect("/login");
         border-radius: 12px; padding: 1rem;
         box-shadow: 0 -4px 12px -8px rgba(0,0,0,0.15);
         display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;
+      }
+
+      /* Multi-step wizard — show only current step's <details>, hide rest */
+      #onboarding-form > details { display: none; }
+      #onboarding-form > details.is-active-step { display: block; }
+      #onboarding-form > details.is-active-step[open] > *:not(summary) { display: block; }
+      /* Disable summary toggle in step mode — content always visible */
+      #onboarding-form > details.is-active-step > summary { pointer-events: none; cursor: default; }
+
+      /* Stepper — pills on top */
+      .wizard-stepper li.is-current {
+        background: var(--c-brand) !important;
+        color: white !important;
+        border-color: var(--c-brand) !important;
+      }
+      .wizard-stepper li.is-current .step-num {
+        background: rgba(255,255,255,0.25);
+        color: white;
+      }
+      .wizard-stepper li.is-done {
+        background: #ecfdf5 !important;
+        color: #047857 !important;
+        border-color: #a7f3d0 !important;
+      }
+      .wizard-stepper li.is-done .step-num {
+        background: #10b981;
+        color: white;
+      }
+      .wizard-stepper li.is-done .step-num::before {
+        content: "✓";
+        font-size: 0.85em;
+      }
+      .wizard-stepper li.is-done .step-num span { display: none; }
+      .wizard-stepper li:hover:not(.is-current) {
+        border-color: var(--c-brand) !important;
+      }
+      .wizard-stepper li:focus-visible {
+        outline: 2px solid var(--c-brand);
+        outline-offset: 2px;
+      }
+      @media (max-width: 720px) {
+        .wizard-stepper .step-label { display: none; }
+      }
+
+      /* Step nav bar — replaces sticky submit-bar */
+      .step-nav-bar {
+        position: sticky; bottom: 1rem; z-index: 5;
+        background: var(--c-surface); border: 1px solid var(--c-border);
+        border-radius: 12px; padding: 0.75rem 1rem;
+        box-shadow: 0 -4px 12px -8px rgba(0,0,0,0.15);
+        display: flex; gap: 1rem; align-items: center;
       }
 
       /* Section badges — required vs optional */
@@ -937,6 +1018,103 @@ if (!client) return Astro.redirect("/login");
         } catch {}
       }
 
+      // ============ MULTI-STEP WIZARD NAVIGATION ============
+      const TOTAL_STEPS = 9;
+      let currentStep = 1;
+      const stepperItems = Array.from(document.querySelectorAll("#stepper-list > li"));
+      const prevBtn = document.getElementById("prev-step");
+      const nextBtn = document.getElementById("next-step");
+      const submitBtn = document.getElementById("submit-btn");
+
+      function getStepElement(n) {
+        return form.querySelectorAll(":scope > details")[n - 1] || null;
+      }
+
+      function goToStep(n, opts) {
+        opts = opts || {};
+        n = Math.max(1, Math.min(TOTAL_STEPS, n));
+        currentStep = n;
+        // Toggle visibility of all step <details>
+        form.querySelectorAll(":scope > details").forEach((el, idx) => {
+          const stepN = idx + 1;
+          const active = stepN === n;
+          el.classList.toggle("is-active-step", active);
+          el.open = active;
+        });
+        // Update stepper UI
+        stepperItems.forEach((li, idx) => {
+          const stepN = idx + 1;
+          li.classList.remove("is-current", "is-done");
+          if (stepN < n) li.classList.add("is-done");
+          if (stepN === n) {
+            li.classList.add("is-current");
+            li.setAttribute("aria-current", "step");
+          } else {
+            li.removeAttribute("aria-current");
+          }
+        });
+        // Button visibility
+        prevBtn.hidden = n === 1;
+        nextBtn.hidden = n === TOTAL_STEPS;
+        submitBtn.hidden = n !== TOTAL_STEPS;
+        // Update progress
+        updateProgress();
+        // Scroll to top of step (only if not initial load)
+        if (!opts.silent) {
+          const stepEl = getStepElement(n);
+          if (stepEl) stepEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
+
+      function validateCurrentStep() {
+        const stepEl = getStepElement(currentStep);
+        if (!stepEl) return true;
+        const requireds = stepEl.querySelectorAll("input[required]:not([type=hidden]), select[required], textarea[required]");
+        for (const el of requireds) {
+          if (!el.checkValidity()) {
+            el.focus();
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            stepEl.classList.add("has-errors");
+            stepEl.style.borderColor = "var(--c-danger)";
+            stepEl.style.boxShadow = "0 0 0 3px color-mix(in srgb, var(--c-danger) 15%, transparent)";
+            return false;
+          }
+        }
+        // Clear any prior error highlight
+        stepEl.classList.remove("has-errors");
+        stepEl.style.borderColor = "";
+        stepEl.style.boxShadow = "";
+        return true;
+      }
+
+      nextBtn.addEventListener("click", () => {
+        if (!validateCurrentStep()) return;
+        goToStep(currentStep + 1);
+      });
+      prevBtn.addEventListener("click", () => goToStep(currentStep - 1));
+
+      // Click on stepper pill jumps (only to steps <= currentStep + 1, i.e. already-visited)
+      stepperItems.forEach((li) => {
+        const targetStep = parseInt(li.dataset.stepJump || "0", 10);
+        const handler = () => {
+          if (targetStep <= currentStep) {
+            // Going back — no validation needed
+            goToStep(targetStep);
+          } else if (targetStep === currentStep + 1) {
+            // Going forward by one — validate first
+            if (validateCurrentStep()) goToStep(targetStep);
+          }
+          // Skipping forward (>+1) blocked silently
+        };
+        li.addEventListener("click", handler);
+        li.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handler();
+          }
+        });
+      });
+
       // ============ PROGRESS INDICATOR ============
       const TOTAL_SECTIONS = 9;
       const progressFill = document.getElementById("progress-fill");
@@ -960,18 +1138,16 @@ if (!client) return Astro.redirect("/login");
         });
       }
       function updateProgress() {
-        const sections = Array.from(form.querySelectorAll(":scope > details"));
-        const filled = sections.filter(isSectionFilled).length;
-        const pct = Math.round((filled / TOTAL_SECTIONS) * 100);
+        // Progress bar reflects CURRENT STEP position (not "filled" count) —
+        // simpler UX: user sees "you're at step 3 of 9" not "3 of 9 sections done".
+        const pct = Math.round((currentStep / TOTAL_STEPS) * 100);
         if (progressFill) progressFill.style.width = pct + "%";
-        if (progressLabel) progressLabel.textContent = `${filled} / ${TOTAL_SECTIONS} sekcji`;
+        if (progressLabel) progressLabel.textContent = `Krok ${currentStep} / ${TOTAL_STEPS}`;
         if (progressPct) progressPct.textContent = pct + "%";
-        if (progressTrack) progressTrack.setAttribute("aria-valuenow", String(filled));
-        // Green fill when complete
-        if (progressFill) progressFill.style.background = filled === TOTAL_SECTIONS ? "#10b981" : "var(--c-brand)";
+        if (progressTrack) progressTrack.setAttribute("aria-valuenow", String(currentStep));
+        if (progressFill) progressFill.style.background = currentStep === TOTAL_STEPS ? "#10b981" : "var(--c-brand)";
       }
-      form.addEventListener("input", updateProgress);
-      form.addEventListener("change", updateProgress);
+      // Progress now driven by currentStep (not field-by-field) — no need to listen on form input.
       function loadDraft() {
         try {
           const raw = localStorage.getItem(DRAFT_KEY);
@@ -992,7 +1168,16 @@ if (!client) return Astro.redirect("/login");
         } catch { addServiceRow(); }
       }
       loadDraft();
-      updateProgress();
+      // After draft restore, jump to first incomplete step (or step 1 fresh)
+      function findFirstIncompleteStep() {
+        for (let i = 1; i <= TOTAL_STEPS; i++) {
+          const el = getStepElement(i);
+          if (!el) continue;
+          if (!isSectionFilled(el)) return i;
+        }
+        return 1; // all filled — show step 1 for review
+      }
+      goToStep(findFirstIncompleteStep(), { silent: true });
       updateDraftStatus();
       form.addEventListener("input", () => {
         clearTimeout(window.__draftTimer);
