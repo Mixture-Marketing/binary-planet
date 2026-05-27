@@ -24,6 +24,7 @@ import { adminNewsletterRouter } from "./routes/admin/newsletter.js";
 import { adminOvhRouter } from "./routes/admin/ovh.js";
 import { adminSiteMigrationRouter } from "./routes/admin/site-migration.js";
 import { adminUpgradeDomainRouter } from "./routes/admin/upgrade-domain.js";
+import { adminDeleteKlientRepoRouter } from "./routes/admin/delete-klient-repo.js";
 import { preonboardRouter } from "./routes/admin/preonboard.js";
 import { sveltiaOauthRouter } from "./routes/sveltia-oauth.js";
 import { stripeWebhookRouter } from "./routes/webhooks/stripe.js";
@@ -56,6 +57,7 @@ export function createApp(): Hono<HonoEnv> {
   app.route("/api/admin/extra-subpage", adminExtraSubpageRouter);
   app.route("/api/admin/site-migration", adminSiteMigrationRouter);
   app.route("/api/admin/clients", adminUpgradeDomainRouter);
+  app.route("/api/admin/clients/delete-repo", adminDeleteKlientRepoRouter);
   // Newsletter public endpoints (confirm + unsubscribe — klikalne z maila)
   app.route("/api/newsletter", adminNewsletterRouter);
   // Preonboard — public-ish, X-BP-Preonboard-Key auth, rate-limited per IP
