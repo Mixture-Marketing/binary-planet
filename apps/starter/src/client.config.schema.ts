@@ -158,8 +158,12 @@ export const clientConfigSchema = z.object({
   }),
 
   // Domain + SEO
+  // Regex allows underscores too — CF workers.dev subdomains derived from client_id
+  // (e.g. `mm-starter-clk_kaorl_m9em4.account.workers.dev`) contain `_`. For real
+  // registered domains underscores are invalid per DNS LDH rule, but Cloudflare
+  // accepts them on its workers.dev subdomains.
   domain: z.object({
-    primary: z.string().regex(/^[a-z0-9.-]+\.[a-z]{2,}$/),
+    primary: z.string().regex(/^[a-z0-9._-]+\.[a-z]{2,}$/),
     canonicalScheme: z.literal("https").default("https"),
   }),
 

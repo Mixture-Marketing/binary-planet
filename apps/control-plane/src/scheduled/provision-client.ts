@@ -475,10 +475,15 @@ export async function provisionOne(
   log.info("provision.end", { client_id: row.client_id, status: finalStatus, steps: steps.length });
 
   // Notify klient via email when provisioning succeeds (best-effort, non-blocking).
-  if (finalStatus === "done") {
+  // CRITICAL: skip email in dry-run mode — nothing was actually deployed, klient
+  // would get a "your site is ready" email with broken URL. (See bug 2026-05-27:
+  // klient karolmierzwa2003 got email + dead workers.dev link after dry-run.)
+  if (finalStatus === "done" && !dryRun) {
     await sendProvisioningDoneEmail(env, row.client_id).catch((e) => {
       log.warn("provision.email_failed", { client_id: row.client_id, error: e instanceof Error ? e.message : String(e) });
     });
+  } else if (finalStatus === "done" && dryRun) {
+    log.info("provision.email_skipped_dry_run", { client_id: row.client_id });
   }
 
   return { client_id: row.client_id, ok: finalStatus === "done", steps, ...(errorMsg && { error: errorMsg }) };
